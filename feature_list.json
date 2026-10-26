@@ -1,0 +1,156 @@
+{
+  "project": "asclepio-web",
+  "description": "Cliente web React + Vite de Asclepio (enfermería, medicina, administración).",
+  "rules": {
+    "one_feature_per_session": true,
+    "require_tests_to_close": true,
+    "require_approved_spec_to_implement": true,
+    "valid_status": [
+      "pending",
+      "spec_ready",
+      "in_progress",
+      "done",
+      "blocked"
+    ],
+    "sdd_required_when": "feature has \"sdd\": true"
+  },
+  "features": [
+    {
+      "id": "F-00-web",
+      "global_id": "F-00",
+      "name": "bootstrap",
+      "title": "Bootstrap técnico de la web",
+      "description": "Vite + React + TS estricto, ESLint/Prettier, Vitest + Testing Library, Router, TanStack Query, RHF + Zod, script api:types, estructura de carpetas, página /health, layout responsivo.",
+      "depends_on": [
+        "F-00-api"
+      ],
+      "consumes_contract": null,
+      "acceptance": [
+        "La página de estado muestra el resultado de GET /api/v1/health",
+        "npm run api:types genera tipos desde ../asclepio-api/openapi",
+        "./init.sh completo en verde"
+      ],
+      "sdd": false,
+      "status": "pending"
+    },
+    {
+      "id": "F-01-web",
+      "global_id": "F-01",
+      "name": "auth_roles_tenancy",
+      "title": "Login y rutas por rol",
+      "description": "Login, manejo de token, rutas protegidas por rol y logout.",
+      "depends_on": [
+        "F-00-web",
+        "F-01-api"
+      ],
+      "consumes_contract": null,
+      "acceptance": [
+        "Ver ../asclepio-api/docs/product/features/F-01.md (F-01.AC6)"
+      ],
+      "sdd": true,
+      "status": "pending"
+    },
+    {
+      "id": "F-02-web",
+      "global_id": "F-02",
+      "name": "encounter_view",
+      "title": "Consulta de atención",
+      "description": "Consulta de atención y su línea de tiempo (solo lectura).",
+      "depends_on": [
+        "F-01-web",
+        "F-02-api"
+      ],
+      "consumes_contract": null,
+      "acceptance": [
+        "Ver ../asclepio-api/docs/product/features/F-02.md (F-02.AC7, AC8)"
+      ],
+      "sdd": true,
+      "status": "pending"
+    },
+    {
+      "id": "F-03-web",
+      "global_id": "F-03",
+      "name": "clinical_capture",
+      "title": "Formulario de captura clínica",
+      "description": "Formulario validado de signos vitales, síntomas y motivo.",
+      "depends_on": [
+        "F-02-web",
+        "F-03-api"
+      ],
+      "consumes_contract": null,
+      "acceptance": [
+        "Ver ../asclepio-api/docs/product/features/F-03.md (F-03.AC5)"
+      ],
+      "sdd": true,
+      "status": "pending"
+    },
+    {
+      "id": "F-04-web",
+      "global_id": "F-04",
+      "name": "ai_suggestion_panel",
+      "title": "Panel de sugerencia",
+      "description": "Muestra la sugerencia como propuesta (nivel, explicación, factores, guard) o el modo manual.",
+      "depends_on": [
+        "F-03-web",
+        "F-04-api"
+      ],
+      "consumes_contract": null,
+      "acceptance": [
+        "Ver ../asclepio-api/docs/product/features/F-04.md (F-04.AC8)"
+      ],
+      "sdd": true,
+      "status": "pending"
+    },
+    {
+      "id": "F-05-web",
+      "global_id": "F-05",
+      "name": "triage_decision",
+      "title": "Validar / Corregir / Manual",
+      "description": "Acciones de decisión con el mismo peso visual; Corregir exige nivel y motivo.",
+      "depends_on": [
+        "F-04-web",
+        "F-05-api"
+      ],
+      "consumes_contract": null,
+      "acceptance": [
+        "Ver ../asclepio-api/docs/product/features/F-05.md (F-05.AC7)"
+      ],
+      "sdd": true,
+      "status": "pending"
+    },
+    {
+      "id": "F-06-web",
+      "global_id": "F-06",
+      "name": "priority_queue",
+      "title": "Vista de cola",
+      "description": "Cola responsiva con refresco periódico y alerta de tiempo excedido.",
+      "depends_on": [
+        "F-05-web",
+        "F-06-api"
+      ],
+      "consumes_contract": null,
+      "acceptance": [
+        "Ver ../asclepio-api/docs/product/features/F-06.md (F-06.AC2–AC5)"
+      ],
+      "sdd": true,
+      "status": "pending"
+    },
+    {
+      "id": "F-07-web",
+      "global_id": "F-07",
+      "name": "reports",
+      "title": "Tablero de reportes",
+      "description": "Indicadores de tiempos, cumplimiento, concordancia y descarga CSV.",
+      "depends_on": [
+        "F-05-web",
+        "F-07-api"
+      ],
+      "consumes_contract": null,
+      "acceptance": [
+        "Ver ../asclepio-api/docs/product/features/F-07.md (F-07.AC6)"
+      ],
+      "sdd": true,
+      "status": "pending"
+    }
+  ]
+}

@@ -12,9 +12,10 @@ src/
 │   ├── auth/            # login y sesión
 │   ├── triage/          # captura clínica, sugerencia y decisión (F-03, F-04, F-05) + consulta de atención (F-02)
 │   ├── queue/           # cola priorizada (F-06)
-│   └── reports/         # indicadores y CSV (F-07)
+│   ├── reports/         # indicadores y CSV (F-07)
+│   └── status/          # página de estado: GET /api/v1/health (F-00)
 └── shared/
-    ├── api/             # cliente HTTP tipado + schema.d.ts generado (npm run api:types)
+    ├── api/             # client.ts (openapi-fetch tipado) + schema.d.ts generado (npm run api:types, versionado)
     ├── ui/              # componentes visuales sin lógica de dominio
     ├── hooks/           # hooks genéricos
     └── lib/             # utilidades: fechas en America/Bogota, problem+json

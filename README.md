@@ -18,7 +18,12 @@ asclepio/
 cp .env.example .env
 ./init.sh            # o ./init.sh --quick
 ```
-Después de F-00: `npm install`, `npm run api:types` y `npm run dev` → `http://localhost:5173` (con la API en `http://localhost:3000`).
+```bash
+npm install
+npm run api:types    # regenera src/shared/api/schema.d.ts desde ../asclepio-api/openapi
+npm run dev          # http://localhost:5173 (API en http://localhost:3000)
+npm test && npm run lint && npm run typecheck
+```
 
 ## Cómo trabajar con el harness (SDD)
 1. Abre Claude Code en este directorio; actúa como **leader**.

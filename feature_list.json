@@ -43,7 +43,7 @@
         "F-00-web",
         "F-01-api"
       ],
-      "consumes_contract": "0.2.0",
+      "consumes_contract": "0.2.1",
       "acceptance": [
         "Ver ../asclepio-api/docs/product/features/F-01.md (F-01.AC6)"
       ],

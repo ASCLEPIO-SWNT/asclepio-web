@@ -233,7 +233,7 @@ export interface components {
              * @description Versión vigente de GET /public/consent. Si no coincide: 422.
              * @example 2026-10-v1
              */
-            consentVersion: Record<string, never>;
+            consentVersion: string;
         };
         PatientAccountCreatedDto: {
             /**

@@ -10,6 +10,7 @@ src/
 │   └── providers/       # QueryClient, auth, tema
 ├── features/
 │   ├── auth/            # login y sesión
+│   ├── reception/       # bandeja de pre-registros, confirmación de llegada, rechazo y registro directo, incluido NN (F-02)
 │   ├── triage/          # captura clínica, sugerencia y decisión (F-03, F-04, F-05) + consulta de atención (F-02)
 │   ├── queue/           # cola priorizada (F-06)
 │   ├── reports/         # indicadores y CSV (F-07)

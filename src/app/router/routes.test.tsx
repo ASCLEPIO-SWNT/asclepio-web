@@ -86,18 +86,6 @@ describe('rutas y sesión', () => {
       expect(router.state.location.pathname).toBe(HOME[role].path);
     });
 
-    it(`R23: el marcador de ${HOME[role].path} tiene h1 y la feature que lo trae, sin acciones`, async () => {
-      fakeApi({ 'GET /api/v1/me': json(200, staffMe[role]) });
-      renderApp({ entries: [HOME[role].path], stored: true });
-      const main = (
-        await screen.findByRole('heading', { level: 1, name: HOME[role].title })
-      ).closest('section');
-      expect(main).toHaveTextContent(
-        `Esta funcionalidad llega en ${HOME[role].feature}.`,
-      );
-      expect(main?.querySelectorAll('button, input, form, a')).toHaveLength(0);
-    });
-
     it.each(FORBIDDEN[role])(
       `R19: ${role} en %s ve "Sin permiso" con enlace a su inicio y no el contenido`,
       async (path) => {
@@ -122,6 +110,22 @@ describe('rutas y sesión', () => {
       },
     );
   });
+
+  // D4 de F-02-web: /recepcion ya no es un marcador; R23 cubre los otros tres roles.
+  it.each(['NURSE', 'PHYSICIAN', 'ADMIN'] as const)(
+    'R23: el marcador del inicio de %s tiene h1 y la feature que lo trae, sin acciones',
+    async (role) => {
+      fakeApi({ 'GET /api/v1/me': json(200, staffMe[role]) });
+      renderApp({ entries: [HOME[role].path], stored: true });
+      const main = (
+        await screen.findByRole('heading', { level: 1, name: HOME[role].title })
+      ).closest('section');
+      expect(main).toHaveTextContent(
+        `Esta funcionalidad llega en ${HOME[role].feature}.`,
+      );
+      expect(main?.querySelectorAll('button, input, form, a')).toHaveLength(0);
+    },
+  );
 
   it('R5: vuelve a la ruta protegida que originó la redirección si el rol la permite', async () => {
     fakeApi({

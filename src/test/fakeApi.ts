@@ -13,6 +13,8 @@ export type Handler = (request: Request) => Response | Promise<Response>;
 export interface RecordedRequest {
   method: string;
   path: string;
+  /** Query string de la petición (R6, R19, R28, R38). */
+  query: URLSearchParams;
   headers: Headers;
   body: unknown;
 }
@@ -125,11 +127,13 @@ export function fakeApi(routes: Record<string, Handler>) {
   const requests: RecordedRequest[] = [];
   const fetchMock = vi.fn(async (input: Request) => {
     const request = input instanceof Request ? input : new Request(input);
-    const path = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const path = url.pathname;
     const text = await request.clone().text();
     requests.push({
       method: request.method,
       path,
+      query: new URLSearchParams(url.search),
       headers: new Headers(request.headers),
       body: text ? (JSON.parse(text) as unknown) : undefined,
     });
@@ -146,4 +150,123 @@ export function fakeApi(routes: Record<string, Handler>) {
       routes[key] = handler;
     },
   };
+}
+
+// ------------------------------------------------------------------ Fixtures F-02 (contrato 0.4.0)
+
+export const TENANT_ID = staffMe.NURSE.tenantId;
+export const SITE_NORTE = {
+  id: '7a1b2c3d-0000-4000-8000-000000000001',
+  name: 'Sede Norte',
+};
+export const SITE_SUR = {
+  id: '7a1b2c3d-0000-4000-8000-000000000002',
+  name: 'Sede Sur',
+};
+
+/** `GET /public/tenants`: el tenant del personal con dos sedes y otro tenant ajeno. */
+export const publicTenants: Schemas['PublicTenantDto'][] = [
+  {
+    id: '9f9f9f9f-0000-4000-8000-0000000000ff',
+    name: 'Otra IPS',
+    sites: [{ id: '9f9f9f9f-0000-4000-8000-000000000011', name: 'Sede Ajena' }],
+  },
+  { id: TENANT_ID, name: 'IPS Asclepio', sites: [SITE_NORTE, SITE_SUR] },
+];
+
+export const patient: Schemas['PatientDto'] = {
+  id: 'b0b0b0b0-0000-4000-8000-000000000001',
+  documentType: 'CC',
+  documentNumber: '1032456789',
+  fullName: 'Laura Gómez Pérez',
+  birthDate: '1990-05-17',
+  estimatedAgeYears: null,
+  sex: 'F',
+  isNN: false,
+};
+
+export const nnPatient: Schemas['PatientDto'] = {
+  id: 'b0b0b0b0-0000-4000-8000-000000000002',
+  documentType: null,
+  documentNumber: null,
+  fullName: null,
+  birthDate: null,
+  estimatedAgeYears: 45,
+  sex: 'M',
+  isNN: true,
+};
+
+export const pendingPreRegistration: Schemas['PendingPreRegistrationDto'] = {
+  id: 'c0c0c0c0-0000-4000-8000-000000000001',
+  siteId: SITE_NORTE.id,
+  siteName: SITE_NORTE.name,
+  // 13:05 UTC = 8:05 a. m. en Bogotá; expira 6 h después.
+  preRegisteredAt: '2026-10-27T13:05:00.000Z',
+  expiresAt: '2026-10-27T19:05:00.000Z',
+  chiefComplaintText: 'Dolor de cabeza desde ayer',
+  complaintSource: 'TYPED',
+  identityVerified: false,
+  patient,
+};
+
+export const ENCOUNTER_ID = 'e0e0e0e0-0000-4000-8000-000000000001';
+
+/** Atención con eventos ENCOUNTER_CREATED, STATUS_CHANGED y uno de tipo desconocido (D12). */
+export const encounter: Schemas['EncounterDto'] = {
+  id: ENCOUNTER_ID,
+  siteId: SITE_NORTE.id,
+  siteName: SITE_NORTE.name,
+  status: 'WAITING_TRIAGE',
+  origin: 'PRE_REGISTRATION',
+  // 14:30 UTC = 9:30 a. m. en Bogotá.
+  arrivalAt: '2026-10-27T14:30:00.000Z',
+  preRegistrationId: pendingPreRegistration.id,
+  preRegisteredAt: pendingPreRegistration.preRegisteredAt,
+  chiefComplaintText: 'Dolor de cabeza desde ayer',
+  complaintSource: 'TYPED',
+  cancellationReason: null,
+  registeredBy: { id: staffMe.RECEPTION.id, fullName: 'Rosa Recepción' },
+  patient,
+  events: [
+    {
+      id: '3',
+      type: 'ENCOUNTER_CREATED',
+      fromStatus: null,
+      toStatus: null,
+      payload: { origin: 'PRE_REGISTRATION' },
+      actor: {
+        type: 'STAFF',
+        id: staffMe.RECEPTION.id,
+        fullName: 'Rosa Recepción',
+      },
+      occurredAt: '2026-10-27T14:30:00.000Z',
+    },
+    {
+      id: '4',
+      type: 'STATUS_CHANGED',
+      fromStatus: 'REGISTERED',
+      toStatus: 'WAITING_TRIAGE',
+      payload: { secreto: 'payload-no-visible' },
+      actor: { type: 'SYSTEM', id: null, fullName: null },
+      occurredAt: '2026-10-27T14:30:00.000Z',
+    },
+    {
+      id: '10',
+      // Tipo que la web aún no conoce: se tolera (contrato).
+      type: 'TRIAGE_DECIDED' as Schemas['EncounterEventDto']['type'],
+      fromStatus: null,
+      toStatus: null,
+      payload: {},
+      actor: { type: 'PATIENT', id: null, fullName: null },
+      occurredAt: '2026-10-27T15:00:00.000Z',
+    },
+  ],
+};
+
+export function encounterSummary(
+  overrides: Partial<Schemas['EncounterSummaryDto']> = {},
+): Schemas['EncounterSummaryDto'] {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { events, ...summary } = encounter;
+  return { ...summary, ...overrides };
 }

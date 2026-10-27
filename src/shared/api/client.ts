@@ -3,7 +3,7 @@ import type { components, paths } from './schema';
 import { session } from './session';
 
 /** Versión del contrato que consume esta web (feature_list.json → consumes_contract). */
-export const CONSUMED_CONTRACT = '0.2.1';
+export const CONSUMED_CONTRACT = '0.4.0';
 
 const LOGIN_PATH = '/api/v1/auth/login';
 
@@ -44,3 +44,19 @@ export type StaffMe = Schemas['StaffMeDto'];
 export type Me = Schemas['StaffMeDto'] | Schemas['PatientMeDto'];
 export type StaffRole = StaffMe['role'];
 export type FieldError = Schemas['FieldErrorDto'];
+
+// F-02-web (contrato 0.4.0): sedes, pacientes, pre-registros y atenciones.
+export type PublicTenant = Schemas['PublicTenantDto'];
+export type PublicSite = Schemas['PublicSiteDto'];
+export type Patient = Schemas['PatientDto'];
+export type CreatePatient = Schemas['CreatePatientDto'];
+export type PendingPreRegistration = Schemas['PendingPreRegistrationDto'];
+export type Encounter = Schemas['EncounterDto'];
+export type EncounterSummary = Schemas['EncounterSummaryDto'];
+export type EncounterEvent = Schemas['EncounterEventDto'];
+export type EncounterStatus = Encounter['status'];
+export type EncounterOrigin = Encounter['origin'];
+export type ComplaintSource = Encounter['complaintSource'];
+export type DocumentType = NonNullable<Patient['documentType']>;
+export type Sex = NonNullable<Patient['sex']>;
+export type EventActorType = Schemas['EventActorDto']['type'];

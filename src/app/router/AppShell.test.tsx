@@ -16,25 +16,25 @@ const CASES: Array<{
     role: 'RECEPTION',
     home: '/recepcion',
     label: 'Recepción',
-    links: ['Recepción'],
+    links: ['Recepción', 'Atenciones'],
   },
   {
     role: 'NURSE',
     home: '/triage',
     label: 'Enfermería',
-    links: ['Triage', 'Cola priorizada'],
+    links: ['Triage', 'Cola priorizada', 'Atenciones'],
   },
   {
     role: 'PHYSICIAN',
     home: '/cola',
     label: 'Medicina',
-    links: ['Cola priorizada'],
+    links: ['Cola priorizada', 'Atenciones'],
   },
   {
     role: 'ADMIN',
     home: '/reportes',
     label: 'Administración',
-    links: ['Cola priorizada', 'Reportes'],
+    links: ['Cola priorizada', 'Reportes', 'Atenciones'],
   },
 ];
 

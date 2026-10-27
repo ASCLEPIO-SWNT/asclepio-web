@@ -65,7 +65,7 @@
         "Ver ../asclepio-api/docs/product/features/F-02.md (F-02.AC7, AC9)"
       ],
       "sdd": true,
-      "status": "in_progress"
+      "status": "done"
     },
     {
       "id": "F-03-web",

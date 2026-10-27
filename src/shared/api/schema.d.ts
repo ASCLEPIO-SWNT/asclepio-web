@@ -36,6 +36,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/patients": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PatientsController_search"];
+        put?: never;
+        post: operations["PatientsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patient/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PatientProfileController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch: operations["PatientProfileController_update"];
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -116,6 +148,182 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/patient/pre-registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PatientPreRegistrationsController_list"];
+        put?: never;
+        post: operations["PatientPreRegistrationsController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patient/pre-registrations/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PatientPreRegistrationsController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pre-registrations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PreRegistrationsController_pending"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pre-registrations/{id}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PreRegistrationsController_confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/pre-registrations/{id}/reject": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["PreRegistrationsController_reject"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/encounters": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EncountersController_list"];
+        put?: never;
+        post: operations["EncountersController_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/encounters/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["EncountersController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/encounters/{id}/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["EncountersController_cancel"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/encounters/{id}/vital-signs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ClinicalCaptureController_recordVitalSigns"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/encounters/{id}/symptom-findings": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["ClinicalCaptureController_recordSymptomFindings"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/encounters/{id}/clinical-capture": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ClinicalCaptureController_getCapture"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -139,6 +347,65 @@ export interface components {
             id: string;
             name: string;
             sites: components["schemas"]["PublicSiteDto"][];
+        };
+        PatientDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string|null} */
+            documentType: "CC" | "TI" | "CE" | "PA" | "RC" | null;
+            documentNumber: string | null;
+            fullName: string | null;
+            /** Format: date */
+            birthDate: string | null;
+            estimatedAgeYears: number | null;
+            /** @enum {string|null} */
+            sex: "M" | "F" | "X" | null;
+            /** @description true si es un paciente NN (sin documento). */
+            isNN: boolean;
+        };
+        CreatePatientDto: {
+            /**
+             * @description Obligatorio junto con documentNumber; ninguno de los dos en un NN.
+             * @enum {string}
+             */
+            documentType?: "CC" | "TI" | "CE" | "PA" | "RC";
+            documentNumber?: string;
+            /** @description Obligatorio con documento; opcional (o null) en un NN. */
+            fullName?: string | null;
+            /**
+             * Format: date
+             * @description YYYY-MM-DD. Obligatoria con documento; en un NN, exactamente una de birthDate o estimatedAgeYears. Posterior a hoy en Bogotá → 422.
+             * @example 1990-05-17
+             */
+            birthDate?: string;
+            /** @description Solo en un NN sin birthDate. */
+            estimatedAgeYears?: number;
+            /** @enum {string} */
+            sex: "M" | "F" | "X";
+        };
+        PatientProfileDto: {
+            /** Format: uuid */
+            id: string;
+            documentType: string | null;
+            documentNumber: string | null;
+            fullName: string | null;
+            /** Format: date */
+            birthDate: string | null;
+            /** @enum {string|null} */
+            sex: "M" | "F" | "X" | null;
+            /** @description true mientras recepción no haya verificado la identidad; después los datos quedan bloqueados. */
+            editable: boolean;
+        };
+        UpdatePatientProfileDto: {
+            fullName?: string;
+            /**
+             * Format: date
+             * @description YYYY-MM-DD; se exigen 18 años cumplidos en America/Bogota (si no: 422).
+             * @example 1990-05-17
+             */
+            birthDate?: string;
+            /** @enum {string} */
+            sex?: "M" | "F" | "X";
         };
         StaffMeDto: {
             /**
@@ -250,6 +517,275 @@ export interface components {
             /** @description Texto del consentimiento (Markdown). */
             text: string;
         };
+        CreatePreRegistrationDto: {
+            /**
+             * Format: uuid
+             * @description Sede del tenant (de GET /public/tenants).
+             */
+            siteId: string;
+            chiefComplaintText: string;
+            /** @enum {string} */
+            complaintSource: "TYPED" | "VOICE_ON_DEVICE";
+        };
+        EncounterRefDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "REGISTERED" | "WAITING_TRIAGE" | "TRIAGED" | "IN_CARE" | "CLOSED" | "CANCELLED";
+        };
+        PatientPreRegistrationDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            siteId: string;
+            siteName: string;
+            /**
+             * @description Estado efectivo.
+             * @enum {string}
+             */
+            status: "PENDING" | "CONFIRMED" | "EXPIRED" | "REJECTED";
+            /** Format: date-time */
+            preRegisteredAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            encounter: components["schemas"]["EncounterRefDto"] | null;
+        };
+        PendingPreRegistrationDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            siteId: string;
+            siteName: string;
+            /** Format: date-time */
+            preRegisteredAt: string;
+            /** Format: date-time */
+            expiresAt: string;
+            chiefComplaintText: string;
+            /** @enum {string} */
+            complaintSource: "TYPED" | "VOICE_ON_DEVICE";
+            /** @description identity_verified de la cuenta del paciente. */
+            identityVerified: boolean;
+            patient: components["schemas"]["PatientDto"];
+        };
+        ConfirmPreRegistrationDto: {
+            /**
+             * @description Recepción verificó la identidad del paciente presente. Si falta o no es true: 422.
+             * @enum {boolean}
+             */
+            identityVerified: true;
+        };
+        StaffRefDto: {
+            /** Format: uuid */
+            id: string;
+            fullName: string | null;
+        };
+        EventActorDto: {
+            /** @enum {string} */
+            type: "STAFF" | "PATIENT" | "SYSTEM";
+            /** Format: uuid */
+            id: string | null;
+            fullName: string | null;
+        };
+        EncounterEventDto: {
+            /** @description bigint serializado como texto. */
+            id: string;
+            /**
+             * @description Tipo de evento. F-02: ENCOUNTER_CREATED, STATUS_CHANGED. F-03: VITAL_SIGNS_RECORDED (payload { vitalSignsId }) y SYMPTOM_FINDINGS_RECORDED (payload { findingIds, count }), sin fromStatus/toStatus ni valores clínicos. Las features siguientes añaden tipos: los clientes deben tolerar tipos desconocidos.
+             * @enum {string}
+             */
+            type: "ENCOUNTER_CREATED" | "STATUS_CHANGED" | "VITAL_SIGNS_RECORDED" | "SYMPTOM_FINDINGS_RECORDED";
+            /** @enum {string|null} */
+            fromStatus: "REGISTERED" | "WAITING_TRIAGE" | "TRIAGED" | "IN_CARE" | "CLOSED" | "CANCELLED" | null;
+            /** @enum {string|null} */
+            toStatus: "REGISTERED" | "WAITING_TRIAGE" | "TRIAGED" | "IN_CARE" | "CLOSED" | "CANCELLED" | null;
+            payload: {
+                [key: string]: unknown;
+            };
+            actor: components["schemas"]["EventActorDto"];
+            /** Format: date-time */
+            occurredAt: string;
+        };
+        EncounterDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            siteId: string;
+            siteName: string;
+            /** @enum {string} */
+            status: "REGISTERED" | "WAITING_TRIAGE" | "TRIAGED" | "IN_CARE" | "CLOSED" | "CANCELLED";
+            /** @enum {string} */
+            origin: "PRE_REGISTRATION" | "DIRECT";
+            /**
+             * Format: date-time
+             * @description Hora legal de llegada (servidor).
+             */
+            arrivalAt: string;
+            /** Format: uuid */
+            preRegistrationId: string | null;
+            /** Format: date-time */
+            preRegisteredAt: string | null;
+            chiefComplaintText: string;
+            /** @enum {string} */
+            complaintSource: "TYPED" | "VOICE_ON_DEVICE";
+            cancellationReason: string | null;
+            registeredBy: components["schemas"]["StaffRefDto"];
+            patient: components["schemas"]["PatientDto"];
+            events: components["schemas"]["EncounterEventDto"][];
+        };
+        RejectPreRegistrationDto: {
+            /** @description De 1 a 500 caracteres sin contar espacios iniciales y finales. */
+            reason: string;
+        };
+        RejectedPreRegistrationDto: {
+            /** Format: uuid */
+            id: string;
+            /** @enum {string} */
+            status: "REJECTED";
+            /** Format: date-time */
+            resolvedAt: string;
+        };
+        CreateEncounterDto: {
+            /** Format: uuid */
+            patientId: string;
+            /** Format: uuid */
+            siteId: string;
+            chiefComplaintText: string;
+            /** @enum {string} */
+            complaintSource: "TYPED" | "VOICE_ON_DEVICE";
+        };
+        EncounterSummaryDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            siteId: string;
+            siteName: string;
+            /** @enum {string} */
+            status: "REGISTERED" | "WAITING_TRIAGE" | "TRIAGED" | "IN_CARE" | "CLOSED" | "CANCELLED";
+            /** @enum {string} */
+            origin: "PRE_REGISTRATION" | "DIRECT";
+            /**
+             * Format: date-time
+             * @description Hora legal de llegada (servidor).
+             */
+            arrivalAt: string;
+            /** Format: uuid */
+            preRegistrationId: string | null;
+            /** Format: date-time */
+            preRegisteredAt: string | null;
+            chiefComplaintText: string;
+            /** @enum {string} */
+            complaintSource: "TYPED" | "VOICE_ON_DEVICE";
+            cancellationReason: string | null;
+            registeredBy: components["schemas"]["StaffRefDto"];
+            patient: components["schemas"]["PatientDto"];
+        };
+        EncounterListDto: {
+            items: components["schemas"]["EncounterSummaryDto"][];
+        };
+        CancelEncounterDto: {
+            /** @description De 1 a 500 caracteres sin contar espacios iniciales y finales. */
+            reason: string;
+        };
+        /**
+         * @description Nivel de conciencia (ACVPU). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico.
+         * @enum {string}
+         */
+        ConsciousnessLevel: "A" | "C" | "V" | "P" | "U";
+        CreateVitalSignsDto: {
+            /** @description Frecuencia respiratoria (rpm). Entero. Rango admitido 4–80 rpm (fuera de rango → 422 y la toma entera se rechaza). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            respiratoryRate: number;
+            /** @description Saturación de oxígeno (%). Entero. Rango admitido 50–100 % (fuera de rango → 422 y la toma entera se rechaza). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            oxygenSaturation: number;
+            /** @description Oxígeno suplementario. Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            supplementalOxygen: boolean;
+            /** @description Presión arterial sistólica (mmHg). Entero. Rango admitido 40–300 mmHg (fuera de rango → 422 y la toma entera se rechaza). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            systolicBp: number;
+            /** @description Frecuencia cardiaca (lpm). Entero. Rango admitido 20–300 lpm (fuera de rango → 422 y la toma entera se rechaza). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            heartRate: number;
+            /** @description Nivel de conciencia (ACVPU). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            consciousness: components["schemas"]["ConsciousnessLevel"];
+            /** @description Temperatura (°C). Número con como máximo un decimal. Rango admitido 25.0–45.0 °C (fuera de rango → 422 y la toma entera se rechaza). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            temperatureC: number;
+            /** @description Presión arterial diastólica (mmHg). Entero. Rango admitido 20–200 mmHg (fuera de rango → 422 y la toma entera se rechaza). Opcional en cada toma. PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            diastolicBp?: number;
+            /** @description Glucometría (mg/dL). Entero. Rango admitido 20–600 mg/dL (fuera de rango → 422 y la toma entera se rechaza). Opcional en cada toma. PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            glucoseMgDl?: number;
+        };
+        VitalSignsDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            encounterId: string;
+            /** @description Frecuencia respiratoria (rpm). Entero. Rango admitido 4–80 rpm (fuera de rango → 422 y la toma entera se rechaza). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            respiratoryRate: number;
+            /** @description Saturación de oxígeno (%). Entero. Rango admitido 50–100 % (fuera de rango → 422 y la toma entera se rechaza). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            oxygenSaturation: number;
+            /** @description Oxígeno suplementario. Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            supplementalOxygen: boolean;
+            /** @description Presión arterial sistólica (mmHg). Entero. Rango admitido 40–300 mmHg (fuera de rango → 422 y la toma entera se rechaza). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            systolicBp: number;
+            /** @description Frecuencia cardiaca (lpm). Entero. Rango admitido 20–300 lpm (fuera de rango → 422 y la toma entera se rechaza). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            heartRate: number;
+            /** @description Nivel de conciencia (ACVPU). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            consciousness: components["schemas"]["ConsciousnessLevel"];
+            /** @description Temperatura (°C). Número con como máximo un decimal. Rango admitido 25.0–45.0 °C (fuera de rango → 422 y la toma entera se rechaza). Obligatorio en cada toma (si falta → 422). PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            temperatureC: number;
+            /** @description Presión arterial diastólica (mmHg). Entero. Rango admitido 20–200 mmHg (fuera de rango → 422 y la toma entera se rechaza). Opcional en cada toma. PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            diastolicBp: number | null;
+            /** @description Glucometría (mg/dL). Entero. Rango admitido 20–600 mg/dL (fuera de rango → 422 y la toma entera se rechaza). Opcional en cada toma. PROVISIONAL — no validado clínicamente, revisar con asesor clínico. */
+            glucoseMgDl: number | null;
+            /**
+             * Format: date-time
+             * @description Hora del servidor de la toma.
+             */
+            recordedAt: string;
+            recordedBy: components["schemas"]["StaffRefDto"];
+        };
+        /**
+         * @description SYMPTOM = lo que refiere el paciente; FINDING = lo que observa enfermería; COMPLAINT_NOTE = precisión del motivo de consulta (el motivo original no se modifica).
+         * @enum {string}
+         */
+        SymptomFindingKind: "SYMPTOM" | "FINDING" | "COMPLAINT_NOTE";
+        SymptomFindingInputDto: {
+            /** @description SYMPTOM = lo que refiere el paciente; FINDING = lo que observa enfermería; COMPLAINT_NOTE = precisión del motivo de consulta (el motivo original no se modifica). */
+            kind: components["schemas"]["SymptomFindingKind"];
+            /** @description Texto libre de 1 a 500 caracteres sin contar espacios iniciales y finales (se guarda sin ellos). */
+            description: string;
+        };
+        CreateSymptomFindingsDto: {
+            items: components["schemas"]["SymptomFindingInputDto"][];
+        };
+        SymptomFindingDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            encounterId: string;
+            kind: components["schemas"]["SymptomFindingKind"];
+            description: string;
+            /**
+             * Format: date-time
+             * @description Hora del servidor de la captura.
+             */
+            recordedAt: string;
+            recordedBy: components["schemas"]["StaffRefDto"];
+        };
+        SymptomFindingListDto: {
+            items: components["schemas"]["SymptomFindingDto"][];
+        };
+        ClinicalCaptureDto: {
+            /** Format: uuid */
+            encounterId: string;
+            /** @enum {string} */
+            status: "REGISTERED" | "WAITING_TRIAGE" | "TRIAGED" | "IN_CARE" | "CLOSED" | "CANCELLED";
+            /** @description Motivo de consulta original (no se edita). */
+            chiefComplaintText: string;
+            /** @enum {string} */
+            complaintSource: "TYPED" | "VOICE_ON_DEVICE";
+            /** @description Todas las tomas, por recordedAt e id ascendentes. */
+            vitalSigns: components["schemas"]["VitalSignsDto"][];
+            /** @description Todos los hallazgos, por recordedAt e id ascendentes. */
+            symptomFindings: components["schemas"]["SymptomFindingDto"][];
+        };
         FieldErrorDto: {
             field: string;
             message: string;
@@ -318,6 +854,140 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PublicTenantDto"][];
+                };
+            };
+            /** @description Demasiadas peticiones desde esta IP a este endpoint (application/problem+json). */
+            429: {
+                headers: {
+                    /** @description Segundos hasta que termina la ventana del límite. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PatientsController_search: {
+        parameters: {
+            query: {
+                documentType: "CC" | "TI" | "CE" | "PA" | "RC";
+                documentNumber: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientDto"][];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PatientsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePatientDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PatientProfileController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientProfileDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PatientProfileController_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePatientProfileDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientProfileDto"];
                 };
             };
             /** @description Demasiadas peticiones desde esta IP a este endpoint (application/problem+json). */
@@ -525,6 +1195,435 @@ export interface operations {
                 };
                 content: {
                     "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PatientPreRegistrationsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientPreRegistrationDto"][];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PatientPreRegistrationsController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePreRegistrationDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientPreRegistrationDto"];
+                };
+            };
+            /** @description Demasiadas peticiones desde esta IP a este endpoint (application/problem+json). */
+            429: {
+                headers: {
+                    /** @description Segundos hasta que termina la ventana del límite. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PatientPreRegistrationsController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientPreRegistrationDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PreRegistrationsController_pending: {
+        parameters: {
+            query?: {
+                siteId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingPreRegistrationDto"][];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PreRegistrationsController_confirm: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmPreRegistrationDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncounterDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PreRegistrationsController_reject: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectPreRegistrationDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RejectedPreRegistrationDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    EncountersController_list: {
+        parameters: {
+            query?: {
+                status?: "REGISTERED" | "WAITING_TRIAGE" | "TRIAGED" | "IN_CARE" | "CLOSED" | "CANCELLED";
+                siteId?: string;
+                patientId?: string;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncounterListDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    EncountersController_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateEncounterDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncounterDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    EncountersController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncounterDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    EncountersController_cancel: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CancelEncounterDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncounterDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    ClinicalCaptureController_recordVitalSigns: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateVitalSignsDto"];
+            };
+        };
+        responses: {
+            /** @description Toma registrada con hora del servidor y responsable del token. 422 con errors[] por campo si falta un signo obligatorio, alguno está fuera de rango (la toma entera se rechaza) o la sistólica no supera a la diastólica. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VitalSignsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    ClinicalCaptureController_recordSymptomFindings: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateSymptomFindingsDto"];
+            };
+        };
+        responses: {
+            /** @description Hallazgos registrados en el orden recibido, con la misma hora del servidor y el responsable del token. */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SymptomFindingListDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    ClinicalCaptureController_getCapture: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ClinicalCaptureDto"];
                 };
             };
             /** @description Error en application/problem+json (RFC 9457) */

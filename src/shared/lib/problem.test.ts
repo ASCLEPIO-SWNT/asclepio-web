@@ -1,5 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { ApiProblemError, toApiProblem, unwrap } from './problem';
+import { describe, expect, it, vi } from 'vitest';
+import {
+  ApiProblemError,
+  actionErrorMessage,
+  applyFieldErrors,
+  problemOf,
+  toApiProblem,
+  unwrap,
+  type ApiProblem,
+} from './problem';
 
 const res = (status: number, headers: Record<string, string> = {}) =>
   new Response(null, { status, headers });
@@ -75,5 +83,78 @@ describe('problem', () => {
     await expect(
       unwrap(() => Promise.resolve({ data: { ok: 1 }, response: res(200) })),
     ).resolves.toEqual({ ok: 1 });
+  });
+});
+
+describe('actionErrorMessage (D11)', () => {
+  const other = (status: number): ApiProblem => ({
+    kind: 'other',
+    status,
+    fieldErrors: [],
+  });
+
+  it('R13: usa el mensaje en contexto de 409 y 404 de la confirmación', () => {
+    const byStatus = {
+      409: 'Este pre-registro ya no está pendiente o el paciente ya tiene una atención activa.',
+      404: 'Este pre-registro ya no existe.',
+    };
+    expect(actionErrorMessage(other(409), byStatus)).toBe(byStatus[409]);
+    expect(actionErrorMessage(other(404), byStatus)).toBe(byStatus[404]);
+  });
+
+  it('R16: 403 sin mensaje en contexto da el de sin permiso para la acción', () => {
+    expect(actionErrorMessage(other(403), { 409: 'x' })).toBe(
+      'No tienes permiso para realizar esta acción.',
+    );
+  });
+
+  it('R27: sin respuesta HTTP da el mensaje de conexión', () => {
+    expect(actionErrorMessage({ kind: 'network' }, { 409: 'x' })).toBe(
+      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+    );
+  });
+
+  it.each([
+    [other(500)],
+    [other(400)],
+    [{ kind: 'rateLimited', retryAfterSeconds: 5 }],
+  ] as ApiProblem[][])(
+    'R36: cualquier otro error da el mensaje genérico (%o)',
+    (p) => {
+      expect(actionErrorMessage(p, { 409: 'x', 404: 'y' })).toBe(
+        'No se pudo completar la acción. Inténtalo de nuevo.',
+      );
+    },
+  );
+
+  it('R36: el mensaje en contexto de un estado gana al de 403 si la spec lo define', () => {
+    expect(actionErrorMessage(other(403), { 403: 'propio' })).toBe('propio');
+  });
+
+  it('problemOf devuelve el problema de un ApiProblemError y other(0) de otra cosa', () => {
+    expect(problemOf(new ApiProblemError({ kind: 'network' }))).toEqual({
+      kind: 'network',
+    });
+    expect(problemOf(new Error('x'))).toEqual(other(0));
+  });
+});
+
+describe('applyFieldErrors (D11)', () => {
+  it('R23: aplica solo los errors[] cuyo field es un campo del formulario', () => {
+    const setError = vi.fn();
+    const applied = applyFieldErrors<{ fullName: string; sex: string }>(
+      setError,
+      [
+        { field: 'fullName', message: 'fullName must be shorter' },
+        { field: 'tenantId', message: 'no aplica' },
+        { field: 'sex', message: 'sex must be one of M, F, X' },
+      ],
+      ['fullName', 'sex'],
+    );
+    expect(applied).toBe(2);
+    expect(setError.mock.calls).toEqual([
+      ['fullName', { type: 'server', message: 'fullName must be shorter' }],
+      ['sex', { type: 'server', message: 'sex must be one of M, F, X' }],
+    ]);
   });
 });

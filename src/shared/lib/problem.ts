@@ -1,11 +1,11 @@
+import type { FieldValues, Path, UseFormSetError } from 'react-hook-form';
+import type { FieldError } from '../api/client';
+
 /**
  * Traducción de los errores de la API (application/problem+json, RFC 9457) a un
  * resultado que la UI convierte en mensajes (docs/conventions.md, design.md D10/D11).
  */
-export interface FieldError {
-  field: string;
-  message: string;
-}
+export type { FieldError };
 
 export type ApiProblem =
   | { kind: 'unauthorized' }
@@ -70,4 +70,67 @@ export async function unwrap<T>(
   }
   if (result.response.ok && result.data !== undefined) return result.data;
   throw new ApiProblemError(toApiProblem(result.response, result.error));
+}
+
+/** El ApiProblem de un error lanzado por `unwrap` (o `other` sin estado si es otra cosa). */
+export function problemOf(error: unknown): ApiProblem {
+  return error instanceof ApiProblemError
+    ? error.problem
+    : { kind: 'other', status: 0, fieldErrors: [] };
+}
+
+/** Estado HTTP de un problema, o null si no hubo respuesta HTTP. */
+export function statusOf(problem: ApiProblem): number | null {
+  switch (problem.kind) {
+    case 'unauthorized':
+      return 401;
+    case 'rateLimited':
+      return 429;
+    case 'network':
+      return null;
+    case 'other':
+      return problem.status;
+  }
+}
+
+export const FORBIDDEN_ACTION_MESSAGE =
+  'No tienes permiso para realizar esta acción.';
+export const NETWORK_ACTION_MESSAGE =
+  'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
+export const GENERIC_ACTION_MESSAGE =
+  'No se pudo completar la acción. Inténtalo de nuevo.';
+
+/**
+ * Mensaje de un "error de acción" (glosario de F-02-web, D11): primero el mensaje en
+ * contexto del estado (`byStatus`), luego 403, sin respuesta HTTP y el genérico.
+ */
+export function actionErrorMessage(
+  problem: ApiProblem,
+  byStatus: Partial<Record<number, string>> = {},
+): string {
+  const status = statusOf(problem);
+  if (status === null) return NETWORK_ACTION_MESSAGE;
+  const inContext = byStatus[status];
+  if (inContext !== undefined) return inContext;
+  if (status === 403) return FORBIDDEN_ACTION_MESSAGE;
+  return GENERIC_ACTION_MESSAGE;
+}
+
+/**
+ * Pasa a React Hook Form los `errors[]` de un 400 cuyo `field` es uno de `fields`.
+ * Devuelve cuántos se aplicaron (0 → la UI muestra un error de acción).
+ */
+export function applyFieldErrors<T extends FieldValues>(
+  setError: UseFormSetError<T>,
+  fieldErrors: readonly FieldError[],
+  fields: readonly Path<T>[],
+): number {
+  let applied = 0;
+  for (const { field, message } of fieldErrors) {
+    const name = fields.find((f) => f === field);
+    if (name === undefined) continue;
+    setError(name, { type: 'server', message });
+    applied += 1;
+  }
+  return applied;
 }

@@ -1,9 +1,10 @@
 import { NavLink, Outlet, useNavigate } from 'react-router';
 import { logout } from '../../features/auth/logout';
+import { CurrentStaffProvider } from '../../shared/hooks/useCurrentStaff';
 import { ROLE_LABELS, routesFor } from './roleMatrix';
 import { useStaff } from './useStaff';
 
-/** Marco de las vistas protegidas: usuario, rol, navegación por rol y "Cerrar sesión" (R21, R22). */
+/** Marco de las vistas protegidas: usuario, rol, navegación por rol y "Cerrar sesión" (R21, R22); provee el perfil a las features (D2 de F-02-web). */
 export function AppShell() {
   const staff = useStaff();
   const navigate = useNavigate();
@@ -36,7 +37,9 @@ export function AppShell() {
           Cerrar sesión
         </button>
       </section>
-      <Outlet />
+      <CurrentStaffProvider me={staff.me}>
+        <Outlet />
+      </CurrentStaffProvider>
     </div>
   );
 }

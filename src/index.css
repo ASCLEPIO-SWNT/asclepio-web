@@ -7,6 +7,8 @@
   --ok: #1a7f37;
   --error: #b42318;
   --accent: #0b5cad;
+  --warn: #8a5a00;
+  --border: #c9ced6;
   font-family:
     system-ui,
     -apple-system,
@@ -65,6 +67,108 @@ body {
 .muted {
   color: var(--muted);
   font-size: 0.875rem;
+}
+.status--warn {
+  color: var(--warn);
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.button {
+  min-height: 2.75rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--accent);
+  border-radius: 0.375rem;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+/* Login (F-01-web) */
+.login {
+  max-width: 28rem;
+  margin: 0 auto;
+}
+.form {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.field {
+  display: grid;
+  gap: 0.25rem;
+}
+.field input {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  font: inherit;
+}
+.field input[aria-invalid='true'] {
+  border-color: var(--error);
+}
+.field__error {
+  margin: 0;
+  color: var(--error);
+  font-size: 0.875rem;
+}
+[role='alert'][tabindex='-1']:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+/* Marco de las vistas protegidas (F-01-web) */
+.shell {
+  display: grid;
+  gap: 1rem;
+}
+.shell__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem 1.5rem;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--card);
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+}
+.shell__user {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.shell__role {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.shell__nav ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.shell__nav a {
+  color: var(--accent);
+}
+.shell__nav a[aria-current='page'] {
+  font-weight: 700;
 }
 @media (min-width: 768px) {
   .layout__header {

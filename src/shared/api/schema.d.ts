@@ -20,6 +20,102 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/public/tenants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["PublicTenantsController_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_loginStaff"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/patient/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_loginPatient"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/patient/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["AuthController_createPatientAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["AuthController_me"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/public/consent": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["ConsentController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -32,6 +128,127 @@ export interface components {
              * @example 2026-10-26T19:42:00.000Z
              */
             time: string;
+        };
+        PublicSiteDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+        };
+        PublicTenantDto: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            sites: components["schemas"]["PublicSiteDto"][];
+        };
+        StaffMeDto: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "STAFF";
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: email */
+            email: string;
+            fullName: string;
+            /** @enum {string} */
+            role: "RECEPTION" | "NURSE" | "PHYSICIAN" | "ADMIN";
+        };
+        PatientMeDto: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "PATIENT";
+            /**
+             * Format: uuid
+             * @description Id de la cuenta de paciente.
+             */
+            id: string;
+            /** Format: uuid */
+            tenantId: string;
+            /** Format: uuid */
+            patientId: string;
+            consentVersion: string;
+            /** @description false hasta que recepción verifique la identidad (F-02). */
+            identityVerified: boolean;
+        };
+        StaffLoginDto: {
+            /**
+             * Format: email
+             * @example enfermera@ips.example
+             */
+            email: string;
+            /** Format: password */
+            password: string;
+        };
+        AccessTokenDto: {
+            /** @description JWT HS256 de 8 h. No hay refresh token. */
+            accessToken: string;
+            /** @enum {string} */
+            tokenType: "Bearer";
+            /**
+             * Format: date-time
+             * @example 2026-10-26T23:00:00.000Z
+             */
+            expiresAt: string;
+        };
+        PatientLoginDto: {
+            /** Format: uuid */
+            tenantId: string;
+            /** @enum {string} */
+            documentType: "CC" | "CE" | "PA";
+            documentNumber: string;
+            /** Format: password */
+            password: string;
+        };
+        CreatePatientAccountDto: {
+            /**
+             * Format: uuid
+             * @description IPS (de GET /public/tenants).
+             */
+            tenantId: string;
+            /** @enum {string} */
+            documentType: "CC" | "CE" | "PA";
+            documentNumber: string;
+            fullName: string;
+            /**
+             * Format: date
+             * @description Fecha civil YYYY-MM-DD; se exigen 18 años cumplidos en America/Bogota.
+             * @example 1990-05-17
+             */
+            birthDate: string;
+            /** @enum {string} */
+            sex: "M" | "F" | "X";
+            /** Format: password */
+            password: string;
+            /**
+             * @description Debe ser true (Ley 1581). Si falta o es otro valor: 422.
+             * @enum {boolean}
+             */
+            consentAccepted: true;
+            /**
+             * @description Versión vigente de GET /public/consent. Si no coincide: 422.
+             * @example 2026-10-v1
+             */
+            consentVersion: Record<string, never>;
+        };
+        PatientAccountCreatedDto: {
+            /**
+             * Format: uuid
+             * @description Id de la cuenta de paciente.
+             */
+            id: string;
+            /** Format: uuid */
+            patientId: string;
+        };
+        ConsentDto: {
+            /** @example 2026-10-v1 */
+            version: string;
+            /** @description Texto del consentimiento (Markdown). */
+            text: string;
         };
         FieldErrorDto: {
             field: string;
@@ -73,6 +290,241 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HealthDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PublicTenantsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicTenantDto"][];
+                };
+            };
+            /** @description Demasiadas peticiones desde esta IP a este endpoint (application/problem+json). */
+            429: {
+                headers: {
+                    /** @description Segundos hasta que termina la ventana del límite. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    AuthController_loginStaff: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffLoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessTokenDto"];
+                };
+            };
+            /** @description Demasiadas peticiones desde esta IP a este endpoint (application/problem+json). */
+            429: {
+                headers: {
+                    /** @description Segundos hasta que termina la ventana del límite. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    AuthController_loginPatient: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatientLoginDto"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccessTokenDto"];
+                };
+            };
+            /** @description Demasiadas peticiones desde esta IP a este endpoint (application/problem+json). */
+            429: {
+                headers: {
+                    /** @description Segundos hasta que termina la ventana del límite. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    AuthController_createPatientAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreatePatientAccountDto"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatientAccountCreatedDto"];
+                };
+            };
+            /** @description Demasiadas peticiones desde esta IP a este endpoint (application/problem+json). */
+            429: {
+                headers: {
+                    /** @description Segundos hasta que termina la ventana del límite. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    AuthController_me: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StaffMeDto"] | components["schemas"]["PatientMeDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    ConsentController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConsentDto"];
+                };
+            };
+            /** @description Demasiadas peticiones desde esta IP a este endpoint (application/problem+json). */
+            429: {
+                headers: {
+                    /** @description Segundos hasta que termina la ventana del límite. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
                 };
             };
             /** @description Error en application/problem+json (RFC 9457) */

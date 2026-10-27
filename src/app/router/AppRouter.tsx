@@ -1,13 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router';
-import { StatusPage } from '../../features/status/StatusPage';
-import { Layout } from '../../shared/ui/Layout';
+import { routes } from './routes';
 
-const router = createBrowserRouter([
-  {
-    element: <Layout />,
-    children: [{ index: true, element: <StatusPage /> }],
-  },
-]);
+const router = createBrowserRouter(routes);
 
 export function AppRouter() {
   return <RouterProvider router={router} />;

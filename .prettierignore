@@ -1,0 +1,4 @@
+# Generado por npm run api:types: no se formatea a mano.
+src/shared/api/schema.d.ts
+dist/
+coverage/

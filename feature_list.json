@@ -53,16 +53,16 @@
     {
       "id": "F-02-web",
       "global_id": "F-02",
-      "name": "encounter_view",
-      "title": "Consulta de atención",
-      "description": "Consulta de atención y su línea de tiempo (solo lectura).",
+      "name": "pre_registration_confirmation",
+      "title": "Confirmación de llegada y consulta de atención",
+      "description": "Bandeja de pre-registros de la sede, confirmación de llegada por RECEPTION (hora legal), registro directo (incluido NN) y consulta de la atención con su línea de tiempo (ADR 0008).",
       "depends_on": [
         "F-01-web",
         "F-02-api"
       ],
       "consumes_contract": null,
       "acceptance": [
-        "Ver ../asclepio-api/docs/product/features/F-02.md (F-02.AC7, AC8)"
+        "Ver ../asclepio-api/docs/product/features/F-02.md (F-02.AC7, AC9)"
       ],
       "sdd": true,
       "status": "pending"

@@ -60,12 +60,12 @@
         "F-01-web",
         "F-02-api"
       ],
-      "consumes_contract": null,
+      "consumes_contract": "0.4.0",
       "acceptance": [
         "Ver ../asclepio-api/docs/product/features/F-02.md (F-02.AC7, AC9)"
       ],
       "sdd": true,
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "id": "F-03-web",

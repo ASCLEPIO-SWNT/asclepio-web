@@ -1,3 +1,5 @@
+import { featureMessage } from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router';
@@ -35,11 +37,12 @@ export function EncounterDetailRoute() {
 }
 
 function NotFound() {
+  const { t } = useI18n();
   return (
     <div role="alert" className="status status--error">
-      <p>No se encontró la atención.</p>
+      <p>{t('feature_encounter_not_found')}</p>
       <p>
-        <Link to="/atenciones">Volver a las atenciones</Link>
+        <Link to="/atenciones">{t('feature_encounters_back')}</Link>
       </p>
     </div>
   );
@@ -47,6 +50,7 @@ function NotFound() {
 
 /** Detalle de la atención, línea de tiempo y cancelación (R31–R36). */
 function EncounterDetailPage({ id }: { id: string }) {
+  const { t } = useI18n();
   const me = useCurrentStaff();
   const location = useLocation();
   const queryClient = useQueryClient();
@@ -62,14 +66,14 @@ function EncounterDetailPage({ id }: { id: string }) {
   if (gone || errorStatus === 404) {
     body = <NotFound />;
   } else if (detail.isPending) {
-    body = <LoadingState>Cargando la atención…</LoadingState>;
+    body = <LoadingState>{t('feature_encounter_loading')}</LoadingState>;
   } else if (detail.isError) {
     body =
       errorStatus === 403 ? (
         <ViewForbidden />
       ) : (
         <LoadError
-          message="No se pudo cargar la atención."
+          message={t('feature_encounter_error')}
           retrying={detail.isFetching}
           onRetry={() => void detail.refetch()}
         />
@@ -80,26 +84,28 @@ function EncounterDetailPage({ id }: { id: string }) {
       CANCEL_ROLES.includes(me.role) && !TERMINAL.includes(encounter.status);
     body = (
       <>
-        {arrivalNotice && !cancelled && <Notice>Llegada registrada.</Notice>}
-        {cancelled && <Notice>Atención cancelada.</Notice>}
+        {arrivalNotice && !cancelled && (
+          <Notice>{t('feature_arrival_registered')}</Notice>
+        )}
+        {cancelled && <Notice>{t('feature_encounter_cancelled')}</Notice>}
         <dl className="details">
-          <dt>Estado</dt>
+          <dt>{t('feature_status')}</dt>
           <dd>{ENCOUNTER_STATUS_LABELS[encounter.status]}</dd>
-          <dt>Origen</dt>
+          <dt>{t('feature_origin')}</dt>
           <dd>{ORIGIN_LABELS[encounter.origin]}</dd>
-          <dt>Sede</dt>
+          <dt>{t('feature_site')}</dt>
           <dd>{encounter.siteName}</dd>
-          <dt>Llegada (hora legal)</dt>
+          <dt>{t('feature_arrival_legal')}</dt>
           <dd>{formatBogota(encounter.arrivalAt)}</dd>
           {encounter.preRegisteredAt !== null && (
             <>
-              <dt>Pre-registro (referencia)</dt>
+              <dt>{t('feature_pr_reference')}</dt>
               <dd>{formatBogota(encounter.preRegisteredAt)}</dd>
             </>
           )}
-          <dt>Registrada por</dt>
+          <dt>{t('feature_registered_by')}</dt>
           <dd>{encounter.registeredBy.fullName ?? '—'}</dd>
-          <dt>Motivo de consulta</dt>
+          <dt>{t('feature_complaint')}</dt>
           <dd>
             {encounter.chiefComplaintText}{' '}
             <span className="muted">
@@ -108,14 +114,14 @@ function EncounterDetailPage({ id }: { id: string }) {
           </dd>
           {encounter.status === 'CANCELLED' && (
             <>
-              <dt>Motivo de la cancelación</dt>
+              <dt>{t('feature_cancellation_reason')}</dt>
               <dd>{encounter.cancellationReason ?? '—'}</dd>
             </>
           )}
         </dl>
 
         <section aria-labelledby="patient-title">
-          <h2 id="patient-title">Paciente</h2>
+          <h2 id="patient-title">{t('feature_patient')}</h2>
           <PatientDetails patient={encounter.patient} />
         </section>
 
@@ -141,7 +147,9 @@ function EncounterDetailPage({ id }: { id: string }) {
             }}
           />
         )}
-        {cancelError && <ActionError>{cancelError}</ActionError>}
+        {cancelError && (
+          <ActionError>{featureMessage(cancelError)}</ActionError>
+        )}
 
         <EncounterTimeline events={encounter.events} />
       </>
@@ -150,9 +158,9 @@ function EncounterDetailPage({ id }: { id: string }) {
 
   return (
     <section className="card" aria-labelledby="encounter-title">
-      <h1 id="encounter-title">Atención</h1>
+      <h1 id="encounter-title">{t('feature_encounter')}</h1>
       <p>
-        <Link to="/atenciones">Todas las atenciones</Link>
+        <Link to="/atenciones">{t('feature_encounters_all')}</Link>
       </p>
       {body}
     </section>

@@ -5,17 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run i18n:compile && tsc -b && vite build",
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write src",
-    "typecheck": "tsc -b --noEmit",
-    "test": "vitest run",
+    "typecheck": "npm run i18n:compile && tsc -b --noEmit",
+    "test": "npm run i18n:compile && vitest run",
     "test:watch": "vitest",
-    "api:types": "openapi-typescript ../asclepio-api/openapi/asclepio-api.v1.json -o src/shared/api/schema.d.ts"
+    "api:types": "openapi-typescript ../asclepio-api/openapi/asclepio-api.v1.json -o src/shared/api/schema.d.ts",
+    "i18n:check": "node scripts/check-messages.mjs",
+    "i18n:compile": "node scripts/compile-messages.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@inlang/plugin-message-format": "^4.5.5",
     "@testing-library/dom": "^10.4.2",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -46,7 +49,9 @@
     }
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@hookform/resolvers": "^5.9.2",
+    "@inlang/paraglide-js": "^2.29.3",
     "@tanstack/react-query": "^5.105.0",
     "openapi-fetch": "^0.17.0",
     "react": "^19.3.1",

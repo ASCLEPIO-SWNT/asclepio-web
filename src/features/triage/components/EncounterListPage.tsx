@@ -1,3 +1,5 @@
+import { featureMessage } from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import type { EncounterStatus } from '../../../shared/api/client';
@@ -18,6 +20,7 @@ import { PAGE_SIZE, useEncounters } from '../hooks/useEncounters';
 
 /** `/atenciones`: lista filtrable por estado y sede, paginada por `offset` (R28–R30, D7, D13). */
 export function EncounterListPage() {
+  const { t } = useI18n();
   const sites = useSites();
   const [status, setStatus] = useState<EncounterStatus | ''>('');
   const [siteId, setSiteId] = useState('');
@@ -31,11 +34,11 @@ export function EncounterListPage() {
 
   return (
     <section className="card" aria-labelledby="encounters-title">
-      <h1 id="encounters-title">Atenciones</h1>
+      <h1 id="encounters-title">{t('feature_encounters')}</h1>
 
       {sites.isError && (
         <LoadError
-          message={SITES_ERROR_MESSAGE}
+          message={featureMessage(SITES_ERROR_MESSAGE)}
           retrying={sites.isFetching}
           onRetry={() => void sites.refetch()}
         />
@@ -43,7 +46,7 @@ export function EncounterListPage() {
 
       <div className="toolbar">
         <div className="field">
-          <label htmlFor="encounters-status">Estado</label>
+          <label htmlFor="encounters-status">{t('feature_status')}</label>
           <select
             id="encounters-status"
             value={status}
@@ -52,7 +55,7 @@ export function EncounterListPage() {
               setOffset(0);
             }}
           >
-            <option value="">Todos los estados</option>
+            <option value="">{t('feature_statuses_all')}</option>
             {ENCOUNTER_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {ENCOUNTER_STATUS_LABELS[s]}
@@ -61,7 +64,7 @@ export function EncounterListPage() {
           </select>
         </div>
         <div className="field">
-          <label htmlFor="encounters-site">Sede</label>
+          <label htmlFor="encounters-site">{t('feature_site')}</label>
           <select
             id="encounters-site"
             value={siteId}
@@ -71,7 +74,7 @@ export function EncounterListPage() {
               setOffset(0);
             }}
           >
-            <option value="">Todas las sedes</option>
+            <option value="">{t('feature_sites_all')}</option>
             {sites.data?.map((site) => (
               <option key={site.id} value={site.id}>
                 {site.name}
@@ -81,33 +84,35 @@ export function EncounterListPage() {
         </div>
       </div>
 
-      {list.isPending && <LoadingState>Cargando las atenciones…</LoadingState>}
+      {list.isPending && (
+        <LoadingState>{t('feature_encounters_loading')}</LoadingState>
+      )}
       {list.isError &&
         (statusOf(problemOf(list.error)) === 403 ? (
           <ViewForbidden />
         ) : (
           <LoadError
-            message="No se pudieron cargar las atenciones."
+            message={t('feature_encounters_error')}
             retrying={list.isFetching}
             onRetry={() => void list.refetch()}
           />
         ))}
       {list.isSuccess && items.length === 0 && (
-        <p className="muted">No hay atenciones con estos filtros.</p>
+        <p className="muted">{t('feature_encounters_empty')}</p>
       )}
       {list.isSuccess && items.length > 0 && (
         <div className="table-wrap">
           <table className="table">
             <thead>
               <tr>
-                <th scope="col">Llegada</th>
-                <th scope="col">Paciente</th>
-                <th scope="col">Documento</th>
-                <th scope="col">Sede</th>
-                <th scope="col">Estado</th>
-                <th scope="col">Origen</th>
+                <th scope="col">{t('feature_arrival')}</th>
+                <th scope="col">{t('feature_patient')}</th>
+                <th scope="col">{t('feature_document')}</th>
+                <th scope="col">{t('feature_site')}</th>
+                <th scope="col">{t('feature_status')}</th>
+                <th scope="col">{t('feature_origin')}</th>
                 <th scope="col">
-                  <span className="visually-hidden">Detalle</span>
+                  <span className="visually-hidden">{t('feature_detail')}</span>
                 </th>
               </tr>
             </thead>
@@ -121,7 +126,9 @@ export function EncounterListPage() {
                   <td>{ENCOUNTER_STATUS_LABELS[encounter.status]}</td>
                   <td>{ORIGIN_LABELS[encounter.origin]}</td>
                   <td>
-                    <Link to={`/atenciones/${encounter.id}`}>Ver atención</Link>
+                    <Link to={`/atenciones/${encounter.id}`}>
+                      {t('feature_encounter_view')}
+                    </Link>
                   </td>
                 </tr>
               ))}
@@ -137,7 +144,7 @@ export function EncounterListPage() {
           disabled={offset === 0}
           onClick={() => setOffset((o) => Math.max(0, o - PAGE_SIZE))}
         >
-          Anterior
+          {t('feature_previous')}
         </button>
         <button
           type="button"
@@ -145,7 +152,7 @@ export function EncounterListPage() {
           disabled={!list.isSuccess || items.length < PAGE_SIZE}
           onClick={() => setOffset((o) => o + PAGE_SIZE)}
         >
-          Siguiente
+          {t('feature_next')}
         </button>
       </div>
     </section>

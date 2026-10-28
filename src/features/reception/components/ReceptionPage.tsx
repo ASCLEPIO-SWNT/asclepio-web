@@ -1,3 +1,5 @@
+import { featureMessage } from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link } from 'react-router';
@@ -27,6 +29,7 @@ interface TrayActionError {
 
 /** `/recepcion`: bandeja de pre-registros con confirmación y rechazo (R4–R16). */
 export function ReceptionPage() {
+  const { t } = useI18n();
   const queryClient = useQueryClient();
   const sites = useSites();
   const [siteId, setSiteId] = useState('');
@@ -46,14 +49,14 @@ export function ReceptionPage() {
 
   return (
     <section className="card" aria-labelledby="reception-title">
-      <h1 id="reception-title">Recepción — bandeja de pre-registros</h1>
+      <h1 id="reception-title">{t('feature_reception_title')}</h1>
       <p>
-        <Link to="/recepcion/registro">Registro directo</Link>
+        <Link to="/recepcion/registro">{t('feature_registration_direct')}</Link>
       </p>
 
       {sites.isError && (
         <LoadError
-          message={SITES_ERROR_MESSAGE}
+          message={featureMessage(SITES_ERROR_MESSAGE)}
           retrying={sites.isFetching}
           onRetry={() => void sites.refetch()}
         />
@@ -61,14 +64,14 @@ export function ReceptionPage() {
 
       <div className="toolbar">
         <div className="field">
-          <label htmlFor="tray-site">Sede</label>
+          <label htmlFor="tray-site">{t('feature_site')}</label>
           <select
             id="tray-site"
             value={siteId}
             disabled={!sites.isSuccess}
             onChange={(event) => setSiteId(event.target.value)}
           >
-            <option value="">Todas las sedes</option>
+            <option value="">{t('feature_sites_all')}</option>
             {sites.data?.map((site) => (
               <option key={site.id} value={site.id}>
                 {site.name}
@@ -82,36 +85,42 @@ export function ReceptionPage() {
           disabled={tray.isFetching}
           onClick={() => void tray.refetch()}
         >
-          Actualizar
+          {t('feature_refresh')}
         </button>
       </div>
 
       {notice?.kind === 'confirmed' && (
         <Notice>
-          Llegada confirmada. Hora de llegada:{' '}
+          {t('feature_arrival_confirmed')}{' '}
           {formatBogota(notice.encounter.arrivalAt)}.{' '}
-          <Link to={`/atenciones/${notice.encounter.id}`}>Ver atención</Link>
+          <Link to={`/atenciones/${notice.encounter.id}`}>
+            {t('feature_encounter_view')}
+          </Link>
         </Notice>
       )}
-      {notice?.kind === 'rejected' && <Notice>Pre-registro rechazado.</Notice>}
-      {orphanError && <ActionError>{orphanError}</ActionError>}
+      {notice?.kind === 'rejected' && (
+        <Notice>{t('feature_pr_rejected')}</Notice>
+      )}
+      {orphanError && <ActionError>{featureMessage(orphanError)}</ActionError>}
 
-      {tray.isPending && <LoadingState>Cargando la bandeja…</LoadingState>}
+      {tray.isPending && (
+        <LoadingState>{t('feature_tray_loading')}</LoadingState>
+      )}
       {tray.isError &&
         (statusOf(problemOf(tray.error)) === 403 ? (
           <ViewForbidden />
         ) : (
           <LoadError
-            message="No se pudo cargar la bandeja."
+            message={t('feature_tray_error')}
             retrying={tray.isFetching}
             onRetry={() => void tray.refetch()}
           />
         ))}
       {tray.isSuccess && items.length === 0 && (
-        <p className="muted">No hay pre-registros pendientes.</p>
+        <p className="muted">{t('feature_tray_empty')}</p>
       )}
       {tray.isSuccess && items.length > 0 && (
-        <ul className="cards" aria-label="Pre-registros pendientes">
+        <ul className="cards" aria-label={t('feature_tray_pending')}>
           {items.map((preRegistration) => (
             <li key={preRegistration.id}>
               <PreRegistrationCard

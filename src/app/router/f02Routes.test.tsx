@@ -64,7 +64,7 @@ describe('rutas de F-02', () => {
     it(`R1: ${role} tiene "Atenciones" en la navegación, que lleva a /atenciones`, async () => {
       fakeApi({ 'GET /api/v1/me': json(200, staffMe[role]), ...F02_ROUTES });
       const user = userEvent.setup();
-      const { router } = renderApp({ entries: ['/'], stored: true });
+      const { router } = renderApp({ entries: ['/app'], stored: true });
       const nav = await screen.findByRole('navigation', { name: 'Principal' });
       await user.click(within(nav).getByRole('link', { name: 'Atenciones' }));
       await screen.findByRole('heading', { level: 1, name: 'Atenciones' });

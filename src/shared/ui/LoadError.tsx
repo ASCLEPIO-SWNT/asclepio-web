@@ -8,6 +8,7 @@ export function LoadError({
   onRetry: () => void;
   retrying?: boolean;
 }) {
+  const { t } = useI18n();
   return (
     <div role="alert" className="status status--error load-error">
       <p>{message}</p>
@@ -17,8 +18,9 @@ export function LoadError({
         disabled={retrying}
         onClick={onRetry}
       >
-        Reintentar
+        {t('common_retry')}
       </button>
     </div>
   );
 }
+import { useI18n } from '../i18n';

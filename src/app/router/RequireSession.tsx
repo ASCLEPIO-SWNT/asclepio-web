@@ -2,9 +2,11 @@ import { Navigate, Outlet, useLocation } from 'react-router';
 import { ProfileError } from '../../features/auth/components/ProfileError';
 import { LoadingState } from '../../shared/ui/LoadingState';
 import { useStaff } from './useStaff';
+import { useI18n } from '../../shared/i18n';
 
 /** Guard de ruta protegida (D6): R18, R11, R16 y R17. */
 export function RequireSession() {
+  const { t } = useI18n();
   const staff = useStaff();
   const location = useLocation();
   switch (staff.status) {
@@ -16,7 +18,7 @@ export function RequireSession() {
     case 'error':
       return <ProfileError />;
     case 'loading':
-      return <LoadingState>Cargando tu perfil…</LoadingState>;
+      return <LoadingState>{t('common_profile_loading')}</LoadingState>;
     case 'staff':
       return <Outlet />;
   }

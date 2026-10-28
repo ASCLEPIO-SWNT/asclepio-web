@@ -75,9 +75,9 @@ describe('rutas y sesión', () => {
       expect(router.state.location.pathname).toBe('/estado');
     });
 
-    it(`R20: con sesión activa / y /login redirigen a ${HOME[role].path}`, async () => {
+    it(`R20: con sesión activa /app y /login redirigen a ${HOME[role].path}`, async () => {
       fakeApi({ 'GET /api/v1/me': json(200, staffMe[role]) });
-      const { router } = renderApp({ entries: ['/'], stored: true });
+      const { router } = renderApp({ entries: ['/app'], stored: true });
       await screen.findByRole('heading', { level: 1, name: HOME[role].title });
       expect(router.state.location.pathname).toBe(HOME[role].path);
 
@@ -159,7 +159,7 @@ describe('rutas y sesión', () => {
     expect(router.state.location.pathname).toBe('/recepcion');
   });
 
-  it.each([...ALL_PROTECTED, '/', '/no-existe'])(
+  it.each([...ALL_PROTECTED, '/app', '/no-existe'])(
     'R18: sin sesión guardada %s redirige a /login reemplazando el historial y sin renderizar la ruta',
     async (path) => {
       const net = fakeApi({});

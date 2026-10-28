@@ -11,6 +11,10 @@ import {
 } from 'vitest';
 import { session } from '../../shared/api/session';
 import {
+  DEFAULT_PREFERENCES,
+  PREFERENCES_KEY,
+} from '../../shared/preferences/storage';
+import {
   ENCOUNTER_ID,
   SITE_NORTE,
   encounter,
@@ -108,7 +112,12 @@ function expectNoLeaks() {
     }
   }
   for (const secret of PERSONAL) expect(output).not.toContain(secret);
-  expect(localStorage.length).toBe(0);
+  expect(Object.keys(localStorage)).toEqual([PREFERENCES_KEY]);
+  expect(JSON.parse(localStorage.getItem(PREFERENCES_KEY)!)).toEqual(
+    DEFAULT_PREFERENCES,
+  );
+  const preferences = localStorage.getItem(PREFERENCES_KEY)!;
+  for (const secret of PERSONAL) expect(preferences).not.toContain(secret);
 }
 
 function keysDeep(value: unknown): string[] {

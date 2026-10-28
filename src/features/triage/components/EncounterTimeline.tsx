@@ -1,3 +1,4 @@
+import { useI18n } from '../../../shared/i18n';
 import type { EncounterEvent } from '../../../shared/api/client';
 import { formatBogota } from '../../../shared/lib/datetime';
 import {
@@ -11,9 +12,10 @@ import {
  * desconocidos tolerados y sin mostrar `payload`.
  */
 export function EncounterTimeline({ events }: { events: EncounterEvent[] }) {
+  const { t } = useI18n();
   return (
     <section aria-labelledby="timeline-title">
-      <h2 id="timeline-title">Línea de tiempo</h2>
+      <h2 id="timeline-title">{t('feature_timeline')}</h2>
       <ol className="timeline">
         {events.map((event) => (
           <li key={event.id}>

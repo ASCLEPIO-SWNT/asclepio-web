@@ -1,3 +1,8 @@
+import {
+  featureMessage,
+  fieldMessage,
+} from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm, useWatch, type Path, type Resolver } from 'react-hook-form';
@@ -63,7 +68,7 @@ function FieldMessage({
   if (!message) return null;
   return (
     <p id={`${id}-error`} className="field__error">
-      {message}
+      {fieldMessage(message)}
     </p>
   );
 }
@@ -79,6 +84,7 @@ export function PatientForm({
   mode: PatientFormMode;
   onCreated: (patient: Patient) => void;
 }) {
+  const { t } = useI18n();
   const create = useCreatePatient();
   const [actionError, setActionError] = useState<string | null>(null);
   const isDocument = mode.kind === 'document';
@@ -143,7 +149,9 @@ export function PatientForm({
     });
   };
 
-  const title = isDocument ? 'Crear paciente' : 'Registrar paciente NN';
+  const title = isDocument
+    ? t('feature_patient_create')
+    : t('feature_patient_nn_register');
 
   return (
     <form
@@ -162,7 +170,9 @@ export function PatientForm({
       {isDocument && (
         <>
           <div className="field">
-            <label htmlFor="patient-document-type">Tipo de documento</label>
+            <label htmlFor="patient-document-type">
+              {t('feature_document_type')}
+            </label>
             <input
               {...invalid(
                 'patient-document-type',
@@ -178,7 +188,9 @@ export function PatientForm({
             />
           </div>
           <div className="field">
-            <label htmlFor="patient-document-number">Número de documento</label>
+            <label htmlFor="patient-document-number">
+              {t('feature_document_number')}
+            </label>
             <input
               {...invalid(
                 'patient-document-number',
@@ -197,8 +209,8 @@ export function PatientForm({
       )}
 
       <div className="field">
-        <label htmlFor="patient-full-name">Nombre completo</label>
-        {!isDocument && <p className="muted">Opcional en un paciente NN.</p>}
+        <label htmlFor="patient-full-name">{t('feature_full_name')}</label>
+        {!isDocument && <p className="muted">{t('feature_nn_optional')}</p>}
         <input
           {...invalid('patient-full-name', errors.fullName?.message)}
           type="text"
@@ -213,14 +225,16 @@ export function PatientForm({
 
       {!isDocument && (
         <div className="field">
-          <label htmlFor="patient-age-mode">Dato de edad</label>
+          <label htmlFor="patient-age-mode">
+            {t('feature_age_information')}
+          </label>
           <select
             {...invalid('patient-age-mode', errors.ageMode?.message)}
             {...register('ageMode')}
           >
-            <option value="">Elige…</option>
-            <option value="birthDate">Fecha de nacimiento</option>
-            <option value="estimatedAge">Edad estimada (años)</option>
+            <option value="">{t('feature_choose')}</option>
+            <option value="birthDate">{t('feature_birth_date')}</option>
+            <option value="estimatedAge">{t('feature_estimated_age')}</option>
           </select>
           <FieldMessage
             id="patient-age-mode"
@@ -231,7 +245,7 @@ export function PatientForm({
 
       {showBirthDate && (
         <div className="field">
-          <label htmlFor="patient-birth-date">Fecha de nacimiento</label>
+          <label htmlFor="patient-birth-date">{t('feature_birth_date')}</label>
           <input
             {...invalid('patient-birth-date', errors.birthDate?.message)}
             type="date"
@@ -246,7 +260,9 @@ export function PatientForm({
 
       {showAge && (
         <div className="field">
-          <label htmlFor="patient-estimated-age">Edad estimada (años)</label>
+          <label htmlFor="patient-estimated-age">
+            {t('feature_estimated_age')}
+          </label>
           <input
             {...invalid(
               'patient-estimated-age',
@@ -267,12 +283,12 @@ export function PatientForm({
       )}
 
       <div className="field">
-        <label htmlFor="patient-sex">Sexo</label>
+        <label htmlFor="patient-sex">{t('feature_sex')}</label>
         <select
           {...invalid('patient-sex', errors.sex?.message)}
           {...register('sex')}
         >
-          <option value="">Elige…</option>
+          <option value="">{t('feature_choose')}</option>
           {SEXES.map((sex) => (
             <option key={sex} value={sex}>
               {SEX_LABELS[sex]}
@@ -283,10 +299,12 @@ export function PatientForm({
       </div>
 
       <button type="submit" className="button" disabled={create.isPending}>
-        Guardar paciente
+        {t('feature_patient_save')}
       </button>
-      {create.isPending && <LoadingState>Guardando el paciente…</LoadingState>}
-      {actionError && <ActionError>{actionError}</ActionError>}
+      {create.isPending && (
+        <LoadingState>{t('feature_patient_saving')}</LoadingState>
+      )}
+      {actionError && <ActionError>{featureMessage(actionError)}</ActionError>}
     </form>
   );
 }

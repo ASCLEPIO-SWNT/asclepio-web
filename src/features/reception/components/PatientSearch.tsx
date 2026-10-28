@@ -1,3 +1,5 @@
+import { fieldMessage } from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import {
@@ -19,6 +21,7 @@ export function PatientSearch({
   busy: boolean;
   onSearch: (values: PatientSearchValues) => void;
 }) {
+  const { t } = useI18n();
   const {
     register,
     handleSubmit,
@@ -31,7 +34,7 @@ export function PatientSearch({
   return (
     <form
       className="form form--inline"
-      aria-label="Buscar paciente"
+      aria-label={t('feature_patient_search')}
       noValidate
       onSubmit={(event) => {
         if (busy) {
@@ -42,7 +45,9 @@ export function PatientSearch({
       }}
     >
       <div className="field">
-        <label htmlFor="search-document-type">Tipo de documento</label>
+        <label htmlFor="search-document-type">
+          {t('feature_document_type')}
+        </label>
         <select
           id="search-document-type"
           aria-invalid={errors.documentType ? true : false}
@@ -51,7 +56,7 @@ export function PatientSearch({
           }
           {...register('documentType')}
         >
-          <option value="">Elige…</option>
+          <option value="">{t('feature_choose')}</option>
           {DOCUMENT_TYPES.map((type) => (
             <option key={type} value={type}>
               {DOCUMENT_TYPE_LABELS[type]}
@@ -60,12 +65,14 @@ export function PatientSearch({
         </select>
         {errors.documentType && (
           <p id="search-document-type-error" className="field__error">
-            {errors.documentType.message}
+            {fieldMessage(errors.documentType.message)}
           </p>
         )}
       </div>
       <div className="field">
-        <label htmlFor="search-document-number">Número de documento</label>
+        <label htmlFor="search-document-number">
+          {t('feature_document_number')}
+        </label>
         <input
           id="search-document-number"
           type="text"
@@ -78,14 +85,14 @@ export function PatientSearch({
         />
         {errors.documentNumber && (
           <p id="search-document-number-error" className="field__error">
-            {errors.documentNumber.message}
+            {fieldMessage(errors.documentNumber.message)}
           </p>
         )}
       </div>
       <button type="submit" className="button" disabled={busy}>
-        Buscar
+        {t('feature_search')}
       </button>
-      {busy && <LoadingState>Buscando el paciente…</LoadingState>}
+      {busy && <LoadingState>{t('feature_searching')}</LoadingState>}
     </form>
   );
 }

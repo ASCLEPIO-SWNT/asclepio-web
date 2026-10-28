@@ -1,3 +1,5 @@
+import { featureMessage } from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { useState } from 'react';
 import type {
   Encounter,
@@ -42,6 +44,7 @@ export function PreRegistrationCard({
   onRejected: () => void;
   onFailed: (message: string, refreshTray: boolean) => void;
 }) {
+  const { t } = useI18n();
   const { id, patient } = preRegistration;
   const [verified, setVerified] = useState(false);
   const [rejecting, setRejecting] = useState(false);
@@ -86,19 +89,19 @@ export function PreRegistrationCard({
       <h2 id={titleId}>{patientName(patient)}</h2>
       <PatientDetails patient={patient} />
       <dl className="details">
-        <dt>Sede</dt>
+        <dt>{t('feature_site')}</dt>
         <dd>{preRegistration.siteName}</dd>
-        <dt>Motivo de consulta</dt>
+        <dt>{t('feature_complaint')}</dt>
         <dd>{preRegistration.chiefComplaintText}</dd>
-        <dt>Pre-registro</dt>
+        <dt>{t('feature_pr_label')}</dt>
         <dd>{formatBogota(preRegistration.preRegisteredAt)}</dd>
-        <dt>Expira</dt>
+        <dt>{t('feature_expires')}</dt>
         <dd>{formatBogota(preRegistration.expiresAt)}</dd>
       </dl>
       <p className="muted">
         {preRegistration.identityVerified
-          ? 'Identidad verificada'
-          : 'Identidad sin verificar'}
+          ? t('feature_verified')
+          : t('feature_unverified')}
       </p>
 
       <div className="check">
@@ -109,9 +112,7 @@ export function PreRegistrationCard({
           disabled={busy}
           onChange={(event) => setVerified(event.target.checked)}
         />
-        <label htmlFor={checkId}>
-          Verifiqué la identidad del paciente presente con su documento.
-        </label>
+        <label htmlFor={checkId}>{t('feature_verify_identity')}</label>
       </div>
       <div className="actions">
         <button
@@ -120,7 +121,7 @@ export function PreRegistrationCard({
           disabled={!verified || busy}
           onClick={onConfirm}
         >
-          Confirmar llegada
+          {t('feature_confirm_arrival')}
         </button>
         <button
           type="button"
@@ -128,13 +129,13 @@ export function PreRegistrationCard({
           disabled={busy}
           onClick={() => setRejecting(true)}
         >
-          Rechazar
+          {t('feature_reject')}
         </button>
       </div>
       {confirm.isPending && (
-        <LoadingState>Confirmando la llegada…</LoadingState>
+        <LoadingState>{t('feature_confirming_arrival')}</LoadingState>
       )}
-      {error && <ActionError>{error}</ActionError>}
+      {error && <ActionError>{featureMessage(error)}</ActionError>}
       {rejecting && (
         <RejectForm
           id={id}

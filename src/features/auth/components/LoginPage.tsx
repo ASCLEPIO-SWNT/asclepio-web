@@ -1,4 +1,10 @@
+import {
+  featureMessage,
+  fieldMessage,
+} from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { HeartIcon } from '@heroicons/react/24/solid';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { session, type EndReason } from '../../../shared/api/session';
@@ -18,13 +24,18 @@ const END_REASON_MESSAGES: Record<EndReason, string | null> = {
   logout: null,
 };
 
-function problemMessage(problem: ApiProblem): string {
+function problemMessage(
+  problem: ApiProblem,
+  t: (key: string, values?: Record<string, string | number>) => string,
+): string {
   switch (problem.kind) {
     case 'unauthorized':
       return 'Correo o contraseña incorrectos.';
     case 'rateLimited':
       return problem.retryAfterSeconds !== undefined
-        ? `Demasiados intentos. Espera ${problem.retryAfterSeconds} segundos e inténtalo de nuevo.`
+        ? t('feature_rate_limited_seconds', {
+            seconds: problem.retryAfterSeconds,
+          })
         : 'Demasiados intentos. Espera un momento e inténtalo de nuevo.';
     case 'network':
       return 'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
@@ -39,6 +50,7 @@ const problemOf = (error: unknown): ApiProblem =>
     : { kind: 'other', status: 0, fieldErrors: [] };
 
 export function LoginPage() {
+  const { t } = useI18n();
   const { session: current, endReason } = useSession();
   const me = useMe();
   const login = useLogin();
@@ -100,88 +112,101 @@ export function LoginPage() {
   };
 
   const serverMessage = login.isError
-    ? problemMessage(problemOf(login.error))
+    ? problemMessage(problemOf(login.error), t)
     : null;
   const endMessage =
     !serverMessage && endReason ? END_REASON_MESSAGES[endReason] : null;
 
   return (
-    <section className="card login" aria-labelledby="login-title">
-      <h1 id="login-title">Iniciar sesión</h1>
-      <p className="muted">Acceso para el personal de la IPS.</p>
+    <div className="login-scene">
+      <section className="card login login-panel" aria-labelledby="login-title">
+        <header className="login-heading">
+          <div className="login-brand" aria-hidden="true">
+            <HeartIcon />
+          </div>
+          <p className="login-wordmark">Asclepio</p>
+          <h1 id="login-title" className="visually-hidden">
+            {t('feature_login_title')}
+          </h1>
+          <p className="muted login-subtitle">{t('feature_login_subtitle')}</p>
+        </header>
 
-      {serverMessage && (
-        <div
-          ref={alertRef}
-          role="alert"
-          tabIndex={-1}
-          className="status status--error"
-        >
-          {serverMessage}
-        </div>
-      )}
-      {endMessage && (
-        <div role="alert" className="status status--warn">
-          {endMessage}
-        </div>
-      )}
-
-      <form
-        className="form"
-        noValidate
-        onSubmit={(event) => {
-          if (disabled) {
-            event.preventDefault();
-            return;
-          }
-          void handleSubmit(onValid)(event);
-        }}
-      >
-        <div className="field">
-          <label htmlFor="login-email">Correo</label>
-          <input
-            id="login-email"
-            type="email"
-            autoComplete="username"
-            aria-invalid={errors.email ? true : false}
-            aria-describedby={errors.email ? 'login-email-error' : undefined}
-            {...register('email')}
-          />
-          {errors.email && (
-            <p id="login-email-error" className="field__error">
-              {errors.email.message}
-            </p>
-          )}
-        </div>
-
-        <div className="field">
-          <label htmlFor="login-password">Contraseña</label>
-          <input
-            id="login-password"
-            type="password"
-            autoComplete="current-password"
-            aria-invalid={errors.password ? true : false}
-            aria-describedby={
-              errors.password ? 'login-password-error' : undefined
-            }
-            {...register('password')}
-          />
-          {errors.password && (
-            <p id="login-password-error" className="field__error">
-              {errors.password.message}
-            </p>
-          )}
-        </div>
-
-        <button type="submit" className="button" disabled={disabled}>
-          Ingresar
-        </button>
-        {busy && (
-          <p role="status" className="muted">
-            Ingresando…
-          </p>
+        {serverMessage && (
+          <div
+            ref={alertRef}
+            role="alert"
+            tabIndex={-1}
+            className="status status--error"
+          >
+            {featureMessage(serverMessage)}
+          </div>
         )}
-      </form>
-    </section>
+        {endMessage && (
+          <div role="alert" className="status status--warn">
+            {featureMessage(endMessage)}
+          </div>
+        )}
+
+        <form
+          className="form login-form"
+          noValidate
+          onSubmit={(event) => {
+            if (disabled) {
+              event.preventDefault();
+              return;
+            }
+            void handleSubmit(onValid)(event);
+          }}
+        >
+          <div className="field">
+            <label htmlFor="login-email">{t('feature_email')}</label>
+            <input
+              id="login-email"
+              type="email"
+              autoComplete="username"
+              placeholder={t('feature_login_email_placeholder')}
+              aria-invalid={errors.email ? true : false}
+              aria-describedby={errors.email ? 'login-email-error' : undefined}
+              {...register('email')}
+            />
+            {errors.email && (
+              <p id="login-email-error" className="field__error">
+                {fieldMessage(errors.email.message)}
+              </p>
+            )}
+          </div>
+
+          <div className="field">
+            <label htmlFor="login-password">{t('feature_password')}</label>
+            <input
+              id="login-password"
+              type="password"
+              autoComplete="current-password"
+              placeholder="••••••••"
+              aria-invalid={errors.password ? true : false}
+              aria-describedby={
+                errors.password ? 'login-password-error' : undefined
+              }
+              {...register('password')}
+            />
+            {errors.password && (
+              <p id="login-password-error" className="field__error">
+                {fieldMessage(errors.password.message)}
+              </p>
+            )}
+          </div>
+
+          <button type="submit" className="button" disabled={disabled}>
+            {t('feature_sign_in')}
+          </button>
+          {busy && (
+            <p role="status" className="muted">
+              {t('feature_signing_in')}
+            </p>
+          )}
+        </form>
+        <p className="muted login-footer">{t('feature_login_intro')}</p>
+      </section>
+    </div>
   );
 }

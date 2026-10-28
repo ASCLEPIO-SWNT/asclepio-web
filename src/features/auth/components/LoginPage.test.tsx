@@ -262,7 +262,7 @@ describe('LoginPage', () => {
     expect(sessionStorage.getItem(SESSION_KEY)).toBeNull();
   });
 
-  it('R9: otro estado muestra el error genérico y los errors[] de email y password junto a su campo', async () => {
+  it('R9: otro estado muestra el error genérico y asocia errors[] a sus campos sin exponer texto arbitrario', async () => {
     fakeApi({
       'POST /api/v1/auth/login': problem(400, {
         title: 'Bad Request',
@@ -283,8 +283,8 @@ describe('LoginPage', () => {
       'No se pudo iniciar sesión. Inténtalo de nuevo.',
     );
     expect(alert).toHaveFocus();
-    expect(emailInput()).toHaveAccessibleDescription('email must be an email');
-    expect(passwordInput()).toHaveAccessibleDescription('password is too long');
+    expect(emailInput()).toHaveAccessibleDescription('Revisa este campo.');
+    expect(passwordInput()).toHaveAccessibleDescription('Revisa este campo.');
     expect(screen.queryByText('no se muestra')).not.toBeInTheDocument();
     expect(sessionStorage.getItem(SESSION_KEY)).toBeNull();
   });

@@ -10,6 +10,7 @@ import { LoginRoute } from './LoginRoute';
 import { RequireRole } from './RequireRole';
 import { RequireSession } from './RequireSession';
 import { ROLE_ROUTES } from './roleMatrix';
+import { PublicHome } from '../PublicHome';
 
 /** Pantallas reales por ruta de la matriz (D4 de F-02-web); el resto siguen como marcadores. */
 const FEATURE_ROUTES: Partial<Record<string, RouteObject[]>> = {
@@ -24,10 +25,11 @@ export const routes: RouteObject[] = [
     children: [
       { path: '/login', element: <LoginRoute /> },
       { path: '/estado', element: <StatusPage /> },
-      { index: true, element: <HomeRedirect /> },
+      { index: true, element: <PublicHome /> },
       {
         element: <RequireSession />,
         children: [
+          { path: '/app', element: <HomeRedirect /> },
           {
             element: <AppShell />,
             children: ROLE_ROUTES.map((route) => ({
@@ -39,6 +41,7 @@ export const routes: RouteObject[] = [
                     <PlaceholderPage
                       title={route.title}
                       feature={route.feature}
+                      titleKey={`common_nav_${route.path.slice(1)}`}
                     />
                   ),
                 },

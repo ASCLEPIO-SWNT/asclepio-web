@@ -1,3 +1,5 @@
+import { fieldMessage } from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -30,6 +32,7 @@ export function CancelEncounterForm({
   onCancelled: (encounter: Encounter) => void;
   onFailed: (message: string | null, status: number | null) => void;
 }) {
+  const { t } = useI18n();
   const cancel = useCancelEncounter(encounterId);
   const [open, setOpen] = useState(false);
   const {
@@ -69,13 +72,13 @@ export function CancelEncounterForm({
     <div className="cancel">
       {!open && (
         <button type="button" className="button" onClick={() => setOpen(true)}>
-          Cancelar atención
+          {t('feature_encounter_cancel')}
         </button>
       )}
       {open && (
         <form
           className="form"
-          aria-label="Cancelar atención"
+          aria-label={t('feature_encounter_cancel')}
           noValidate
           onSubmit={(event) => {
             if (cancel.isPending) {
@@ -87,8 +90,8 @@ export function CancelEncounterForm({
         >
           <TextAreaField
             id="cancel-reason"
-            label="Motivo de la cancelación"
-            error={errors.reason?.message}
+            label={t('feature_cancellation_reason')}
+            error={fieldMessage(errors.reason?.message)}
             registration={register('reason')}
           />
           <div className="actions">
@@ -97,7 +100,7 @@ export function CancelEncounterForm({
               className="button"
               disabled={cancel.isPending}
             >
-              Confirmar cancelación
+              {t('feature_cancel_confirm')}
             </button>
             <button
               type="button"
@@ -108,11 +111,11 @@ export function CancelEncounterForm({
                 reset();
               }}
             >
-              Volver
+              {t('feature_back')}
             </button>
           </div>
           {cancel.isPending && (
-            <LoadingState>Cancelando la atención…</LoadingState>
+            <LoadingState>{t('feature_encounter_cancelling')}</LoadingState>
           )}
         </form>
       )}

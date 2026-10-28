@@ -2,14 +2,23 @@
 export function PlaceholderPage({
   title,
   feature,
+  titleKey,
 }: {
   title: string;
   feature: string;
+  titleKey?: string;
 }) {
+  const { t } = useI18n();
   return (
     <section className="card" aria-labelledby="placeholder-title">
-      <h1 id="placeholder-title">{title}</h1>
-      <p className="muted">Esta funcionalidad llega en {feature}.</p>
+      <span className="pending-badge">
+        <ClockIcon aria-hidden="true" />
+        {t('common_pending_label')}
+      </span>
+      <h1 id="placeholder-title">{titleKey ? t(titleKey) : title}</h1>
+      <p className="muted">{t('common_pending', { feature })}</p>
     </section>
   );
 }
+import { ClockIcon } from '@heroicons/react/24/outline';
+import { useI18n } from '../i18n';

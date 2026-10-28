@@ -1,3 +1,8 @@
+import {
+  featureMessage,
+  fieldMessage,
+} from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -33,6 +38,7 @@ export function ArrivalForm({
   /** Sedes del tenant; null mientras cargan o si fallaron (selector deshabilitado, R5). */
   sites: PublicSite[] | null;
 }) {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const create = useCreateEncounter();
   const [actionError, setActionError] = useState<{
@@ -88,11 +94,11 @@ export function ArrivalForm({
 
   return (
     <section className="arrival" aria-labelledby="arrival-title">
-      <h2 id="arrival-title">Paciente seleccionado</h2>
+      <h2 id="arrival-title">{t('feature_patient_selected')}</h2>
       <PatientDetails patient={patient} />
       <form
         className="form"
-        aria-label="Registrar llegada"
+        aria-label={t('feature_arrival_register')}
         noValidate
         onSubmit={(event) => {
           if (create.isPending) {
@@ -103,7 +109,7 @@ export function ArrivalForm({
         }}
       >
         <div className="field">
-          <label htmlFor="arrival-site">Sede</label>
+          <label htmlFor="arrival-site">{t('feature_site')}</label>
           <select
             id="arrival-site"
             disabled={sites === null}
@@ -111,7 +117,7 @@ export function ArrivalForm({
             aria-describedby={siteError ? 'arrival-site-error' : undefined}
             {...register('siteId')}
           >
-            <option value="">Elige la sede…</option>
+            <option value="">{t('feature_site_choose')}</option>
             {sites?.map((site) => (
               <option key={site.id} value={site.id}>
                 {site.name}
@@ -120,30 +126,30 @@ export function ArrivalForm({
           </select>
           {siteError && (
             <p id="arrival-site-error" className="field__error">
-              {siteError}
+              {fieldMessage(siteError)}
             </p>
           )}
         </div>
         <TextAreaField
           id="arrival-complaint"
-          label="Motivo de consulta"
-          error={errors.chiefComplaintText?.message}
+          label={t('feature_complaint')}
+          error={fieldMessage(errors.chiefComplaintText?.message)}
           registration={register('chiefComplaintText')}
           rows={4}
         />
         <button type="submit" className="button" disabled={create.isPending}>
-          Registrar llegada
+          {t('feature_arrival_register')}
         </button>
         {create.isPending && (
-          <LoadingState>Registrando la llegada…</LoadingState>
+          <LoadingState>{t('feature_arrival_registering')}</LoadingState>
         )}
         {actionError && (
           <ActionError>
-            {actionError.message}
+            {featureMessage(actionError.message)}
             {actionError.conflict && (
               <>
                 {' '}
-                <Link to="/recepcion">Ir a la bandeja</Link>
+                <Link to="/recepcion">{t('feature_tray_go')}</Link>
               </>
             )}
           </ActionError>

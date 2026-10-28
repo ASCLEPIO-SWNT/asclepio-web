@@ -11,6 +11,10 @@ import {
 } from 'vitest';
 import { session } from '../../shared/api/session';
 import {
+  DEFAULT_PREFERENCES,
+  PREFERENCES_KEY,
+} from '../../shared/preferences/storage';
+import {
   PASSWORD,
   TOKEN,
   accessToken,
@@ -82,7 +86,12 @@ function expectNoLeaks(router: ReturnType<typeof renderApp>['router']) {
   }
   expect(search).toBe('');
   expect(hash).toBe('');
-  expect(localStorage.length).toBe(0);
+  expect(Object.keys(localStorage)).toEqual([PREFERENCES_KEY]);
+  expect(JSON.parse(localStorage.getItem(PREFERENCES_KEY)!)).toEqual(
+    DEFAULT_PREFERENCES,
+  );
+  const preferences = localStorage.getItem(PREFERENCES_KEY)!;
+  for (const secret of SECRETS) expect(preferences).not.toContain(secret);
   expect(stored).not.toContain(nurse.email);
   expect(stored).not.toContain(nurse.fullName);
   expect(stored).not.toContain(PASSWORD);
@@ -95,7 +104,7 @@ async function login(user: ReturnType<typeof userEvent.setup>) {
 }
 
 describe('privacidad', () => {
-  it('R10: tras un login correcto sessionStorage solo tiene { accessToken, expiresAt } bajo una clave y localStorage está vacío', async () => {
+  it('R10: tras un login correcto sessionStorage solo tiene { accessToken, expiresAt } bajo una clave y localStorage solo preferencias visuales', async () => {
     const token = accessToken();
     fakeApi({
       'POST /api/v1/auth/login': json(200, token),

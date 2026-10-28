@@ -19,3 +19,4 @@ coverage/
 
 .claude/settings.local.json
 .vitest/
+src/paraglide/

@@ -1,16 +1,18 @@
+import { useI18n } from '../../../shared/i18n';
 import { useMe } from '../hooks/useMe';
 import { logout } from '../logout';
 
 /** R16: GET /me falló sin ser un 401. No se muestra ninguna vista protegida. */
 export function ProfileError() {
+  const { t } = useI18n();
   const me = useMe();
   return (
     <section className="card" aria-labelledby="profile-error-title">
       <h1 id="profile-error-title" className="visually-hidden">
-        Error de perfil
+        {t('feature_profile_error_title')}
       </h1>
       <p role="alert" className="status status--error">
-        No se pudo cargar tu perfil.
+        {t('feature_profile_error')}
       </p>
       <div className="actions">
         <button
@@ -19,10 +21,10 @@ export function ProfileError() {
           disabled={me.isFetching}
           onClick={() => void me.refetch()}
         >
-          Reintentar
+          {t('feature_retry')}
         </button>
         <button type="button" className="button" onClick={logout}>
-          Cerrar sesión
+          {t('feature_logout')}
         </button>
       </div>
     </section>

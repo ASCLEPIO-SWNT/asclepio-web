@@ -503,7 +503,7 @@ describe('Registro directo — alta de paciente', () => {
     expect(date).toHaveValue('2030-01-01');
   });
 
-  it('R23: con 400 y errors[] muestra cada mensaje junto a su campo', async () => {
+  it('R23: con 400 y errors[] asocia un mensaje seguro junto a su campo', async () => {
     const { user } = setup({
       [SEARCH]: json(200, []),
       [CREATE_PATIENT]: problem(400, {
@@ -515,10 +515,10 @@ describe('Registro directo — alta de paciente', () => {
     });
     const form = await openCreate(user);
     await fillWithDocument(user, form);
-    await screen.findByText('fullName must be shorter');
+    await screen.findByText('Revisa este campo.');
     expectAccessibleError(
       within(form).getByLabelText('Nombre completo'),
-      'fullName must be shorter',
+      'Revisa este campo.',
     );
     expect(screen.queryByText('no aplica')).toBeNull();
   });

@@ -1,3 +1,4 @@
+import { t } from '../i18n';
 import type {
   ComplaintSource,
   DocumentType,
@@ -7,68 +8,81 @@ import type {
   Sex,
 } from '../api/client';
 
-/** Etiquetas en español del glosario de F-02-web (las comparten reception y triage). */
-export const DOCUMENT_TYPE_LABELS: Record<DocumentType, string> = {
-  CC: 'Cédula de ciudadanía',
-  TI: 'Tarjeta de identidad',
-  CE: 'Cédula de extranjería',
-  PA: 'Pasaporte',
-  RC: 'Registro civil',
-};
+/** Domain codes stay unchanged; labels resolve in the active locale at render time. */
+function localizedLabels<T extends string>(
+  keys: Record<T, string>,
+): Record<T, string> {
+  return Object.defineProperties(
+    Object.create(null),
+    Object.fromEntries(
+      Object.entries(keys).map(([code, key]) => [
+        code,
+        { enumerable: true, get: () => t(key as string) },
+      ]),
+    ),
+  ) as Record<T, string>;
+}
+export const DOCUMENT_TYPE_LABELS = localizedLabels<DocumentType>({
+  CC: 'feature_doc_cc',
+  TI: 'feature_doc_ti',
+  CE: 'feature_doc_ce',
+  PA: 'feature_doc_pa',
+  RC: 'feature_doc_rc',
+});
 export const DOCUMENT_TYPES = Object.keys(
   DOCUMENT_TYPE_LABELS,
 ) as DocumentType[];
 
-export const SEX_LABELS: Record<Sex, string> = {
-  M: 'Masculino',
-  F: 'Femenino',
-  X: 'Indeterminado / otro',
-};
+export const SEX_LABELS = localizedLabels<Sex>({
+  M: 'feature_sex_m',
+  F: 'feature_sex_f',
+  X: 'feature_sex_x',
+});
 export const SEXES = Object.keys(SEX_LABELS) as Sex[];
 
-export const ENCOUNTER_STATUS_LABELS: Record<EncounterStatus, string> = {
-  REGISTERED: 'Registrada',
-  WAITING_TRIAGE: 'En espera de triage',
-  TRIAGED: 'Clasificada',
-  IN_CARE: 'En atención',
-  CLOSED: 'Cerrada',
-  CANCELLED: 'Cancelada',
-};
+export const ENCOUNTER_STATUS_LABELS = localizedLabels<EncounterStatus>({
+  REGISTERED: 'feature_status_registered',
+  WAITING_TRIAGE: 'feature_status_waiting',
+  TRIAGED: 'feature_status_triaged',
+  IN_CARE: 'feature_status_care',
+  CLOSED: 'feature_status_closed',
+  CANCELLED: 'feature_status_cancelled',
+});
 export const ENCOUNTER_STATUSES = Object.keys(
   ENCOUNTER_STATUS_LABELS,
 ) as EncounterStatus[];
 
-export const ORIGIN_LABELS: Record<EncounterOrigin, string> = {
-  PRE_REGISTRATION: 'Pre-registro (app)',
-  DIRECT: 'Registro directo',
-};
+export const ORIGIN_LABELS = localizedLabels<EncounterOrigin>({
+  PRE_REGISTRATION: 'feature_origin_pr',
+  DIRECT: 'feature_registration_direct',
+});
 
-export const COMPLAINT_SOURCE_LABELS: Record<ComplaintSource, string> = {
-  TYPED: 'Escrito',
-  VOICE_ON_DEVICE: 'Dictado en el dispositivo',
-};
+export const COMPLAINT_SOURCE_LABELS = localizedLabels<ComplaintSource>({
+  TYPED: 'feature_complaint_typed',
+  VOICE_ON_DEVICE: 'feature_complaint_voice',
+});
 
-const EVENT_LABELS: Record<string, string> = {
-  ENCOUNTER_CREATED: 'Atención creada',
-  STATUS_CHANGED: 'Cambio de estado',
-  VITAL_SIGNS_RECORDED: 'Signos vitales registrados',
-  SYMPTOM_FINDINGS_RECORDED: 'Hallazgos registrados',
-};
+const EVENT_LABELS = localizedLabels<string>({
+  ENCOUNTER_CREATED: 'feature_event_created',
+  STATUS_CHANGED: 'feature_event_status',
+  VITAL_SIGNS_RECORDED: 'feature_event_vitals',
+  SYMPTOM_FINDINGS_RECORDED: 'feature_event_findings',
+});
 
 /** Etiqueta de un tipo de evento; los tipos que la web aún no conoce se toleran (D12). */
 export function eventLabel(type: string): string {
-  return EVENT_LABELS[type] ?? `Evento (${type})`;
+  return EVENT_LABELS[type] ?? t('feature_event_unknown', { type });
 }
 
 /** Etiqueta del actor de un evento: el nombre del personal, "Paciente" o "Sistema". */
 export function actorLabel(actor: EncounterEvent['actor']): string {
   switch (actor.type) {
     case 'STAFF':
-      return actor.fullName ?? 'Personal';
+      return actor.fullName ?? t('feature_staff');
     case 'PATIENT':
-      return 'Paciente';
+      return t('feature_patient');
     case 'SYSTEM':
-      return 'Sistema';
+      return t('feature_system');
   }
 }
 
@@ -87,7 +101,7 @@ interface PatientLike {
 /** Nombre del paciente, o "Paciente NN" si es NN sin nombre (R24, R29). */
 export function patientName(patient: PatientLike): string {
   if (patient.fullName) return patient.fullName;
-  return patient.isNN ? 'Paciente NN' : '—';
+  return patient.isNN ? t('feature_patient_nn') : '—';
 }
 
 /** "Cédula de ciudadanía 1032456789", o null si el paciente no tiene documento. */

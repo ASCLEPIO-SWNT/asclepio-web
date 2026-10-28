@@ -1,3 +1,5 @@
+import { featureMessage } from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { useState } from 'react';
 import type { Patient } from '../../../shared/api/client';
 import { SITES_ERROR_MESSAGE, useSites } from '../../../shared/hooks/useSites';
@@ -17,6 +19,7 @@ import { PatientSearch } from './PatientSearch';
  * o NN) → registrar la llegada. Los pasos viven en el estado local, nunca en la URL (R40).
  */
 export function DirectRegistrationPage() {
+  const { t } = useI18n();
   const sites = useSites();
   const [params, setParams] = useState<PatientSearchParams | null>(null);
   const search = usePatientSearch(params);
@@ -44,11 +47,11 @@ export function DirectRegistrationPage() {
 
   return (
     <section className="card" aria-labelledby="direct-title">
-      <h1 id="direct-title">Registro directo</h1>
+      <h1 id="direct-title">{t('feature_registration_direct')}</h1>
 
       {sites.isError && (
         <LoadError
-          message={SITES_ERROR_MESSAGE}
+          message={featureMessage(SITES_ERROR_MESSAGE)}
           retrying={sites.isFetching}
           onRetry={() => void sites.refetch()}
         />
@@ -60,7 +63,7 @@ export function DirectRegistrationPage() {
       )}
       {noResults && !created && (
         <div className="search-result">
-          <p>No hay ningún paciente con ese documento.</p>
+          <p>{t('feature_no_patient')}</p>
           {form?.kind !== 'document' && (
             <button
               type="button"
@@ -73,7 +76,7 @@ export function DirectRegistrationPage() {
                 })
               }
             >
-              Crear paciente
+              {t('feature_patient_create')}
             </button>
           )}
         </div>
@@ -89,7 +92,7 @@ export function DirectRegistrationPage() {
             setForm({ kind: 'nn' });
           }}
         >
-          Registrar paciente NN
+          {t('feature_patient_nn_register')}
         </button>
       </div>
 

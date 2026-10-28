@@ -1,3 +1,5 @@
+import { fieldMessage } from '../../../shared/lib/featureMessages';
+import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { LoadingState } from '../../../shared/ui/LoadingState';
@@ -18,6 +20,7 @@ export function RejectForm({
   onSubmit: (reason: string) => void;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   const {
     register,
     handleSubmit,
@@ -30,7 +33,7 @@ export function RejectForm({
   return (
     <form
       className="form"
-      aria-label="Rechazar pre-registro"
+      aria-label={t('feature_reject_form')}
       noValidate
       onSubmit={(event) => {
         if (disabled) {
@@ -42,13 +45,13 @@ export function RejectForm({
     >
       <TextAreaField
         id={`reject-${id}-reason`}
-        label="Motivo del rechazo"
-        error={errors.reason?.message}
+        label={t('feature_reject_reason')}
+        error={fieldMessage(errors.reason?.message)}
         registration={register('reason')}
       />
       <div className="actions">
         <button type="submit" className="button" disabled={disabled}>
-          Confirmar rechazo
+          {t('feature_reject_confirm')}
         </button>
         <button
           type="button"
@@ -56,10 +59,10 @@ export function RejectForm({
           disabled={busy}
           onClick={onCancel}
         >
-          Volver
+          {t('feature_back')}
         </button>
       </div>
-      {busy && <LoadingState>Rechazando el pre-registro…</LoadingState>}
+      {busy && <LoadingState>{t('feature_rejecting')}</LoadingState>}
     </form>
   );
 }

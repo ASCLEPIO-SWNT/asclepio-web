@@ -12,6 +12,7 @@ describe('labels', () => {
       'Hallazgos registrados',
     );
     expect(eventLabel('TRIAGE_DECIDED')).toBe('Evento (TRIAGE_DECIDED)');
+    expect(eventLabel('toString')).toBe('Evento (toString)');
   });
 
   it('R32: etiqueta el actor y los estados', () => {

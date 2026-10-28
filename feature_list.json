@@ -151,6 +151,23 @@
       ],
       "sdd": true,
       "status": "pending"
+    },
+    {
+      "id": "UI-01-web",
+      "global_id": "UI-01",
+      "name": "frontend_migration",
+      "title": "Identidad, idiomas y accesibilidad del nuevo Asclepio",
+      "description": "Adaptación aprobada del frontend develop anterior a la arquitectura actual: página pública, login, marco por rol, recepción y atenciones con cinco idiomas y preferencias accesibles.",
+      "depends_on": [
+        "F-01-web",
+        "F-02-web"
+      ],
+      "consumes_contract": "0.4.0",
+      "acceptance": [
+        "Plan aprobado por el usuario el 2026-10-28; criterios en docs/ui-migration.md y specs/UI-01-web/."
+      ],
+      "sdd": true,
+      "status": "done"
     }
   ]
 }

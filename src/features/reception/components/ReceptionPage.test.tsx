@@ -1,7 +1,7 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { formatBogota } from '../../../shared/lib/datetime';
+import { formatDateTimeBogota } from '../../../shared/lib/datetime';
 import {
   ENCOUNTER_ID,
   SITE_NORTE,
@@ -18,10 +18,12 @@ import {
   type Handler,
 } from '../../../test/fakeApi';
 import { renderFeature } from '../../../test/renderFeature';
+import { norm } from '../../../test/text';
 import { receptionRoutes } from '../routes';
 
 const TENANTS = 'GET /api/v1/public/tenants';
 const TRAY = 'GET /api/v1/pre-registrations';
+const LIST = 'GET /api/v1/encounters';
 const PR_ID = pendingPreRegistration.id;
 const CONFIRM = `POST /api/v1/pre-registrations/${PR_ID}/confirm`;
 const REJECT = `POST /api/v1/pre-registrations/${PR_ID}/reject`;
@@ -48,6 +50,8 @@ function setup(routes: Record<string, Handler> = {}) {
   const net = fakeApi({
     [TENANTS]: json(200, publicTenants),
     [TRAY]: json(200, [pendingPreRegistration]),
+    // El dashboard pide el indicador de espera: sin handler respondería 404 y ensuciaría los errores.
+    [LIST]: json(200, { items: [] }),
     ...routes,
   });
   const user = userEvent.setup();
@@ -132,7 +136,7 @@ describe('ReceptionPage — bandeja', () => {
     );
   });
 
-  it('R7: muestra cada pre-registro en el orden recibido con sus datos, horas y verificación', async () => {
+  it('R7: muestra cada preregistro en el orden recibido con sus datos, horas y verificación', async () => {
     setup({ [TRAY]: json(200, [pendingPreRegistration, second]) });
     const first = await card();
     const items = screen.getAllByRole('article');
@@ -146,10 +150,10 @@ describe('ReceptionPage — bandeja', () => {
     expect(first).toHaveTextContent('Sede Norte');
     expect(first).toHaveTextContent('Dolor de cabeza desde ayer');
     expect(first).toHaveTextContent(
-      `Pre-registro${formatBogota(pendingPreRegistration.preRegisteredAt)}`,
+      `Preregistro${norm(formatDateTimeBogota(pendingPreRegistration.preRegisteredAt))}`,
     );
     expect(first).toHaveTextContent(
-      `Expira${formatBogota(pendingPreRegistration.expiresAt)}`,
+      `Expira${norm(formatDateTimeBogota(pendingPreRegistration.expiresAt))}`,
     );
     expect(within(first).getByText('Identidad sin verificar')).toBeVisible();
 
@@ -175,7 +179,7 @@ describe('ReceptionPage — bandeja', () => {
   it('R8: con una lista vacía muestra el mensaje de bandeja vacía', async () => {
     setup({ [TRAY]: json(200, []) });
     expect(
-      await screen.findByText('No hay pre-registros pendientes.'),
+      await screen.findByText('No hay preregistros pendientes.'),
     ).toBeInTheDocument();
   });
 
@@ -270,7 +274,7 @@ describe('ReceptionPage — confirmación de llegada', () => {
 
     const notice = await screen.findByText(/Llegada confirmada\./);
     expect(notice.closest('[role="status"]')).toHaveTextContent(
-      `Llegada confirmada. Hora de llegada: ${formatBogota(encounter.arrivalAt)}.`,
+      `Llegada confirmada. Hora de llegada: ${norm(formatDateTimeBogota(encounter.arrivalAt))}`,
     );
     expect(screen.getByRole('link', { name: 'Ver atención' })).toHaveAttribute(
       'href',
@@ -278,16 +282,16 @@ describe('ReceptionPage — confirmación de llegada', () => {
     );
     await waitFor(() => expect(net.calls(TRAY)).toHaveLength(2));
     expect(
-      await screen.findByText('No hay pre-registros pendientes.'),
+      await screen.findByText('No hay preregistros pendientes.'),
     ).toBeInTheDocument();
   });
 
   it.each([
     [
       409,
-      'Este pre-registro ya no está pendiente o el paciente ya tiene una atención activa.',
+      'Este preregistro ya no está pendiente o el paciente ya tiene una atención activa.',
     ],
-    [404, 'Este pre-registro ya no existe.'],
+    [404, 'Este preregistro ya no existe.'],
   ])(
     'R13: con %i muestra el error de acción en contexto y vuelve a pedir la bandeja',
     async (status, message) => {
@@ -302,7 +306,7 @@ describe('ReceptionPage — confirmación de llegada', () => {
     },
   );
 
-  it('R13: si tras el 409 el pre-registro desaparece de la bandeja, el error de acción sigue visible', async () => {
+  it('R13: si tras el 409 el preregistro desaparece de la bandeja, el error de acción sigue visible', async () => {
     const { net, user } = setup({ [CONFIRM]: problem(409) });
     const item = await card();
     await user.click(within(item).getByRole('checkbox'));
@@ -310,9 +314,9 @@ describe('ReceptionPage — confirmación de llegada', () => {
     await user.click(
       within(item).getByRole('button', { name: 'Confirmar llegada' }),
     );
-    await screen.findByText('No hay pre-registros pendientes.');
+    await screen.findByText('No hay preregistros pendientes.');
     expect(screen.getByRole('alert')).toHaveTextContent(
-      'Este pre-registro ya no está pendiente o el paciente ya tiene una atención activa.',
+      'Este preregistro ya no está pendiente o el paciente ya tiene una atención activa.',
     );
   });
 
@@ -424,7 +428,7 @@ describe('ReceptionPage — rechazo', () => {
       within(item).getByRole('button', { name: 'Confirmar rechazo' }),
     );
     expect(await screen.findByRole('status')).toHaveTextContent(
-      'Pre-registro rechazado.',
+      'Preregistro rechazado.',
     );
     expect(net.calls(REJECT)[0].body).toEqual({
       reason: 'El paciente no se presentó',
@@ -451,8 +455,8 @@ describe('ReceptionPage — rechazo', () => {
   });
 
   it.each([
-    [409, 'Este pre-registro ya no está pendiente.', true],
-    [404, 'Este pre-registro ya no existe.', true],
+    [409, 'Este preregistro ya no está pendiente.', true],
+    [404, 'Este preregistro ya no existe.', true],
     [500, 'No se pudo completar la acción. Inténtalo de nuevo.', false],
     [403, 'No tienes permiso para realizar esta acción.', false],
   ])(
@@ -502,11 +506,11 @@ describe('ReceptionPage — rechazo', () => {
       within(item).getByRole('button', { name: 'Confirmar llegada' }),
     ).toBeDisabled();
     expect(within(item).getByRole('status')).toHaveTextContent(
-      'Rechazando el pre-registro…',
+      'Rechazando el preregistro…',
     );
     await user.click(submit);
     expect(net.calls(REJECT)).toHaveLength(1);
     act(() => gate.release());
-    await screen.findByText('Pre-registro rechazado.');
+    await screen.findByText('Preregistro rechazado.');
   });
 });

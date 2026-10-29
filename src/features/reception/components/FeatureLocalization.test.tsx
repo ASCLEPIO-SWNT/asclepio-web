@@ -211,7 +211,7 @@ describe('UI-01 feature localization', () => {
     await user.click(screen.getByRole('button', { name: 'Confirmar llegada' }));
     expect(
       await screen.findByText(
-        'Este pre-registro ya no está pendiente o el paciente ya tiene una atención activa.',
+        'Este preregistro ya no está pendiente o el paciente ya tiene una atención activa.',
       ),
     ).toBeVisible();
     await user.click(screen.getByRole('button', { name: 'English test' }));

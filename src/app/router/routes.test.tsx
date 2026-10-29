@@ -22,7 +22,7 @@ const HOME: Record<
 > = {
   RECEPTION: {
     path: '/recepcion',
-    title: 'Recepción — bandeja de pre-registros',
+    title: 'Recepción',
     feature: 'F-02-web',
   },
   NURSE: { path: '/triage', title: 'Triage', feature: 'F-03 a F-05-web' },
@@ -154,7 +154,7 @@ describe('rutas y sesión', () => {
 
     await screen.findByRole('heading', {
       level: 1,
-      name: 'Recepción — bandeja de pre-registros',
+      name: 'Recepción',
     });
     expect(router.state.location.pathname).toBe('/recepcion');
   });

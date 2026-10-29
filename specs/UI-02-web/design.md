@@ -1,0 +1,684 @@
+# UI-02-web — Diseño
+
+## Resumen
+
+Se reescribe la composición de las cuatro pantallas de inicio (`/recepcion`, `/triage`, `/cola`, `/reportes`) según la **maqueta v2 que el usuario aprobó el 2026-10-28** («Listos, me gusta mucho ese estilo, implementalo»). Las cuatro comparten una estructura vertical **sin columna lateral**: **encabezado de página** (único `h1`, descripción y acciones), **barra de resumen** (una superficie con las celdas de indicadores y, en recepción y enfermería, el filtro «Sede»), **panel de trabajo a todo el ancho** (cabecera con `h2` y la nota «Se actualiza cada 30 s», cuerpo y pie opcional) y, en `/cola` y `/reportes`, una **franja «pendiente»**. Las listas son tablas con columnas alineadas que se apilan como tarjetas en paneles estrechos; los preregistros son tarjetas en dos columnas. La estructura se compone con doce componentes presentacionales nuevos en `shared/ui` y una hoja de estilos propia (`src/shared/ui/dashboard.css`) que parte del CSS de la maqueta, adaptado a `rem`, a consultas de contenedor y a los tokens de `index.css`. Cada dashboard vive en la feature dueña de su ruta: `reception`, `triage` y dos features nuevas, `queue` y `reports`, que hoy solo montan su dashboard y dejan el hueco de F-06 y F-07 como franja «pendiente».
+
+Los hooks de atenciones que necesitan varias features (`useEncounters`, `ENCOUNTERS_KEY`, el nuevo `useEncounterCount`) se mueven a `shared/hooks`, porque `docs/architecture.md` prohíbe los imports entre features. `PlaceholderPage` se retira (D13). Tres cambios salen de los criterios nuevos del brief: la **marca única** en el marco privado (UI-02.AC11, D26: un `handle` en la ruta del `AppShell` que `Layout` lee con `useMatches`), la **escritura en español** («preregistro», etiquetas con mayúscula, sin «·» y horas sin segundos; UI-02.AC12, D27 y D28, con tres formateadores de hora nuevos en `shared/lib/datetime.ts`) y la **ausencia del panel «Accesos»** (D15). No cambian el contrato 0.4.0, los tipos generados, la matriz de roles, el resto del marco privado ni las pantallas fuera de alcance (`/recepcion/registro`, `/atenciones`, `/atenciones/:id`, `/triage/:id`). Solo cambia `asclepio-web`, sin dependencias nuevas. Por decisión expresa del usuario (PA-3, 2026-10-28), los cuatro dashboards se refrescan solos cada 30 s con la pestaña visible además de «Actualizar»; eso revisa F-03-web D3 y R3 en dos puntos (indicadores y refresco de la bandeja) y se detalla en D14 y D19 a D21.
+
+Esta versión sustituye a la anterior de la spec (maqueta v1, con indicadores como tarjetas, panel lateral «Accesos» y filas de atención como tarjetas), que el usuario descartó por desordenada. La lista de lo que se retira está al final de «Decisiones».
+
+Medidas reales del área de contenido (marco privado vigente: `.layout__main` máximo 84 rem con relleno `clamp(1rem, 2.5vw, 2rem)` y, desde 1024 px, barra lateral de 17 rem más 1 rem de separación): 375 px → 343 px; 768 px → ≈ 730 px; 1024 px → ≈ 685 px; 1280 px → 928 px; 1440 px → 992 px. Con el panel a todo el ancho, el contenedor `panel` mide lo mismo que el contenedor `dashboard`: ≥ 40 rem (dos columnas de preregistros y tablas sin apilar) a 768, 1024, 1280 y 1440 px, y 21 rem (una columna, tablas apiladas) a 375 px y con texto al 200 %.
+
+## Referencia visual aprobada
+
+**Maqueta v2**: `../../local-analysis/ui02-maqueta/maqueta-dashboards.html` (HTML autocontenido con CSS y JavaScript) y sus 14 capturas en `../../local-analysis/ui02-maqueta/capturas/`. La carpeta `v1/` es la versión descartada y no se usa. Las capturas, con lo que fijan:
+
+| Captura | Qué muestra | Se usa para |
+|---|---|---|
+| `01-recepcion-claro-1440.png` | Recepción: barra con dos indicadores y filtro; tres preregistros en dos columnas | Wireframe de RECEPTION, R9 a R12 |
+| `02-enfermeria-claro-1440.png` | Enfermería: un indicador y filtro; tabla de 8 filas; pie con «Página 1», «Anterior», «Siguiente» | Wireframe de NURSE, R13 y R14 |
+| `03-medicina-claro-1440.png` | Medicina: tres indicadores; tabla con estado; pie «Las 8 atenciones más recientes»; franja de F-06 | Wireframe de PHYSICIAN, R15, R16 y R18 |
+| `04-administracion-claro-1440.png` | Administración: tres indicadores; tabla simple por sede; pie «3 sedes»; franja de F-07 | Wireframe de ADMIN, R17 y R18 |
+| `05` y `06` (`recepcion` y `medicina` oscuro) | Tema oscuro | Comprobación de tokens (R32) |
+| `07-recepcion-telefono-390.png`, `08-enfermeria-telefono-390.png`, `09-recepcion-tableta-768.png` | Una columna de celdas y de tarjetas; tabla de enfermería apilada; tableta con dos columnas y filtro a fila completa | Reflujo (R34, R35) |
+| `10-administracion-100mas-1440.png` | Cifras «100+» en celda y en fila | R8 |
+| `11-medicina-error-1440.png`, `12-recepcion-cargando-1440.png`, `13-recepcion-sin-datos-1440.png` | Error por celda y de panel; carga con esqueletos; vacío con pista y enlace | R19 a R21 |
+| `14-medicina-grises-1440.png` | Escala de grises | R30 y R32 |
+
+**Cómo se usa.** El CSS de la maqueta (bloque «sistema del dashboard» y consultas de contenedor) es el punto de partida de `dashboard.css`; las funciones `cell`, `summary`, `siteFilter`, `panel`, `panelState`, `badge`, `table`, `row`, `preCard`, `pending` y `dashboard` son el modelo de los componentes. **No se copia** lo que la maqueta dibuja solo como contexto: la barra superior de control («Maqueta con datos ficticios», rol, datos, tema, ancho y vista en grises), la nota inferior, la réplica del marco (`.app`, `.shell*`, que ya existe en el producto) ni los datos ficticios. En la entrega (T13) cada pantalla se compara con su captura (estructura, orden, proporciones y estados; no píxel a píxel) y se registran las diferencias.
+
+**Desviaciones deliberadas de la maqueta** (cada una con su decisión):
+
+| # | Maqueta | Producto | Decisión |
+|---|---|---|---|
+| 1 | «Preregistro» y «Expira» muestran solo la hora; el aviso de llegada, solo la hora | Fecha y hora sin segundos (`28/10/26, 8:05 a. m.`): la expiración puede caer al día siguiente y las horas son las del servidor | D28, R41 |
+| 2 | La franja dice «Llega con F-06» | Usa la clave vigente `common_pending`: «Esta funcionalidad llega en F-06.» (conserva sus cinco traducciones) | D13, R18 |
+| 3 | Las celdas son `div` hijos de la sección | Las celdas son `li` de un `ul` con `display: contents` y `role="list"`, y el filtro queda fuera de la lista (R3) | D22 |
+| 4 | Las tablas se nombran con `aria-label` propio | `aria-labelledby` apunta al `h2` del panel (sin textos duplicados) | D24 |
+| 5 | No dibuja 403, error de sedes ni estados por fila de sede | Se añaden: «Sin permiso» (celda, panel, fila), `LoadError` de sedes en la celda del filtro y estado propio por sede | D8, D23, R17, R22 |
+| 6 | La captura a 390 px muestra el botón de tema | El marco real oculta `.theme-toggle` por debajo de 480 px (regla vigente de `index.css`); no se cambia | D26 |
+| 7 | Fotografía a 390 px | La evidencia usa 375 px, como pide UI-02.AC10 | T1, T13 |
+
+## Decisiones
+
+| # | Decisión | Alternativa descartada | Por qué |
+|---|---|---|---|
+| D1 | La distribución se rige por el **ancho del contenedor**, con puntos de corte en `rem`, y no por el de la ventana: `.dashboard` declara `container: dashboard / inline-size` (30 rem y 56 rem para la barra de resumen y las acciones del encabezado, R34) y `.panel` declara `container: panel / inline-size` (40 rem para los preregistros en dos columnas y para apilar las tablas). Un contenedor no puede cambiar su propia rejilla con su propia consulta, así que `.dashboard` solo es el contenedor y `.stack` es la rejilla vertical (`gap: 1.5rem`). El CSS base es de una columna; las consultas solo añaden columnas. | Media queries por ancho de ventana. | El contenido mide ≈ 685 px con 1024 px de ventana (por la barra lateral) y 928 px con 1280 px; una consulta de ventana no lo sabe. En consultas de contenedor `rem` sigue la preferencia de tamaño de texto, así que a 200 % la barra de resumen y las tablas se apilan solas (R32). El proyecto ya exige navegadores con `oklch()`, `color-mix()` y `:has()`, que llegaron después que las consultas de contenedor, así que no se añade ningún requisito de navegador. |
+| D2 | **Doce componentes en `shared/ui`** sin lógica de dominio: `DashboardPage`, `PageHeader`, `SummaryBar`, `SummaryCell`, `SummaryFilter`, `Panel`, `PanelState`, `StatusBadge`, `DataTable` (con `DataRow` y `DataCell`), `LiveNote`, `PendingStrip` y `RefreshButton`; más la tabla de datos `shared/lib/encounterStatus.ts` (estado → icono, tono y clave). La tarjeta de preregistro, que sí conoce el dominio, vive en `features/reception` (`PreRegistrationCard`, con el nombre que ya tiene). Las features solo componen. | Un `DashboardShell` configurable por objeto, o CSS y marcado propios en cada feature. | Cumple UI-02.AC2 con piezas pequeñas y probables una a una; evita cuatro maquetaciones distintas (D2 del brief) y mantiene la regla `shared/ui` = sin dominio (`PatientDetails` ya conoce tipos, pero no consulta ni decide nada). |
+| D3 | **El `h1` de cada dashboard es el texto de su entrada de navegación** (`common_nav_recepcion`, `common_nav_triage`, `common_nav_cola`, `common_nav_reportes`). Recepción pasa de «Recepción — bandeja de pre-registros» a «Recepción»; la descripción lleva el matiz. | Conservar el `h1` largo de recepción. | Resuelve D2 del brief con una regla comprobable (R2) y alinea los cuatro. Cuesta ajustar el título de recepción en `routes.test.tsx` y `f02Routes.test.tsx` (lista en «Pruebas existentes que cambian»). |
+| D4 | **`useEncounters`, `PAGE_SIZE` y `ENCOUNTERS_KEY` pasan a `shared/hooks/useEncounters.ts`**; la clave base pasa de `['triage','encounters']` a `['encounters']` (convención: dominio primero; precedente `['sites']`). Se añade `useEncounterCount`. Los imports de `features/triage` se actualizan. | Dejarlos en `triage` e importarlos desde `reception`, `queue` y `reports`; o duplicar el hook por feature. | Lo primero lo impide ESLint; lo segundo duplicaría claves y dejaría sin invalidar los conteos al confirmar una llegada (recepción debe invalidar `ENCOUNTERS_KEY`). Las pruebas fijan peticiones de red, no claves de caché. |
+| D5 | **Un `GET /encounters` por indicador, con `status` y `limit=100`** (máximo del contrato); `queryFn` devuelve solo `{ count, capped }`, con `capped = items.length >= 100`. | (a) Un único `GET /encounters?limit=100` sin filtro y conteo por estado en el cliente; (b) una matriz sedes × estados; (c) `limit=1` para «adivinar» el total. | (a) llena la página con `CLOSED` y `CANCELLED` recientes y deja los estados activos más antiguos fuera: cifras falsas sin forma de saberlo. (b) son S×K peticiones por refresco. (c) la respuesta no trae total. Con `status` cada cifra es exacta hasta 99 y honesta («100+») después; guardar solo el conteo evita dejar hasta 100 pacientes en caché por cifra. |
+| D6 | **Indicadores derivados sin petición propia**: «Preregistros pendientes» = longitud de la bandeja (la lista de preregistros no se pagina); «En espera de triage» de `/triage` = `offset` + atenciones recibidas de la propia bandeja (`capped` si llegan 50). | Una petición de conteo aparte en ambos casos. | Cero peticiones extra, mismo estado de carga y de error que la lista y sin tocar los contadores de peticiones de las pruebas de F-03 (`R2`, `R3`). La cifra de enfermería queda como «N+» a partir de 50, coherente con AC3. |
+| D7 | **Sin `keepPreviousData` entre claves distintas.** El contenido se conserva en el refresco de la **misma** clave (comportamiento por defecto de TanStack Query) y cada celda y panel reserva su altura mínima. | `placeholderData: keepPreviousData` al cambiar de sede. | Mostraría la cifra o la lista de la sede anterior bajo la etiqueta de la sede nueva, el mismo defecto que F-03 R4 prohíbe («datos de otra consulta como actuales»). Con altura reservada no hay saltos de maquetación (R23). |
+| D8 | **Los estados de una celda de resumen no usan `role="status"` ni `role="alert"`**: carga con `aria-busy="true"`, esqueleto y texto oculto «Cargando indicador…»; error con icono, la etiqueta visible, «No se pudo cargar» y un botón pequeño «Reintentar» de nombre accesible «Reintentar: {indicador}»; 403 con icono y «Sin permiso». El panel de trabajo sí usa `role="status"` (carga) y `role="alert"` (error, 403). | Una región viva por celda. | Tres regiones vivas anunciando a la vez saturan a quien usa lector de pantalla, y las pruebas vigentes (`getByRole('status')` y `findByRole('alert')` únicos en recepción y enfermería) exigen un solo aviso por pantalla. El nombre distinto del botón evita chocar con `getByRole('button', { name: 'Reintentar' })`. |
+| D9 | **Un único `PanelState`** (cargando, vacío, error, sin permiso) para todos los paneles, con icono, mensaje y, según el caso, pista, «Reintentar» o un enlace. `LoadError`, `LoadingState` y `ViewForbidden` no cambian: los siguen usando las pantallas fuera de alcance. | Añadir icono y estilo a `LoadError` y `LoadingState`. | Cambiaría `/atenciones` y `/atenciones/:id`, que UI-01 dejó cerradas. |
+| D10 | **La insignia de estado (icono + texto + tono) sale de una tabla** `ENCOUNTER_STATUS_VIEW` en `shared/lib/encounterStatus.ts`; los tonos son clases `.tone--*` que fijan `--tone` y `--tone-bg` a partir de `--ok`, `--warn`, `--error`, `--accent` y `--muted`. | Colores propios por estado o estado solo con color. | Los tokens ya cambian en oscuro, alto contraste, sepia, grises y alternativo; el icono y el texto cubren grises y daltonismo (R30). |
+| D11 | **Una sola hoja de estilos nueva, cargada después de `index.css`**: `src/shared/ui/dashboard.css` se importa en `src/main.tsx` justo después de `import './index.css'` (hoy `index.css` es el único `.css` bajo `src/`). Para no chocar con él: (1) los nombres nuevos no reutilizan ninguno de `index.css`, donde ya existen `.table`, `.status`, `.field`, `.form`, `.check` y `.button*` que usan otras pantallas, por eso las tablas son `.data-table` y no `.table`; (2) lo que ajusta una clase existente se declara bajo `.dashboard` para ganar por especificidad sin editar `index.css`: `.dashboard .button--sm` (variante de tamaño nueva), `.dashboard .button--soft` (la clase ya existe y la usa `VoiceGuide`: solo se ajustan color y resalte dentro de los dashboards), `.panel__body > .status`, `.summary__filter .load-error` y `.prereg .check`; (3) la escala de espacios (`--s1` a `--s6`: 0.25, 0.5, 0.75, 1, 1.25 y 1.5 rem) y los radios (`--r-surface` 1.25 rem y `--r-item` 1 rem) son variables locales de `.dashboard`, no tokens globales. De `index.css` solo se retiran, al final (T14), reglas de clases que ningún componente use; no se tocan `.card`, `.toolbar`, `.details`, `.status*`, `.button*`, `.field*`, `.check`, `.shell*`, `.layout*`, `.clinical-workspace*` ni las clases de las pantallas fuera de alcance. | Importarla con `@import` en la primera línea de `index.css` (versión 1 de esta spec); definir la escala como tokens globales. | Con `@import` al principio sus reglas irían **antes** que las de `index.css` (`.button`, `.status`, `.field`, `.layout--workspace .layout__header-inner`) y las perderían a igual especificidad; importada después reproduce el orden de la maqueta, y el ámbito `.dashboard` evita editar clases que usan `/atenciones`, `VoiceGuide` y el resto. Las variables locales evitan ampliar el sistema de tokens que S3 deja intacto. |
+| D12 | **Sin gráficos ni dependencias** (S5). Ni barras ni sparklines: el contrato no tiene series y en el desglose por sede la cifra ya es el dato. Las pruebas de CSS leen el archivo, sin navegador nuevo. | Barras proporcionales por sede; Playwright para medir el layout. | Una barra con cifras que pueden llegar a «100+» miente en la saturación; añadir un navegador de pruebas rompe «sin dependencias nuevas». La medición real a cuatro anchos queda como evidencia manual (T13). |
+| D13 | **`PlaceholderPage` se elimina**; su papel pasa a `PendingStrip`, una franja dentro de `/cola` y `/reportes`: `section` con `aria-labelledby` y `h2`, icono, texto, insignia «Próximamente» y la frase `common_pending` con `feature` = `F-06` o `F-07` (literal en la feature); borde discontinuo, sin botones, enlaces ni peticiones. Se conservan `common_pending` y `common_pending_label`. El respaldo de `routes.tsx` (`?? [PlaceholderPage]`) desaparece porque las cinco rutas de la matriz tienen pantalla. | Mantener `PlaceholderPage` como respaldo sin uso; una tarjeta «Pendiente» a media pantalla (versión 1). | Código muerto; AC5 pide el hueco dentro del dashboard. Su prueba (`R23` de F-01-web para PHYSICIAN y ADMIN) se sustituye por R18. |
+| D14 | **Refresco automático en los cuatro dashboards (decisión del usuario, PA-3, 2026-10-28)**: todas las peticiones de datos de cada dashboard se repiten cada 30 s con la pestaña visible (`refetchInterval` de 30 s y `refetchIntervalInBackground: false`), además de «Actualizar» y «Reintentar». **`refetchOnWindowFocus` y `refetchOnReconnect` siguen en `false` en los cuatro**, también en recepción, cuyo hook hoy usa los valores por defecto. Una petición que responde 403 deja de repetirse por intervalo. Las opciones viven en un solo lugar, `shared/lib/refresh.ts` (`DASHBOARD_REFRESH_MS = 30_000` y `autoRefresh()`). Revisa F-03-web D3 («refresco manual») y F-03-web R3 («sin temporizador ni KPI nuevos») en esos dos puntos; la bandeja conserva `siteId` y `offset` en la URL y páginas de 50. | Refresco manual en `/triage`, `/cola` y `/reportes` (propuesta inicial del `leader`, que conservaba F-03-web D3); refresco además al enfocar la ventana o reconectar. | Lo primero lo descartó el usuario al elegir «todo automático cada 30 s». Lo segundo se descarta porque la cadencia elegida debe ser la única fuente de peticiones (presupuesto fijo, ver «Estrategia de datos»): un refetch por foco añadiría 2, 1, 4 o 3 + S peticiones por cada cambio de ventana y rompería la prueba vigente de F-03 «la bandeja no se refresca por foco ni reconexión». Coste aceptado: al volver a una pestaña oculta, los datos pueden tardar hasta 30 s en actualizarse; «Actualizar» lo hace al instante. |
+| D15 | **Sin columna lateral ni panel «Accesos»** (S6): el panel de trabajo ocupa todo el ancho. Los destinos que ofrecía «Accesos» siguen a un clic: la barra lateral del marco tiene «Atenciones» y «Cola priorizada», «Registro directo» es la acción del encabezado de recepción y «Ver todas las atenciones» es el enlace del pie de medicina y administración. Se elimina el texto estático «Espacio de enfermería». | Mantener «Accesos» (versión 1). | El usuario rechazó la versión 1 por desordenada. Sin lateral, el orden visual coincide con el del DOM y el del foco (R3, R31) y no hay una rama de maquetación por número de indicadores. |
+| D16 | **La tarjeta de preregistro no oculta datos y se distribuye en dos columnas**: `ul.prereg-grid` con dos columnas cuando el panel mide ≥ 40 rem y una por debajo; cada `li` es una rejilla para que las tarjetas de una misma fila midan lo mismo, y la tarjeta (`article`, filas `auto auto 1fr`) deja la casilla y los botones abajo. Los datos van en pares `dt`/`dd` contiguos dentro de un `div`, en una cuadrícula de dos columnas 1.6:1 y cuatro filas (Documento \| Fecha de nacimiento; Sexo \| Sede; Motivo de consulta a ancho completo; Preregistro \| Expira), entre dos bordes. «Preregistro» y «Expira» muestran fecha y hora sin segundos (D28). Un paciente sin documento omite «Documento» y uno sin fecha de nacimiento muestra «Edad estimada», como `PatientDetails`. No se usa `<details>`. | Plegar los datos del paciente «bajo demanda»; la cuadrícula `auto-fit` de la versión 1. | F-02-web R7 exige mostrarlos y las pruebas vigentes usan `toBeVisible` y `toHaveTextContent('Preregistro' + hora)`, que un `<details>` cerrado rompe. Dos columnas aprovechan el ancho del panel; las alturas iguales y los botones abajo alinean las acciones. |
+| D17 | **Constantes técnicas**: página de conteo 100 (`COUNT_LIMIT`), lista reciente 8 (`RECENT_LIMIT`), bandeja 50 (`PAGE_SIZE`, sin cambio) y refresco de los cuatro dashboards 30 s (`DASHBOARD_REFRESH_MS`; `TRAY_REFRESH_MS` de recepción pasa a ser un alias del mismo valor). | Leerlas de la API. | No son clínicas; el contrato fija 1–100 y 50 por defecto. 8 filas caben sin desplazamiento a 1440 px con la barra de resumen encima. |
+| D18 | **Pruebas**: componentes y hooks con `fakeApi` en la frontera de red; un archivo de pruebas de **fuente CSS** para lo que jsdom no calcula (R4, R5, R31, R32, R34, R35); la medición real queda como evidencia manual en `docs/ui-evidence/`. | Pruebas visuales automáticas. | No hay navegador en la cadena de pruebas y D12 prohíbe añadirlo. |
+| D19 | **Un refresco no deshabilita controles ni remonta filas** (R37): «Actualizar» es `RefreshButton`, sin `disabled` y con `aria-busy="true"` mientras hay una petición en curso; «Anterior» y «Siguiente» se deshabilitan solo por datos (`offset` 0, menos de 50 atenciones, lista aún no cargada), no por `isFetching`; cada fila o tarjeta lleva `key` = id del recurso y su estado local (casilla de identidad, motivo de rechazo) vive en la propia tarjeta. | Mantener `disabled={isFetching}` en «Actualizar» y en la paginación, como hoy. | Con un refresco cada 30 s un botón que se deshabilita pierde el foco del teclado en cada ciclo. Con `key` = id, el nodo enfocado, la casilla y el texto del motivo sobreviven al refresco. Una segunda pulsación mientras hay una petición en curso la cancela y la repite (comportamiento por defecto de `refetch`), sin efectos secundarios porque son lecturas; el intervalo, en cambio, no cancela una petición en curso. No se llama a `scrollTo` ni a `scrollIntoView` y no se desactiva `overflow-anchor`, así que el navegador mantiene la posición de desplazamiento. |
+| D20 | **El error de un refresco, automático o manual, sustituye a los datos (R21 se mantiene tal cual)**: la caché conserva los datos antiguos pero no se pintan; el intervalo sigue, de modo que el siguiente ciclo vuelve a pedir, y «Reintentar» lo hace al instante. | Conservar la lista antigua con un aviso de «datos desactualizados» al fallar un refresco. | Es la política de F-03 R4 («sin presentar datos de una consulta fallida como actuales»), que su prueba `R4` fija para enfermería: en una bandeja clínica una fila obsoleta (ya confirmada o cancelada por otra persona) no debe parecer vigente. Coste aceptado y registrado en «Riesgos»: un fallo puntual de red parpadea el panel y, en recepción, desmonta las tarjetas con su estado local. |
+| D21 | **La bandeja de enfermería se reordena sola** con las llegadas nuevas (orden `arrivalAt` descendente y `offset`: una llegada empuja las filas una posición y, fuera de la primera página, repite una fila de la página anterior). Se acepta, sin congelar la lista. | Pausar el sondeo mientras el foco o el puntero estén sobre la lista, o avisar «hay N llegadas nuevas» en vez de reordenar. | Pausar o agrupar contradice «se refrescan solos» y añade estado que F-06 (cola con orden propio por nivel y espera) sustituirá. Los nodos se conservan por id (D19), el enlace de captura abre una pantalla que repite nombre y contexto de la atención y volver a la bandeja es inmediato. |
+| D22 | **Barra de resumen única**: `SummaryBar` es una `section` con `aria-label` «Indicadores» y una sola superficie (borde y radio 1.25 rem) cuyas celdas se separan con una línea de 1 px que dibuja la propia rejilla (`gap: 1px` sobre `background: var(--border)`, con `overflow: hidden` para recortar el radio). Cada celda es un `li`: chip de icono de 2.5 rem, etiqueta con mayúscula inicial (0.8125 rem, gris) y cifra (2 rem, semibold, cifras proporcionales), sin línea de ámbito. Las celdas viven en un `ul` con `display: contents` y `role="list"` (conserva la semántica de lista dentro de la rejilla) y el filtro, fuera de la lista pero dentro de la misma superficie. `SummaryBar` escribe `--cells` (número de indicadores) y la clase `summary--filter` si hay filtro. Columnas según el contenedor `dashboard`: < 30 rem una; 30 a 56 rem dos (el filtro y la última celda impar, a fila completa); ≥ 56 rem una sola fila, con una columna final de 15 a 19 rem para el filtro. | Tarjetas de indicador separadas (versión 1); una `flex` con bordes por celda. | La versión 1 dibujaba hasta tres tarjetas altas con un panel lateral y dejaba huecos. Una superficie con celdas llena el ancho con 1, 2 o 3 indicadores y la línea de 1 px sigue sola al número de columnas de cada banda, sin reglas de borde por punto de corte. |
+| D23 | **El filtro «Sede» vive en la barra de resumen** (recepción y enfermería): `SummaryFilter` es la última celda, con la etiqueta «Sede» y el selector («Todas las sedes» y las sedes de `useSites`). Medicina y administración no tienen filtro. Un fallo de `useSites` muestra el `LoadError` vigente dentro de esa celda, con el selector deshabilitado; los indicadores y el panel siguen sin filtro. | El selector en la cabecera del panel o una subcabecera del panel (versión 1). | El filtro gobierna los indicadores y la lista: en la barra de resumen comparte superficie con lo que filtra y no compite con el título del panel. Conserva la etiqueta exacta «Sede» que buscan las pruebas vigentes con `getByLabelText`. |
+| D24 | **Las listas son tablas reales con roles explícitos**: `DataTable` pinta `table` con `role="table"` y nombre por `aria-labelledby` (el `h2` del panel), `th` con `role="columnheader"` y `scope="col"`, y `DataRow` y `DataCell` con `role="row"` y `role="cell"`; la columna de la acción lleva un encabezado visualmente oculto «Acción». Cada celda que se etiqueta al apilarse lleva `data-label`. Por debajo de 40 rem de panel las tablas con encabezado se apilan: el `thead` se oculta visualmente (sigue en el árbol de accesibilidad), cada `tr` pasa a una tarjeta de dos columnas con las etiquetas «Sede», «Llegada» y «Estado» (CSS `content: attr(data-label)`) y el botón a ancho completo. La tabla simple de sedes (`DataTable simple`) no se apila. `tabular-nums` solo se aplica a las columnas de hora (`.cell-time`) y de cifras (`.num`); relleno vertical de 0.75 rem y resalte suave al pasar el cursor. | Rejillas de `div` con ARIA; ocultar columnas; desplazamiento horizontal. | `table` da lectura por filas y columnas nativa; cambiar su `display` a bloque o rejilla hace que algunos motores pierdan la semántica de tabla, por eso los roles van explícitos. Ocultar columnas pierde datos (R35 exige sin contenido cortado) y el desplazamiento horizontal contradice UI-02.AC9. |
+| D25 | **La nota «Se actualiza cada 30 s» va en la cabecera del panel de trabajo**, a la derecha del `h2` (`LiveNote`, clave `dash_live` con `{seconds}`), no en las acciones del encabezado de página. Es texto plano con un punto decorativo (`::before`, `--ok`): sin `aria-live` ni `role="status"`. | Dejarla junto a «Actualizar» (versión 1) o mostrar la hora de la última actualización. | Queda junto a los datos que se refrescan, libera el encabezado para las acciones y no se confunde con un control. La hora de la última actualización saldría del reloj del cliente (UI-02.AC3: la web no calcula horas) y exigiría un reloj reactivo. El punto usa `--ok`, pero el estado lo da el texto (R30). |
+| D26 | **Marca única en el marco privado (UI-02.AC11)**: la ruta del `AppShell` declara `handle: { privateFrame: true }`; `Layout` lee `useMatches()` y, si alguna coincidencia lo declara, no pinta el enlace de marca de la cabecera y añade la clase `layout--private`, que alinea las herramientas (tema, idioma y preferencias) a la derecha en una píldora compacta. `/`, `/login` y `/estado` no tienen esa coincidencia y conservan la cabecera con la marca. La marca del marco privado es la de la barra lateral (`.shell__heading`), que no cambia. | Ocultar la marca por CSS con `:has(.shell)`; quitar la marca de la barra lateral y dejarla en la cabecera. | Con CSS la marca seguiría en el DOM (dos «Asclepio» para un lector de pantalla) y jsdom no aplica CSS, así que R39 no sería comprobable; quitarla de la barra lateral contradice el AC11. El `handle` es el mecanismo que ya ofrece el router de datos para marcar rutas, no añade estado ni dependencias y se prueba con `renderApp`. Coste aceptado: mientras `RequireSession` muestra la carga o el error del perfil, la ruta ya es privada y la cabecera muestra solo las herramientas; son estados transitorios y sin marco. |
+| D27 | **Escritura en español (UI-02.AC12)**: «preregistro» sin guion en los textos existentes que aparecen en los dashboards (nueve claves de `features` y `guide_reception`; lista en «Escritura y horas»), etiquetas con mayúscula inicial, ningún «·» como separador y horas sin segundos. Los otros cuatro idiomas conservan su terminología (sus catálogos no cambian). Las constantes de texto canónico de la tarjeta (`CONFIRM_MESSAGES`, `REJECT_MESSAGES`) y las tres entradas de `featureMessages.ts` que las mapean cambian junto con el catálogo. | Cambiar «pre-registro» también en `/atenciones`, `/recepcion/registro` y la landing; dejar los textos existentes con guion. | El AC12 limita el cambio a los textos que aparecen en los dashboards; las demás pantallas siguen como las dejó UI-01 (S3) y cambiarlas ampliaría el alcance. Dejar el guion mezclaría dos escrituras en la misma pantalla («Preregistros pendientes» y «Este pre-registro ya no existe.»). Queda una diferencia consciente con el detalle de atención («Pre-registro (referencia)»), registrada en «Riesgos». |
+| D28 | **Tres formateadores de hora en `shared/lib/datetime.ts`**, todos con `Intl.DateTimeFormat('es-CO', { timeZone: 'America/Bogota' })`: `formatTimeBogota` (`hour: 'numeric', minute: '2-digit'`, «11:12 a. m.»), `formatDateBogota` (`dateStyle: 'short'`, «28/10/26») y `formatDateTimeBogota` (`dateStyle: 'short', timeStyle: 'short'`, «28/10/26, 11:12 a. m.»). `formatBogota` (con segundos) no cambia: lo siguen usando las pantallas fuera de alcance. Los formateadores devuelven la salida de `Intl` tal cual (con su espacio duro, que evita partir «a. m.» al envolver); las pruebas no escriben ese espacio: comparan con `\s` o con el texto normalizado (`norm`). | Cambiar `formatBogota` para todas las pantallas; normalizar los espacios dentro del formateador. | Cambiar `formatBogota` movería pruebas y pantallas fuera de alcance (`/atenciones`, detalle, línea de tiempo, `/estado`, capturas), que fijan los segundos. Normalizar el espacio simplificaría las pruebas, pero permitiría que «a.» y «m.» queden en líneas distintas. El carácter exacto que escribe `Intl` en `es-CO` depende de la versión de ICU, así que el diseño no lo supone: T2 lo comprueba en el Node del proyecto y lo anota en el comentario de la prueba. |
+| D29 | **Avisos y errores de acción dentro del cuerpo del panel**: el aviso de éxito (`Notice`, `role="status"`) y el error huérfano de acción (`ActionError`, `role="alert"`) se pintan arriba del cuerpo, con el margen de la maqueta (`.panel__body > .status`); el error de una acción sobre una tarjeta queda dentro de su tarjeta, como hoy. `Notice` conserva su clase y recibe una prop opcional `icon` (la maqueta usa una marca de verificación); `LoadError`, `ActionError`, `LoadingState` y `ViewForbidden` no cambian. | Un componente de aviso nuevo. | `Notice` lo usan también `/atenciones/:id` y `/recepcion/registro`; una prop opcional no cambia esas pantallas. |
+| D30 | **Filas de enfermería y de medicina**: la fila de enfermería no lleva insignia de estado (todas son `WAITING_TRIAGE`: la lista ya está filtrada y repetirlo en cada fila es ruido) ni `h3` (es una fila de tabla), y su acción «Capturar información clínica» es un enlace con el estilo suave (`.button--soft .button--sm`); medicina muestra la insignia de estado y «Ver atención» como botón secundario pequeño (`.button--secondary .button--sm`). El documento solo se muestra en enfermería (un NN no inventa documento); medicina y administración nunca lo muestran (R26). | Insignia en todas las filas de enfermería; un `h3` por fila. | El brief de diseño pide poco color y no repetir un estado en todas las filas de una lista ya filtrada por ese estado; un enlace suave por fila evita una columna de botones sólidos. El `h3` por fila deja de existir al pasar a tabla: las pruebas vigentes que lo buscaban cambian (ver «Pruebas existentes que cambian»). |
+
+### Lo que se retira de la versión 1 de esta spec
+
+La versión 1 solo existió como spec; nada de esto llegó al código ni a los catálogos.
+
+- **Decisiones**: D15 «Accesos con enlaces» (sustituida por el nuevo D15), D22 disposición por número de indicadores y D23 indicador con variante horizontal (sustituidas por D22), D24 filas de atención con dos líneas de meta (sustituida por D24 y D30), D25 nota junto a «Actualizar» (sustituida por D25), D26 subcabecera del panel de enfermería (sustituida por D23).
+- **Componentes**: `IndicatorRow`, `Indicator`, `AttentionRow`, `ShortcutList` y `PendingPanel` (los sustituyen `SummaryBar`, `SummaryCell`, `SummaryFilter`, `DataTable` y `PendingStrip`).
+- **Claves i18n previstas**: `dash_shortcuts`, `dash_view_all_encounters_hint`, `dash_view_queue` y `dash_view_queue_hint`.
+- **Clases CSS previstas**: `.dashboard__layout|ind|main|side`, `.indicators`, `.indicator*`, `.attention*`, `.shortcut*`, `.panel__subhead`, `.count-caption`, `.count-list`, `.count-row`, `.fact--doc` y el contenedor `indicator`.
+
+## Impacto en contrato
+
+**Sin impacto en contrato; consume 0.4.0.** Se usan solo endpoints ya publicados, con sus respuestas ya tipadas en `src/shared/api/schema.d.ts`:
+
+- `GET /api/v1/encounters` (RECEPTION, NURSE, PHYSICIAN, ADMIN) → 200 `EncounterListDto { items: EncounterSummaryDto[] }`, orden `arrivalAt` descendente, **sin total**; parámetros `status`, `siteId`, `limit` (1–100, por defecto 50) y `offset`. `patientId` no se usa.
+- `GET /api/v1/pre-registrations?siteId` (**solo RECEPTION**) → 200 `PendingPreRegistrationDto[]`.
+- `GET /api/v1/public/tenants` → 200 `PublicTenantDto[]`, vía `useSites()`, una vez por sesión.
+- Sin cambios en `POST …/confirm` ni `POST …/reject` (los mismos cuerpos de F-02-web).
+- Errores `application/problem+json` tratados con `shared/lib/problem.ts` (`unwrap`, `problemOf`, `statusOf`).
+- No se piden `GET /encounters/{id}` ni `GET /encounters/{id}/clinical-capture` desde ningún dashboard (una petición por fila). Versión del contrato: 0.4.0 → 0.4.0. `npm run api:types` no debe producir diff y `CONSUMED_CONTRACT` sigue en `'0.4.0'`.
+
+## Impacto en datos
+
+**Sin impacto en datos.** No hay migraciones, tablas, columnas ni permisos. La web no añade almacenamiento: los conteos viven solo en la caché en memoria de TanStack Query como `{ count, capped }`; las listas, en la misma caché que hoy; todo se vacía al cerrar sesión. `localStorage` sigue conteniendo solo las preferencias visuales y `sessionStorage` solo la sesión. En la URL solo viajan `siteId` y `offset` de `/triage`. Las horas se muestran como las entrega el servidor, en `America/Bogota` y sin segundos en los dashboards; la web no envía ni calcula horas.
+
+## Wireframes por rol (escritorio ≥ 1280 px)
+
+Leyenda: `( )` = icono Heroicons; `[ ]` = botón o enlace con aspecto de botón; `▾` = selector; `●` = punto de estado de la nota «Se actualiza cada 30 s»; `☐` = casilla; `…` = texto recortado en el dibujo. Se dibuja el **área de contenido** a ≥ 56 rem de contenedor (928 a 992 px de contenido a 1280 y 1440 px de ventana), siguiendo las capturas 01 a 04 de la maqueta v2. La cabecera del marco privado muestra solo las herramientas (tema, idioma, preferencias) a la derecha, sin marca (D26); la barra lateral con la marca y la navegación no cambia y no se dibuja. En las tablas, cada fila tiene dos líneas (nombre y documento, hora y fecha); las horas son las del servidor en Bogotá, sin segundos.
+
+### RECEPTION — `/recepcion` (captura 01)
+
+```
+Recepción                                                             [↻ Actualizar]  [+ Registro directo]
+Confirma la llegada de pacientes preregistrados o registra una llegada directa.
+
+┌──────────────────────────────────┬──────────────────────────────────┬──────────────────────────────────┐
+│ (▤) Preregistros pendientes      │ (◷) En espera de triage          │ Sede                             │
+│      3                           │      8                           │ [Todas las sedes              ▾] │
+└──────────────────────────────────┴──────────────────────────────────┴──────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Preregistros pendientes                                                       ● Se actualiza cada 30 s │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ (✓) Llegada confirmada. Hora de llegada: 28/10/26, 12:03 p. m.  Ver atención                           │
+│                                                                                                        │
+│  ┌───────────────────────────────────────────────┐   ┌───────────────────────────────────────────────┐ │
+│  │ Laura Gómez Pérez  (!) Identidad sin verificar│   │ Ricardo Medina Soto  (✓) Identidad verificada │ │
+│  ├───────────────────────────────────────────────┤   ├───────────────────────────────────────────────┤ │
+│  │ Documento                 Fecha de nacimiento │   │ Documento                 Fecha de nacimiento │ │
+│  │ Cédula de ciudadanía 10…  17/05/1990          │   │ Cédula de ciudadanía 80…  02/11/1984          │ │
+│  │ Sexo                      Sede                │   │ Sexo                      Sede                │ │
+│  │ Femenino                  Sede Norte          │   │ Masculino                 Sede Sur            │ │
+│  │ Motivo de consulta                            │   │ Motivo de consulta                            │ │
+│  │ Dolor de cabeza desde ayer                    │   │ Fiebre y tos desde hace dos días              │ │
+│  │ Preregistro               Expira              │   │ Preregistro               Expira              │ │
+│  │ 28/10/26, 8:05 a. m.      28/10/26, 2:05 p. m.│   │ 28/10/26, 8:40 a. m.      28/10/26, 2:40 p. m.│ │
+│  ├───────────────────────────────────────────────┤   ├───────────────────────────────────────────────┤ │
+│  │ ☐ Verifiqué la identidad del paciente         │   │ ☐ Verifiqué la identidad del paciente         │ │
+│  │   presente con su documento.                  │   │   presente con su documento.                  │ │
+│  │ [Confirmar llegada] [Rechazar]                │   │ [Confirmar llegada] [Rechazar]                │ │
+│  └───────────────────────────────────────────────┘   └───────────────────────────────────────────────┘ │
+│  ┌───────────────────────────────────────────────┐                                                     │
+│  │ Marta Lucía Rojas  (!) Identidad sin verificar│                                                     │
+│  │ (mismos datos y acciones)                     │                                                     │
+│  └───────────────────────────────────────────────┘                                                     │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+- La barra de resumen tiene dos celdas de indicador y la celda del filtro (columna de 15 a 19 rem a este ancho). «Preregistros pendientes» sale de la longitud de la bandeja y «En espera de triage» de su propia petición; ambas siguen la sede elegida (R9, D6, D23).
+- El encabezado lleva «Actualizar» (secundaria) y «Registro directo» (la única acción sólida) (R11). La nota «Se actualiza cada 30 s» va a la derecha del título del panel (D25).
+- El aviso de éxito (`role="status"`) y el error huérfano de acción (`role="alert"`) se dibujan arriba del cuerpo del panel (D29). Tras confirmar, el aviso lleva fecha y hora sin segundos y el enlace «Ver atención»; no termina en un punto añadido, porque «p. m.» ya termina en punto.
+- Cada tarjeta es un `article` con un único `h3` (el nombre), la insignia de identidad con icono y texto, los datos en cuatro filas (la columna del documento es 1.6 veces la de la fecha), la casilla y los dos botones pequeños abajo; las tarjetas de una misma fila miden lo mismo (D16). La etiqueta del motivo de rechazo conserva el texto exacto «Motivo del rechazo»; el formulario se despliega dentro de la tarjeta, con «Confirmar rechazo» (primaria) y «Volver» (secundaria), ambos pequeños.
+- Vacío (captura 13): icono, «No hay preregistros pendientes.», la pista «Cuando un paciente envíe uno desde la aplicación, aparecerá aquí.» y el enlace «Registrar una llegada directa» a `/recepcion/registro`.
+
+### NURSE — `/triage` (captura 02)
+
+```
+Triage                                                                                    [↻ Actualizar]
+Registra la información clínica de las atenciones en espera de triage.
+
+┌─────────────────────────────────────────────────────────────────────┬──────────────────────────────────┐
+│ (◷) En espera de triage                                             │ Sede                             │
+│      8                                                              │ [Todas las sedes              ▾] │
+└─────────────────────────────────────────────────────────────────────┴──────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Atenciones pendientes                                                         ● Se actualiza cada 30 s │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paciente                           Sede              Llegada                                           │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Daniel Castro Mora                 Sede Sur          11:12 a. m.        [Capturar información clínica] │
+│ Cédula de ciudadanía 1019876543                      28/10/26                                          │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paciente NN                        Sede Este         11:05 a. m.        [Capturar información clínica] │
+│                                                      28/10/26                                          │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Sofía Martínez Díaz                Sede Norte        10:48 a. m.        [Capturar información clínica] │
+│ Cédula de ciudadanía 52876543                        28/10/26                                          │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ (hasta 50 filas por página)                                                                            │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Página 1                                                                    [‹ Anterior] [Siguiente ›] │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+- Un solo indicador más el filtro: la celda del indicador ocupa el espacio restante. Su cifra sale de la propia bandeja (D6): «8» con menos de 50 atenciones y «50+» con la página llena, según la sede elegida.
+- Columnas Paciente (nombre en semibold y, debajo en gris, el documento solo si existe: un NN no inventa documento), Sede y Llegada (hora y, debajo en gris, fecha). **Sin insignia de estado**: todas las filas son `WAITING_TRIAGE` (D30). La acción es el enlace «Capturar información clínica» a `/triage/{id}` con estilo suave y tamaño pequeño; conserva el nombre exacto y se asocia a su fila con `aria-describedby` (la celda del nombre).
+- Pie: «Página N» a la izquierda y «Anterior» y «Siguiente» (secundarios pequeños con chevrones, deshabilitados solo por datos, D19) a la derecha.
+- Vacío: icono, «No hay atenciones en espera de triage con estos filtros.» y la pista «Las llegadas confirmadas por recepción aparecerán aquí.».
+
+### PHYSICIAN — `/cola` (captura 03; el mismo dashboard para NURSE y ADMIN)
+
+```
+Cola priorizada                                                                           [↻ Actualizar]
+Estado de las atenciones y las llegadas más recientes.
+
+┌──────────────────────────────────┬──────────────────────────────────┬──────────────────────────────────┐
+│ (◷) En espera de triage          │ (▣) Clasificadas                 │ (♥) En atención                  │
+│      8                           │      0                           │      0                           │
+└──────────────────────────────────┴──────────────────────────────────┴──────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Atenciones recientes                                                          ● Se actualiza cada 30 s │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Paciente                      Sede           Llegada          Estado                                   │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Daniel Castro Mora            Sede Sur       11:12 a. m.      (◷) En espera de triage    [Ver atención]│
+│                                              28/10/26                                                  │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Camila Torres Vega            Sede Este      10:21 a. m.      (✕) Cancelada              [Ver atención]│
+│                                              28/10/26                                                  │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ (hasta 8 filas)                                                                                        │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Las 8 atenciones más recientes                                              Ver todas las atenciones → │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐
+┊ (◷)  Cola por nivel y espera                       [◷ Próximamente]  Esta funcionalidad llega en F-06. ┊
+┊      Aquí aparecerá la cola priorizada por nivel de triage y tiempo de espera, con datos del servidor. ┊
+└╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘
+```
+
+- Tres indicadores por estado, una petición cada uno y sin sede ni filtro. Con la API 0.4.0 «Clasificadas» y «En atención» valen 0: la celda se ve completa con cero, no vacía.
+- Tabla: Paciente (solo el nombre, sin documento), Sede, Llegada, Estado (insignia con icono y texto) y «Ver atención» (secundario pequeño) a `/atenciones/{id}`. Pie: «Las 8 atenciones más recientes» (con otro número de filas, «Las N atenciones más recientes» y «La atención más reciente» con una) y el enlace «Ver todas las atenciones» a `/atenciones`.
+- La franja «pendiente» (borde discontinuo) tiene `h2`, icono, texto, la insignia «Próximamente» y la frase `common_pending`; sin botones, enlaces ni peticiones; no muestra niveles, tiempos ni umbrales.
+
+### ADMIN — `/reportes` (captura 04)
+
+```
+Reportes                                                                                  [↻ Actualizar]
+Resumen de las atenciones por estado y por sede.
+
+┌──────────────────────────────────┬──────────────────────────────────┬──────────────────────────────────┐
+│ (◷) En espera de triage          │ (▣) Clasificadas                 │ (♥) En atención                  │
+│      8                           │      0                           │      0                           │
+└──────────────────────────────────┴──────────────────────────────────┴──────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Atenciones por sede                                                           ● Se actualiza cada 30 s │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Sede                                                                               En espera de triage │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Sede Norte                                                                                           4 │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Sede Sur                                                                                             3 │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Sede Este                                                                                            1 │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ 3 sedes                                                                     Ver todas las atenciones → │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐
+┊ (◷)  Indicadores y reportes                        [◷ Próximamente]  Esta funcionalidad llega en F-07. ┊
+┊      Aquí aparecerán los tiempos, el cumplimiento, la concordancia y la descarga del CSV.              ┊
+└╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘
+```
+
+- Los mismos tres indicadores que en medicina, sin filtro. Ningún dato de pacientes. La tabla es **simple** (no se apila): Sede y «En espera de triage», con la cifra a la derecha en 1.125 rem semibold y cifras tabulares. Una petición por sede (`status=WAITING_TRIAGE`, `siteId`); cada fila resuelve sola cargando, éxito («100+» con la página llena, captura 10), error («No se pudo cargar» y «Reintentar: Sede Este») y 403 («Sin permiso»).
+- Pie: «3 sedes» («1 sede» con una) y «Ver todas las atenciones». Si `useSites()` falla, el panel muestra un error propio con «Reintentar» que repite solo las sedes; las celdas de resumen siguen funcionando.
+
+### Reflujo a 1024, 768 y 375 px
+
+| Ancho de ventana | Contenedores `dashboard` y `panel` | Barra de resumen | Preregistros y tablas | Notas |
+|---|---|---|---|---|
+| 1280 / 1440 px | 928 / 992 px (≥ 56 rem) | una fila; con filtro, una columna final de 15 a 19 rem | dos columnas; tablas sin apilar | — |
+| 1024 px | ≈ 685 px (30 a 56 rem; el panel ≥ 40 rem) | dos columnas; el filtro y la última celda impar, a fila completa | dos columnas; tablas sin apilar | la barra lateral del marco ocupa 17 rem |
+| 768 px | ≈ 730 px (30 a 56 rem; el panel ≥ 40 rem) | igual que 1024 px | igual que 1024 px | sin barra lateral (menú plegable); captura 09 |
+| 375 px | 343 px (< 30 rem y panel < 40 rem) | una columna de celdas y el filtro; las acciones del encabezado, a ancho completo | una columna; tablas apiladas como tarjetas con «Sede», «Llegada» y «Estado» y el botón a ancho completo; la tabla de sedes no se apila | capturas 07 y 08 (a 390 px) |
+| 200 % de texto | `rem` crece: 992 px ≈ 31 rem | una o dos columnas | una columna; tablas apiladas | los cortes se mueven con la preferencia (D1) |
+
+Los umbrales de 30 y 56 rem miden el ancho del contenedor `dashboard`; el de 40 rem, el del contenedor `panel`, que hoy coincide con el de `dashboard` porque el panel ocupa todo el ancho.
+
+A 768 px, la barra de resumen de recepción (captura 09): dos celdas de indicador en una fila y el filtro debajo, a fila completa.
+
+```
+┌──────────────────────────────┬──────────────────────────────┐
+│ (▤) Preregistros pendientes  │ (◷) En espera de triage      │
+│      3                       │      8                       │
+├──────────────────────────────┴──────────────────────────────┤
+│ Sede                                                        │
+│ [Todas las sedes                                         ▾] │
+└─────────────────────────────────────────────────────────────┘
+```
+
+A 375 px, el panel de enfermería con la tabla apilada (captura 08, a 390 px): cada fila es una tarjeta con el nombre, el documento, las etiquetas «Sede» y «Llegada» y el botón a ancho completo.
+
+```
+┌──────────────────────────────────────┐
+│ Atenciones pendientes                │
+│ ● Se actualiza cada 30 s             │
+├──────────────────────────────────────┤
+│ Daniel Castro Mora                   │
+│ Cédula de ciudadanía 1019876543      │
+│ Sede            Llegada              │
+│ Sede Sur        11:12 a. m.          │
+│                 28/10/26             │
+│ [   Capturar información clínica   ] │
+├──────────────────────────────────────┤
+│ Página 1   [‹ Anterior] [Siguiente ›]│
+└──────────────────────────────────────┘
+```
+
+## Sistema visual del dashboard
+
+Todo el CSS nuevo va en `src/shared/ui/dashboard.css` (D11), mobile-first, con medidas en `rem` (escalan con la preferencia de texto) y solo tokens existentes de `index.css`: `--bg`, `--fg`, `--muted`, `--card`, `--accent`, `--accent-hover`, `--accent-ink`, `--accent-soft`, `--border`, `--ok`, `--ok-bg`, `--warn`, `--warn-bg`, `--error`, `--error-bg` y `--focus`. Ni hex, ni `rgb()`, ni `oklch()` literal fuera de `color-mix(in oklch, <token> N%, <token o transparent>)` (R4; lo comprueba una prueba de fuente CSS). Variables locales de `.dashboard`: `--s1` a `--s6` (0.25, 0.5, 0.75, 1, 1.25 y 1.5 rem), `--r-surface` (1.25 rem, paneles y barra de resumen) y `--r-item` (1 rem, tarjetas y controles); los chips y las filas de la franja usan 0.75 rem y las insignias, 999 px. Tipografía: título 1.375 a 1.625 rem, panel 1 rem, cuerpo 0.875 rem, apoyo 0.75 a 0.8125 rem y cifra de resumen 2 rem.
+
+| Pieza | Anatomía y medidas |
+|---|---|
+| **Dashboard** (`.dashboard` > `.stack`) | `.dashboard` declara `container: dashboard / inline-size`, `min-width: 0` y las variables locales. `.stack` es `display: grid` con `gap: var(--s6)` (1.5 rem) y `min-width: 0`. Zonas en orden de DOM: `header.page-header`, `section.summary`, `section.panel` y, en `/cola` y `/reportes`, `section.pending` (R3). Siempre una columna: no hay rejilla de áreas ni columna lateral. |
+| **Encabezado** (`.page-header`) | `flex-wrap`, `justify-content: space-between`, `gap: var(--s3) var(--s4)`. Bloque de texto (`flex: 1 1 18rem`, `min-width: 0`): `h1` (`clamp(1.375rem, 1.1rem + 0.9vw, 1.625rem)`, 600, `letter-spacing: -0.02em`, interlineado 1.25) y `p` (0.875 rem, `--muted`, `max-width: 40rem`, margen superior 0.25 rem). Acciones (`.page-actions`, `flex-wrap`, `gap: var(--s3)`): «Actualizar» (`.button--secondary`) y, en recepción, «Registro directo» (`.button`, único sólido). `@container dashboard (max-width: 29.99rem)`: `.page-actions` a ancho completo y sus botones con `flex: 1 1 auto`. |
+| **Barra de resumen** (`.summary`) | `display: grid; gap: 1px; border: 1px solid var(--border); border-radius: var(--r-surface); background: var(--border); overflow: hidden` (con `.summary__cell` y `.summary__filter` en `--card`; el `overflow: hidden` solo recorta el radio y es una de las dos excepciones a «sin recortes», junto al `thead` oculto de las tablas apiladas). Base: una columna. `@container dashboard (min-width: 30rem)`: dos columnas, `.summary__filter` con `grid-column: 1 / -1` y la última celda impar (`.summary__list > :last-child:nth-child(odd)`) a fila completa. `@container dashboard (min-width: 56rem)`: `repeat(var(--cells, 2), minmax(0, 1fr))` y, con `.summary--filter`, una columna final `minmax(15rem, 19rem)`; filtro y última celda vuelven a `grid-column: auto`. `.summary__list` es `display: contents`. |
+| **Celda** (`.summary__cell`) | `display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: var(--s3); align-items: center; min-height: 5.5rem; padding: var(--s4) var(--s5)`. Chip (`.summary__icon`): 2.5 rem, radio 0.75 rem, fondo `--tone-bg`, icono `--tone` de 1.25 rem, ocupa las dos filas. Etiqueta (`.summary__label`): 0.8125 rem, 600, `--muted`, interlineado 1.35; la mayúscula inicial viene del texto. Cifra (`.summary__value`): 2 rem, 600, interlineado 1.1, `letter-spacing: -0.03em`, **`font-variant-numeric: proportional-nums`** (nunca `tabular-nums`); el «+» (`.summary__plus`) mide 1.25 rem, `--muted`, y es decorativo. Carga: esqueletos de 1 rem (etiqueta) y de 2 rem por 4.5 rem (cifra). Error: tono `error`, `.summary__error` (0.8125 rem, 600, `--error`) y botón `.button--secondary .button--sm` bajo el texto. |
+| **Filtro** (`.summary__filter`) | `display: grid; align-content: center; gap: 0.35rem; padding: var(--s4) var(--s5)`; `label` de 0.75 rem, 600, `--muted`; `select` a ancho completo, `min-height: 2.5rem`, `padding: 0.4rem 0.75rem`, borde `--border`, radio `--r-item`, 0.875 rem, borde `--accent` al pasar el cursor. `.summary__filter .load-error` compacto (`margin: 0`, `padding: var(--s2) var(--s3)`, 0.8125 rem). |
+| **Panel** (`.panel`) | `container: panel / inline-size; min-width: 0; border: 1px solid var(--border); border-radius: var(--r-surface); background: var(--card)`. Cabecera `.panel__head`: `flex-wrap; align-items: center; gap: var(--s2) var(--s4); padding: var(--s4) var(--s5); border-bottom: 1px solid var(--border)`; `.panel__title` de 1 rem, 600, **sin icono**; `.panel__meta` con `margin-left: auto` (aloja `.live`). Cuerpo `.panel__body` sin relleno: las tablas van a sangre y la cuadrícula de tarjetas y los avisos llevan el suyo (`.panel__body > .status`: `margin: var(--s5) var(--s5) 0`). Pie `.panel__foot`: `flex-wrap; justify-content: space-between; gap: var(--s3); padding: var(--s3) var(--s5); border-top: 1px solid var(--border); font-size: 0.875rem; color: var(--muted)`. Un panel de tabla siempre lleva pie, así que la última fila nunca toca la esquina redondeada. |
+| **Nota viva** (`.live`) | `inline-flex; align-items: center; gap: 0.45rem; font-size: 0.75rem; color: var(--muted)`; punto `::before` de 0.5 rem, redondo, en `--ok` (`content: ''`). |
+| **Enlace de pie** (`.link-more`) | `inline-flex; gap: 0.4rem; font-size: 0.875rem; font-weight: 600; text-decoration: none` con `ArrowRightIcon` de 1.05 rem; subrayado al pasar el cursor. |
+| **Insignia** (`.badge`) | `inline-flex; gap: 0.35rem; padding: 0.15rem 0.6rem; border-radius: 999px; font-size: 0.75rem; font-weight: 600; color: var(--tone); background: var(--tone-bg); border: 1px solid color-mix(in oklch, currentColor 35%, transparent); white-space: nowrap`, con icono de 0.95 rem y texto siempre presente. |
+| **Tabla** (`.data-table`) | `width: 100%; border-collapse: collapse; font-size: 0.875rem`. `th`: relleno 0.625 rem por 1 rem, 0.75 rem, 600, `--muted`, borde inferior, fondo `color-mix(in oklch, var(--bg) 60%, var(--card))`, `white-space: nowrap`. `td`: relleno vertical **0.75 rem** y horizontal 1 rem, borde inferior, `vertical-align: middle`; primera y última columna con 1.25 rem de relleno exterior; sin borde en la última fila. Resalte suave de la fila: `color-mix(in oklch, var(--accent-soft) 45%, transparent)`. Celdas: `.cell-name` (bloque, 600), `.cell-sub` (bloque, 0.8125 rem, `--muted`), `.cell-time` (`nowrap` y `tabular-nums`), `.num` (a la derecha y `tabular-nums`; en `td`, 1.125 rem y 600) y `.cell-actions` (a la derecha, `nowrap`). `.data-table--simple`: relleno vertical de 0.875 rem y sin apilado. |
+| **Tabla apilada** (`@container panel (max-width: 39.99rem)`) | En `.data-table:not(.data-table--simple)`: `thead` oculto visualmente (caja de 1 px, `clip-path: inset(50%)`; sigue en el árbol de accesibilidad); `table` y `tbody` en bloque; cada `tr` es una rejilla de dos columnas (`gap: var(--s2) var(--s4)`, relleno `var(--s4)`, borde inferior); `td` en bloque, sin relleno ni borde; `td[data-label]::before` muestra la etiqueta (`content: attr(data-label)`, 0.75 rem, `--muted`), con alternativa vacía `/ ''` declarada aparte para que el lector de pantalla no la lea dos veces; `.cell-main` y `.cell-actions` a fila completa y el botón de la acción a ancho completo. |
+| **Tarjetas de preregistro** (`.prereg-grid`, `.prereg`) | `ul.prereg-grid`: una columna, `gap: var(--s4)`, relleno `var(--s5)`; `@container panel (min-width: 40rem)`: `repeat(2, minmax(0, 1fr))`. Cada `li` es `display: grid` (la tarjeta se estira a la altura de su fila). `.prereg` (`article`): `display: grid; grid-template-rows: auto auto 1fr; gap: var(--s3); padding: var(--s4) var(--s5); border: 1px solid var(--border); border-radius: var(--r-item); background: var(--card)`. `.prereg__head`: `flex-wrap`, `space-between`, `gap: var(--s2) var(--s3)`; `.prereg__title`: 0.9375 rem, 600. `.prereg__facts`: `dl` en rejilla `minmax(0, 1.6fr) minmax(0, 1fr)`, `gap: var(--s3) var(--s4)`, relleno vertical `var(--s3)` y `border-block`; `dt` de 0.75 rem en `--muted` y `dd` de 0.875 rem, 500; `.fact--wide` a ancho completo. `.prereg__foot`: `display: grid; gap: var(--s3); align-self: end`; `.prereg .check` con texto de 0.8125 rem; `.prereg__buttons`: `flex-wrap; gap: var(--s2)` con «Confirmar llegada» (`.button .button--sm`) y «Rechazar» (`.button .button--secondary .button--sm`). El formulario de rechazo (`.reject`, junto a la clase `form` existente) lleva `gap: var(--s3)`, `margin-top: 0`, `padding-top: var(--s3)` y `border-top: 1px dashed var(--border)`. |
+| **Estados** (`.panel-state`) | `display: grid; justify-items: center; align-content: center; gap: var(--s3); min-height: 10rem; padding: 2rem var(--s4); text-align: center`. Icono en círculo (`.panel-state__icon`: 4 rem, `--tone-bg`, icono de 2 rem); mensaje `.panel-state__msg` (600); pista en `.muted`. Carga: mensaje y `.skeletons` (hasta 40 rem de ancho, tres `.skeleton` de 3.5 rem y radio 0.75 rem, decorativos). El pulso del esqueleto y el giro del icono de «Actualizar» van solo bajo `@media (prefers-reduced-motion: no-preference)`; además `index.css` (L1384 a L1392) ya anula animaciones con movimiento reducido. |
+| **Paginación** (`.pager`) | `inline-flex; align-items: center; gap: var(--s3)`; «Anterior» y «Siguiente» son `.button--secondary .button--sm` con chevrones. |
+| **Franja «pendiente»** (`.pending`) | `display: flex; flex-wrap: wrap; align-items: center; gap: var(--s3) var(--s4); padding: var(--s4) var(--s5); border: 1px dashed var(--border); border-radius: var(--r-surface)`; icono en chip neutral de 2.5 rem (`.pending__icon`); texto (`flex: 1 1 18rem`, `h2.pending__title` de 0.9375 rem y 600, `p` de 0.875 rem en `--muted`); `.pending__meta` con la insignia «Próximamente» (tono neutral) y la frase `common_pending` en `.muted`. |
+| **Botones** | `.dashboard .button--sm`: `min-height: 2.25rem; padding: 0.25rem 0.875rem; font-size: 0.8125rem` (36 px, sobre el mínimo de 24 px de WCAG 2.2, criterio 2.5.8). `.dashboard .button--soft`: color `--accent-hover`; al pasar el cursor, fondo y borde `--accent` y texto `--accent-ink`. Se apoyan en `.button`, `.button--secondary` y `.button--soft` de `index.css` (base `border-color: transparent` y fondo `--accent-soft` del suave). |
+| **Marco privado** (`.layout--private`) | Solo cuando la ruta declara `privateFrame` (D26). `.layout--private .layout__header-inner` queda sin barra (`max-width: 84rem; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; justify-content: flex-end`) y `.layout--private .layout__tools` es la píldora compacta (`padding: 0.375rem; gap: 0.5rem; border: 1px solid color-mix(in oklch, var(--border) 60%, transparent); border-radius: 999px; background: color-mix(in oklch, var(--card) 90%, transparent)`). Se declaran después de `.layout--workspace .layout__header-inner` (misma especificidad) y no editan esa regla. Por debajo de 480 px el marco ya oculta el botón de tema (regla vigente). |
+
+### Insignias e indicadores: icono, tono y token (R30)
+
+La tabla de estados vive en `shared/lib/encounterStatus.ts` (`ENCOUNTER_STATUS_VIEW`); la etiqueta sale de `ENCOUNTER_STATUS_LABELS` (ya localizada). Los tonos son clases `.tone--*` que fijan `--tone` y `--tone-bg`: `accent` → `--accent` y `--accent-soft`; `ok` → `--ok` y `--ok-bg`; `warn` → `--warn` y `--warn-bg`; `error` → `--error` y `--error-bg`; `neutral` → `--muted` y `color-mix(in oklch, var(--muted) 12%, var(--card))`.
+
+| Estado (`EncounterStatus`) | Etiqueta es | Icono (Heroicons 24/outline) | Tono → token |
+|---|---|---|---|
+| `REGISTERED` | Registrada | `InboxArrowDownIcon` | neutral → `--muted` |
+| `WAITING_TRIAGE` | En espera de triage | `ClockIcon` | warn → `--warn` |
+| `TRIAGED` | Clasificada | `ClipboardDocumentCheckIcon` | accent → `--accent` |
+| `IN_CARE` | En atención | `HeartIcon` | ok → `--ok` |
+| `CLOSED` | Cerrada | `ArchiveBoxIcon` | neutral → `--muted` |
+| `CANCELLED` | Cancelada | `XCircleIcon` | error → `--error` |
+| Identidad verificada (recepción) | Identidad verificada | `ShieldCheckIcon` | ok → `--ok` |
+| Identidad sin verificar (recepción) | Identidad sin verificar | `ExclamationTriangleIcon` | warn → `--warn` |
+
+| Celda de resumen | Etiqueta es | Icono | Tono |
+|---|---|---|---|
+| Preregistros pendientes | Preregistros pendientes | `ClipboardDocumentListIcon` | accent |
+| En espera de triage | En espera de triage | `ClockIcon` | warn |
+| Clasificadas | Clasificadas | `ClipboardDocumentCheckIcon` | accent |
+| En atención | En atención | `HeartIcon` | ok |
+| Error de carga / sin permiso | (la etiqueta de la celda) | `ExclamationTriangleIcon` / `LockClosedIcon` | error |
+
+El tono identifica la categoría, nunca un umbral: «En espera de triage» es ámbar con 0 y con 100+. Otros iconos: actualizar `ArrowPathIcon`; «Registro directo» `UserPlusIcon`; enlaces de pie `ArrowRightIcon`; paginación `ChevronLeftIcon` y `ChevronRightIcon`; aviso de llegada `CheckCircleIcon`; vacío de recepción y de enfermería `ClipboardDocumentListIcon`; vacío de medicina `QueueListIcon`; franja «pendiente» `ClockIcon`.
+
+### Clases CSS: nuevas, ajustadas y retiradas
+
+- **Nuevas** (todas en `dashboard.css`; ninguna reutiliza un nombre de `index.css`; los nombres libres se comprobaron con una búsqueda): `.dashboard`, `.stack`, `.page-header`, `.page-actions`, `.summary` (`--filter`), `.summary__list|cell|icon|label|value|plus|error|filter`, `.summary__cell--loading|error`, `.panel` y `.panel__head|title|meta|body|foot`, `.live`, `.link-more`, `.badge`, `.data-table` (`--simple`), `.cell-main|name|sub|time|actions`, `.num`, `.prereg-grid`, `.prereg` y `.prereg__head|title|facts|foot|buttons`, `.fact--wide`, `.reject`, `.panel-state` y `.panel-state__icon|msg`, `.skeletons`, `.skeleton` (`--value`), `.pager`, `.pending` y `.pending__icon|text|title|meta`, `.tone--accent|ok|warn|error|neutral`, `.button--sm` y las reglas de `.layout--private`. Se reutiliza `.visually-hidden` (ya existe).
+- **Ajustes bajo `.dashboard`** sobre clases existentes, sin editarlas: `.button--soft`, `.button--sm`, `.prereg .check`, `.panel__body > .status`, `.summary__filter .load-error`.
+- **Retiradas de `index.css` en T14, solo si la búsqueda en `src` confirma que ningún componente las usa**: `.clinical-board`, `.clinical-tray`, `.clinical-patient` (y sus selectores hijos), `.clinical-empty`, `.clinical-pagination`, `.clinical-summary`, las reglas de `@media` que solo las mencionan, de la recepción `.pre-registration` (se conserva en las listas de selectores compartidas con `.arrival`), `.cards` con su `@media` y `.pending-badge` (solo la usa `PlaceholderPage`).
+- **No se tocan**: `.card`, `.toolbar`, `.details`, `.status*`, `.notice`, `.load-error`, `.table`, `.table-wrap`, `.button*`, `.field*`, `.form`, `.check`, `.visually-hidden`, `.shell*`, `.layout*`, `.clinical-workspace*`, `.clinical-card-heading`, `.clinical-badge`, `.clinical-context*`, `.clinical-forms`, `.clinical-form*`, `.clinical-history*` y `.clinical-record*` (los usan `/triage/:id`, `/atenciones`, `/atenciones/:id` y `/recepcion/registro`).
+
+## Inventario de componentes, hooks y claves de caché
+
+### `shared/ui` (nuevos, sin lógica de dominio; todos con pruebas propias)
+
+| Componente | Props principales | Notas |
+|---|---|---|
+| `DashboardPage` | `header`, `summary`, `main`, `pending?` | `div.dashboard` (contenedor `dashboard`) con `div.stack`; monta las cuatro zonas en ese orden de DOM (R3). |
+| `PageHeader` | `title`, `description`, `actions?` | `header.page-header`; único `h1`; descripción en un `p`; `actions` en `div.page-actions` (`RefreshButton` y, si procede, la acción principal). |
+| `SummaryBar` | `children` (las `SummaryCell`), `filter?` | `section` con `aria-label` `dash_indicators` (región «Indicadores»); `ul.summary__list` con `display: contents` y `role="list"`; escribe `--cells` (número de celdas) y la clase `summary--filter` si hay filtro; el filtro va después de la lista, dentro de la misma superficie. |
+| `SummaryCell` | `label`, `icon`, `tone`, `state` (`loading`, `ready`, `error`, `forbidden`), `value?`, `capped?`, `onRetry?` | `li.summary__cell` con chip de icono (`aria-hidden`), etiqueta y cifra; con `capped`, «N+» con el «+» decorativo y un texto oculto `dash_at_least`; carga con `aria-busy="true"` y texto oculto `dash_stat_loading`; error con `dash_stat_error` y un botón pequeño de nombre `dash_retry_named`; 403 con `dash_stat_forbidden`. Sin regiones vivas (D8). |
+| `SummaryFilter` | `id`, `label`, `children`, `error?` | `div.summary__filter` con `label` y el control que recibe; `error` pinta el `LoadError` bajo el control (D23). |
+| `Panel` | `id`, `title`, `meta?`, `footer?`, `children` | `section.panel` (contenedor `panel`) con `aria-labelledby`; cabecera con `h2.panel__title` (sin icono) y `div.panel__meta` (donde va `LiveNote`); cuerpo sin relleno propio; `footer.panel__foot` opcional. Es el único modo de crear una región de panel. |
+| `PanelState` | `kind` (`loading`, `empty`, `error`, `forbidden`), `message`, `icon?`, `hint?`, `action?`, `onRetry?`, `retrying?` | `role="status"` en carga (mensaje y tres esqueletos decorativos); `role="alert"` en error y sin permiso; vacío sin rol, con icono en círculo, mensaje, pista y enlace; «Reintentar» = `common_retry`. |
+| `StatusBadge` | `tone`, `icon`, `children` | `span.badge.tone--*` con icono decorativo y texto. |
+| `DataTable`, `DataRow`, `DataCell` | `DataTable`: `labelledBy`, `columns` (`{ id, header, hiddenHeader?, numeric? }`), `simple?`, `children`; `DataCell`: `label?` (va a `data-label`), `kind?` (`main`, `time`, `num`, `actions`) | `table` con `role="table"`, `aria-labelledby`, `th` con `role="columnheader"` y `scope="col"`, filas y celdas con `role="row"` y `role="cell"` (D24); `simple` desactiva el apilado. |
+| `LiveNote` | `seconds` | Texto plano `dash_live` («Se actualiza cada 30 s») con el punto decorativo `.live`; sin `aria-live` ni `role` (D25). |
+| `PendingStrip` | `id`, `title`, `feature`, `children` | Franja «pendiente» (D13): icono, `h2`, texto, insignia `common_pending_label` y frase `common_pending`; sin botones, enlaces ni formularios. |
+| `RefreshButton` | `onRefresh`, `busy` | Botón secundario «Actualizar» con `ArrowPathIcon`; sin `disabled` (D19): usa `aria-busy={busy}` y el icono gira solo con movimiento permitido. Lo usan los cuatro dashboards. |
+
+`Notice` (existente) recibe una prop opcional `icon` (D29); sin ella es idéntico al actual.
+
+En `shared/lib`: `encounterStatus.ts` (`ENCOUNTER_STATUS_VIEW` e `INDICATOR_STATUSES = ['WAITING_TRIAGE','TRIAGED','IN_CARE']`, compartida por `queue` y `reports`, que no pueden importarse entre sí), `counts.ts` (`countOf(received, offset, limit)` → `{ count, capped }`, usada por `useEncounterCount` y por la bandeja de enfermería), `indicator.ts` (`indicatorOf(query)`: `isError` con 403 → `forbidden`, otro error → `error`, `isPending` → `loading`, éxito → `ready`; el error gana a los datos antiguos, R21), `refresh.ts` (`DASHBOARD_REFRESH_MS = 30_000` y `autoRefresh()`, que devuelve las opciones de sondeo comunes: `refetchInterval` de 30 s que pasa a `false` tras un 403, `refetchIntervalInBackground: false`, `refetchOnWindowFocus: false`, `refetchOnReconnect: false` y `retry: false`; R22, R24 y R25) y `datetime.ts` (se añaden `formatTimeBogota`, `formatDateBogota` y `formatDateTimeBogota`, D28; `formatBogota` y `formatCivilDate` no cambian). En `src/test/`: ampliación de `fakeApi.ts` (abajo) y un ayudante `text.ts` con `norm(texto)` (colapsa cualquier espacio, incluido el duro, en uno normal) para las pruebas de hora.
+
+### Hooks y claves de caché (convención vigente: dominio o feature primero)
+
+| Hook | Ubicación | Clave | Petición |
+|---|---|---|---|
+| `useEncounters(filters, { refresh?, limit? })` (movido; `limit` por defecto 50; con `refresh` aplica `autoRefresh()`, que sustituye al antiguo `manualRefresh`; sin él conserva el comportamiento actual de `/atenciones`) | `shared/hooks/useEncounters.ts` | `['encounters', { status, siteId, offset, limit }]` | `GET /encounters` con solo los filtros elegidos; cada 30 s en `/triage` y en las atenciones recientes de `/cola` |
+| `useEncounterCount({ status, siteId })` (nuevo; siempre con `autoRefresh()`) | `shared/hooks/useEncounterCount.ts` | `['encounters', 'count', { status, siteId }]` | `GET /encounters?limit=100[&status][&siteId]` cada 30 s; `queryFn` devuelve `{ count, capped }` |
+| `usePendingPreRegistrations(siteId)` (cambia: usa `autoRefresh()`, es decir, añade `refetchOnWindowFocus: false` y `refetchOnReconnect: false` y detiene el intervalo tras un 403; el intervalo de 30 s ya existía) | `features/reception/hooks` | `['reception', 'pre-registrations', siteId ?? 'all']` | `GET /pre-registrations[?siteId]`, cada 30 s |
+| `useSites()` (sin cambios) | `shared/hooks` | `['sites']` | `GET /public/tenants`, una vez por sesión |
+| `useEncounter(id)` (sin cambios, fuera de los dashboards) | `features/triage/hooks` | `['triage', 'encounter', id]` | no se pide desde dashboards |
+
+`ENCOUNTERS_KEY = ['encounters']` es el prefijo común: invalidarlo refresca listas y conteos (lo hacen `useCancelEncounter`, los hooks de captura clínica y, nuevo, la recepción tras confirmar una llegada). Constantes exportadas: `PAGE_SIZE = 50`, `COUNT_LIMIT = 100`, `RECENT_LIMIT = 8`.
+
+### Composición por feature
+
+| Dashboard | Archivos (feature dueña) | Compone |
+|---|---|---|
+| `/recepcion` | `features/reception/components/ReceptionPage.tsx`, `PreRegistrationCard.tsx` y `RejectForm.tsx` | `DashboardPage`, `PageHeader` (con `RefreshButton` y «Registro directo»), `SummaryBar` con dos `SummaryCell` y `SummaryFilter`, `Panel` «Preregistros pendientes» con `LiveNote`, `Notice` y `ActionError`, `PanelState` y una `ul.prereg-grid` de `PreRegistrationCard` |
+| `/triage` | `features/triage/components/TriageTrayPage.tsx` | `DashboardPage`, `PageHeader` (con `RefreshButton`), `SummaryBar` con una `SummaryCell` y `SummaryFilter`, `Panel` «Atenciones pendientes» con `LiveNote`, `PanelState`, `DataTable` y la paginación en el pie |
+| `/cola` | `features/queue/components/QueuePage.tsx` y `features/queue/routes.tsx` (`queueRoutes`) | `PageHeader`, `SummaryBar` con tres `SummaryCell`, `Panel` «Atenciones recientes», `DataTable` con `StatusBadge`, `PendingStrip` (F-06) |
+| `/reportes` | `features/reports/components/ReportsPage.tsx` y `SiteCountTable.tsx`, `features/reports/routes.tsx` (`reportRoutes`) | `PageHeader`, `SummaryBar` con tres `SummaryCell`, `Panel` «Atenciones por sede», `DataTable simple` (una fila por sede con su propio conteo), `PendingStrip` (F-07) |
+
+`app/router/routes.tsx` añade `'/cola': queueRoutes` y `'/reportes': reportRoutes` a `FEATURE_ROUTES`, elimina `PlaceholderPage` y su respaldo y declara `handle: { privateFrame: true }` en la ruta del `AppShell` (D26). `shared/ui/Layout.tsx` añade las guías de `/cola` y `/reportes` y lee `useMatches()`. `src/main.tsx` importa `dashboard.css` después de `index.css` (D11).
+
+## Estrategia de datos y presupuesto de peticiones
+
+Reglas: como máximo **una petición por indicador o por sede**, **ninguna por fila de paciente**; las sedes salen de `useSites()` (una vez por sesión, caché `['sites']`); `retry: false` en todas; `staleTime` por defecto (0), de modo que abrir el dashboard vuelve a pedir; los conteos guardan solo `{ count, capped }`.
+
+| Dashboard | Al abrir | Cada 30 s (pestaña visible) | «Actualizar» | Peticiones que **no** hace |
+|---|---|---|---|---|
+| RECEPTION `/recepcion` | `GET /pre-registrations[?siteId]` y `GET /encounters?status=WAITING_TRIAGE&limit=100[&siteId]` (2) + sedes la primera vez | **2** (bandeja e indicador de espera) | `refetch()` de ambas; tras **confirmar** se invalida además `ENCOUNTERS_KEY` (la llegada crea una atención en espera); tras rechazar solo la bandeja | `/encounters/{id}`, `clinical-capture`, `/encounters` sin `status` |
+| NURSE `/triage` | `GET /encounters?status=WAITING_TRIAGE&limit=50&offset[&siteId]` (1) + sedes la primera vez | **1** (la bandeja; el indicador sale de esa respuesta) | `refetch()` de la bandeja | `GET /pre-registrations` (403 para NURSE), `clinical-capture`, detalle |
+| PHYSICIAN `/cola` (y NURSE, ADMIN) | 3 conteos (`WAITING_TRIAGE`, `TRIAGED`, `IN_CARE`, `limit=100`, sin sede) + 1 lista (`limit=8&offset=0`) = 4; **sin** sedes | **4** (3 conteos y la lista reciente) | invalida `ENCOUNTERS_KEY` (repite las 4); el botón marca `aria-busy` mientras `useIsFetching` > 0, sin deshabilitarse | sedes, `GET /pre-registrations`, detalle, `clinical-capture` |
+| ADMIN `/reportes` | sedes la primera vez + 3 conteos + S conteos por sede (`status=WAITING_TRIAGE`, `siteId`) = 3 + S | **3 + S** (3 conteos y uno por sede) | invalida `ENCOUNTERS_KEY` (repite las 3 + S); no repite las sedes (solo su «Reintentar») | `GET /pre-registrations`, listas con pacientes, detalle, `clinical-capture` |
+
+**Refresco** (D14, D19 a D21): todas las peticiones de la tabla comparten `autoRefresh()`: `refetchInterval` de 30 s, `refetchIntervalInBackground: false` (con la pestaña oculta no hay peticiones), `refetchOnWindowFocus: false` y `refetchOnReconnect: false`; el intervalo de una petición se detiene si responde 403 y sigue tras un error de red, de modo que el siguiente ciclo la repite sola. Las sedes (`['sites']`) no se repiten: se piden una vez por sesión y solo vuelven a pedirse con su «Reintentar». «Actualizar» y «Reintentar» repiten al instante sin esperar al intervalo.
+
+**Coste por pestaña abierta** (una vez cada 30 s, es decir, el doble por minuto): recepción 2 peticiones (4 por minuto); enfermería 1 (2 por minuto); medicina o cola 4 (8 por minuto); administración 3 + S (con S = 3 sedes, 6 por ciclo y 12 por minuto; con S = 10, 13 por ciclo y 26 por minuto, hasta ≈ 70 kB cada una). Con la pestaña oculta el coste es 0. Ninguna petición lleva horas ni `tenantId`.
+
+Manejo de `limit=100` y «N+»: `capped = items.length >= COUNT_LIMIT` (celdas de resumen y filas por sede) y `capped = items.length >= PAGE_SIZE` en la bandeja de enfermería, donde `count = offset + items.length`. Con `capped` la cifra se escribe «N+» y un texto oculto dice «Al menos N»; sin `capped` la cifra es exacta, incluido 0. Con la API 0.4.0 casi todo vale 0 o un número pequeño: el diseño debe verse correcto con 0 y con «100+» (capturas 10 y 13 de la maqueta; se prueba con ambos y se fotografía, T13).
+
+Alternativas descartadas y por qué:
+
+- **Un único `GET /encounters?limit=100` sin filtro** con conteo por estado en el cliente: ahorra peticiones, pero una página llena de `CLOSED` y `CANCELLED` recientes oculta los estados activos antiguos y la cifra sale baja sin aviso. Con `status` por indicador cada cifra es exacta hasta 99.
+- **Matriz sedes × estados** (S × K peticiones) para el desglose: explota el presupuesto; se limita a un estado por sede (PA-5).
+- **Refresco manual en `/triage`, `/cola` y `/reportes`** (propuesta inicial del `leader`, que conservaba F-03-web D3): descartado por decisión expresa del usuario (PA-3). El sondeo de 30 s en los cuatro dashboards es la decisión D14; el intervalo de la cola real (PA-F06-3) sigue abierto en su brief y F-06-web podrá cambiarlo.
+- **Petición aparte para el indicador de enfermería**: duplica la lista y obliga a ajustar los contadores de peticiones de F-03; la cifra derivada no pierde exactitud hasta 49 y a partir de ahí es «50+».
+- **Total desde la API**: no existe en 0.4.0; se anota como riesgo, no como requisito.
+
+## Matriz de estados
+
+Cada celda, panel y fila de sede resuelve sus estados por separado (R19 a R23). El panel de trabajo usa `PanelState` con `role="status"` (carga) y `role="alert"` (error, 403); la celda de resumen, solo contenido visible y `aria-busy` (D8). «Estático» = sin petición propia.
+
+| Celda o panel (rol) | Cargando | Éxito | Vacío | Error | 403 |
+|---|---|---|---|---|---|
+| Celda «Preregistros pendientes» (RECEPTION; comparte la petición de la bandeja) | esqueleto `aria-busy` + «Cargando indicador…» oculto | cifra exacta | cifra 0 | icono + etiqueta + «No se pudo cargar» + «Reintentar: Preregistros pendientes» (repite la bandeja) | icono + «Sin permiso», sin cifra |
+| Celda «En espera de triage» (RECEPTION) | igual | cifra o «N+» | 0 | igual, repite solo su petición | igual |
+| Panel «Preregistros pendientes» (RECEPTION) | `PanelState loading`: «Cargando la bandeja…» y tres esqueletos | tarjetas en el orden recibido | `PanelState empty`: «No hay preregistros pendientes.», pista y enlace «Registrar una llegada directa» | `PanelState error`: «No se pudo cargar la bandeja.» + «Reintentar» | `PanelState forbidden`: «No tienes permiso para ver esta página.», sin datos |
+| Filtro «Sede» (RECEPTION, NURSE) | selector deshabilitado | selector con las sedes | — | `LoadError` existente («No se pudieron cargar las sedes.») en la celda del filtro + selector deshabilitado; el panel sigue sin filtro | — |
+| Celda «En espera de triage» (NURSE; derivada de la bandeja) | esqueleto | cifra o «N+» | 0 | como arriba (repite la bandeja) | «Sin permiso» |
+| Panel «Atenciones pendientes» (NURSE) | «Cargando las atenciones en espera…» | tabla y pie | «No hay atenciones en espera de triage con estos filtros.» + pista (icono; sin acción propia) | «No se pudieron cargar las atenciones en espera.» + «Reintentar»; no se muestran filas antiguas | «No tienes permiso para ver esta página.» |
+| Tres celdas por estado (PHYSICIAN, NURSE, ADMIN en `/cola`; ADMIN en `/reportes`) | esqueleto por celda | cifra o «N+» | 0 | por celda, «Reintentar: {indicador}» | por celda |
+| Panel «Atenciones recientes» (`/cola`) | «Cargando las atenciones recientes…» | hasta 8 filas y pie | «Aún no hay atenciones.» (icono de cola, sin acción) | «No se pudieron cargar las atenciones recientes.» + «Reintentar» | «No tienes permiso para ver esta página.» |
+| Panel «Atenciones por sede» (`/reportes`) | sedes cargando: `PanelState loading` «Cargando las sedes…»; cada cifra, esqueleto | una fila por sede con cifra o «N+» | sin sedes: «El tenant no tiene sedes registradas.» | sedes: `PanelState error` («No se pudieron cargar las sedes.») + «Reintentar»; fila: «No se pudo cargar» + «Reintentar: {sede}» | sedes o fila: «Sin permiso» |
+| Franja «pendiente» (`/cola`, `/reportes`) | estático | estático | — | — | — |
+
+Durante un refresco, automático (cada 30 s) o manual, con datos previos no hay estado de carga: se conservan el contenido, la altura, el foco y el estado local de las filas y tarjetas (R23, R37). Si el refresco falla, el error sustituye a los datos (R21, D20; la lista de enfermería ya lo hace hoy), el intervalo sigue y el siguiente ciclo vuelve a pedir. Si la petición responde 403, deja de repetirse por intervalo (R22) y solo «Actualizar» o «Reintentar» la repiten.
+
+## Plan i18n (R29, R33, R40)
+
+Los textos nuevos viven en los cinco catálogos de cada grupo: `messages/common/{es,en,pt,fr,de}.json` (piezas compartidas y guías) y `messages/features/{es,en,pt,fr,de}.json` (textos de cada dashboard). Prefijo nuevo: `dash_`; las guías siguen con `guide_` y `clinical_guide_`. `scripts/check-messages.mjs` exige las mismas claves y los mismos parámetros en los cinco idiomas y `vite.config.ts` lo ejecuta al arrancar Vite y Vitest, así que **cada tarea añade sus claves en los cinco archivos a la vez**. Aquí se da el texto en español; el `implementer` traduce en, pt, fr y de con los mismos parámetros (`{count}`, `{name}`, `{feature}`, `{page}`, `{seconds}`). Las etiquetas de estado siguen saliendo de `ENCOUNTER_STATUS_LABELS` (`labels.ts`); los datos del paciente, la sede y el motivo se muestran literales.
+
+### `messages/common/*.json` (nuevas o cambiadas)
+
+| Clave | Texto es | Uso |
+|---|---|---|
+| `dash_indicators` | Indicadores | nombre de la región de la barra de resumen |
+| `dash_stat_loading` | Cargando indicador… | texto oculto del esqueleto de una celda |
+| `dash_stat_error` | No se pudo cargar | error de una celda y de la cifra de una sede |
+| `dash_stat_forbidden` | Sin permiso | 403 de una celda y de la cifra de una sede |
+| `dash_live` | Se actualiza cada {seconds} s | nota del panel de trabajo, en los cuatro dashboards (se muestra «Se actualiza cada 30 s»; D25, R38) |
+| `dash_at_least` | Al menos {count} | texto oculto de «N+» |
+| `dash_retry_named` | Reintentar: {name} | nombre accesible del «Reintentar» de una celda o de una sede |
+| `dash_view_all_encounters` | Ver todas las atenciones | enlace de pie a `/atenciones` (medicina y administración) |
+| `dash_col_action` | Acción | encabezado oculto de la columna de la acción |
+| `guide_queue` (nueva) | Esta pantalla resume las atenciones por estado: en espera de triage, clasificadas y en atención. Debajo verás las atenciones más recientes; abre una para consultar su detalle. Se actualiza sola de forma periódica; usa Actualizar para consultar al instante. La cola por nivel y tiempo de espera todavía no está disponible. La guía no lee datos de pacientes. | guía de `/cola` |
+| `guide_reports` (nueva) | Esta pantalla resume las atenciones por estado y las que esperan triage en cada sede. Se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Los reportes de tiempos y la descarga del CSV todavía no están disponibles. La pantalla no muestra datos de pacientes. | guía de `/reportes` |
+| `guide_reception` (cambia) | Los indicadores muestran cuántos preregistros esperan confirmación y cuántas atenciones esperan triage. La pantalla se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Selecciona una sede para filtrar los indicadores y los preregistros. Verifica la identidad antes de confirmar la llegada. Puedes rechazar un preregistro con motivo o abrir el registro directo. | guía de `/recepcion` |
+
+### `messages/features/*.json` (nuevas o cambiadas)
+
+| Clave | Texto es | Pantalla |
+|---|---|---|
+| `dash_stat_preregistered` | Preregistros pendientes | recepción (celda) |
+| `dash_stat_waiting` | En espera de triage | recepción, enfermería, medicina, administración (celda y columna de la tabla de sedes) |
+| `dash_stat_triaged` | Clasificadas | medicina, administración |
+| `dash_stat_in_care` | En atención | medicina, administración |
+| `dash_reception_lead` | Confirma la llegada de pacientes preregistrados o registra una llegada directa. | recepción |
+| `dash_reception_empty_hint` | Cuando un paciente envíe uno desde la aplicación, aparecerá aquí. | recepción (vacío) |
+| `dash_reception_empty_action` | Registrar una llegada directa | recepción (vacío) |
+| `dash_triage_empty_hint` | Las llegadas confirmadas por recepción aparecerán aquí. | enfermería (vacío) |
+| `dash_queue_lead` | Estado de las atenciones y las llegadas más recientes. | medicina |
+| `dash_queue_recent` | Atenciones recientes | medicina (panel) |
+| `dash_queue_recent_loading` | Cargando las atenciones recientes… | medicina |
+| `dash_queue_recent_empty` | Aún no hay atenciones. | medicina |
+| `dash_queue_recent_error` | No se pudieron cargar las atenciones recientes. | medicina |
+| `dash_recent_footer` | Las {count} atenciones más recientes | pie de medicina (con 2 o más filas; 8 con la lista completa) |
+| `dash_recent_footer_one` | La atención más reciente | pie de medicina (con una fila) |
+| `dash_queue_pending_title` | Cola por nivel y espera | medicina (franja) |
+| `dash_queue_pending_body` | Aquí aparecerá la cola priorizada por nivel de triage y tiempo de espera, con datos del servidor. | medicina |
+| `dash_reports_lead` | Resumen de las atenciones por estado y por sede. | administración |
+| `dash_reports_by_site` | Atenciones por sede | administración (panel) |
+| `dash_reports_sites_loading` | Cargando las sedes… | administración |
+| `dash_reports_sites_empty` | El tenant no tiene sedes registradas. | administración |
+| `dash_sites_count` | {count} sedes | pie de administración (con 2 o más sedes) |
+| `dash_sites_count_one` | 1 sede | pie de administración (con una sede) |
+| `dash_reports_pending_title` | Indicadores y reportes | administración (franja) |
+| `dash_reports_pending_body` | Aquí aparecerán los tiempos, el cumplimiento, la concordancia y la descarga del CSV. | administración |
+| `clinical_guide_tray` (cambia) | Esta es la bandeja de enfermería. El indicador muestra cuántas atenciones esperan triage. La lista se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Selecciona una sede y abre una atención para registrar la información clínica. Usa Anterior y Siguiente para cambiar de página. | guía de `/triage` |
+
+Los pies con número usan dos claves (singular y plural) para no escribir «1 sedes»; la funcionalidad elige la clave según el número. Ninguna pista dice ya «Usa Actualizar…» como si la actualización fuera manual: la nota `dash_live` dice que la pantalla se actualiza sola, `dash_triage_empty_hint` y `dash_reception_empty_hint` no mencionan la actualización y las cuatro guías añaden que «Actualizar» consulta al instante.
+
+**Se reutilizan sin cambio**: `common_nav_*` (los `h1`), `common_pending` y `common_pending_label`, `common_retry`, `common_forbidden`, `feature_refresh`, `feature_registration_direct`, `feature_site`, `feature_sites_all`, `feature_sites_error`, `feature_tray_loading`, `feature_tray_error`, `feature_patient`, `feature_arrival`, `feature_status`, `feature_encounter_view`, `feature_verified`, `feature_unverified`, `feature_complaint`, `feature_expires`, `feature_verify_identity`, `feature_confirm_arrival`, `feature_confirming_arrival`, `feature_reject`, `feature_reject_reason`, `feature_reject_confirm`, `feature_back`, `feature_arrival_confirmed`, `clinical_tray_intro` (descripción de enfermería), `clinical_pending`, `clinical_tray_loading`, `clinical_tray_error`, `clinical_tray_empty`, `clinical_open`, `clinical_page`, `feature_previous`, `feature_next`, `common_birthdate`, `common_estimated_age`, `common_years`, `common_sex` y `common_document`. **Se retiran de los cinco catálogos en T14, solo si la búsqueda confirma que nadie las usa** (hoy solo las usa `TriageTrayPage.tsx` o `ReceptionPage.tsx`): `feature_reception_title`, `clinical_workspace`, `clinical_workflow_title`, `clinical_workflow_body` y `clinical_waiting_only`.
+
+## Escritura y horas (R40, R41)
+
+**Textos en español que pasan a «preregistro»** (los existentes que aparecen en los dashboards; los otros cuatro idiomas no cambian):
+
+| Clave | Texto antes | Texto después |
+|---|---|---|
+| `feature_pr_rejected` | Pre-registro rechazado. | Preregistro rechazado. |
+| `feature_tray_empty` | No hay pre-registros pendientes. | No hay preregistros pendientes. |
+| `feature_tray_pending` | Pre-registros pendientes | Preregistros pendientes |
+| `feature_confirm_conflict` | Este pre-registro ya no está pendiente o el paciente ya tiene una atención activa. | Este preregistro ya no está pendiente o el paciente ya tiene una atención activa. |
+| `feature_pr_gone` | Este pre-registro ya no existe. | Este preregistro ya no existe. |
+| `feature_reject_conflict` | Este pre-registro ya no está pendiente. | Este preregistro ya no está pendiente. |
+| `feature_pr_label` | Pre-registro | Preregistro |
+| `feature_reject_form` | Rechazar pre-registro | Rechazar preregistro |
+| `feature_rejecting` | Rechazando el pre-registro… | Rechazando el preregistro… |
+| `guide_reception` (common) | (ver arriba) | (ver arriba) |
+
+Cambian junto con el catálogo, porque son el texto canónico que `featureMessage` traduce: las constantes `CONFIRM_MESSAGES` y `REJECT_MESSAGES` de `PreRegistrationCard.tsx` y las tres entradas de `MESSAGE_KEYS` en `src/shared/lib/featureMessages.ts` (`feature_confirm_conflict`, `feature_pr_gone`, `feature_reject_conflict`).
+
+**Textos con «pre-registro» que no cambian** (no aparecen en los dashboards; UI-02.AC12 y S3): `feature_arrival_conflict` (formulario de llegada, `/recepcion/registro`) y su entrada en `featureMessages.ts`, `feature_origin_pr` («Pre-registro (app)») y `feature_pr_reference` («Pre-registro (referencia)») en las atenciones, `landing_description`, `landing_step1_title` y `landing_capability_mobile` en la landing, y el campo `title` de `roleMatrix.ts` («Recepción — bandeja de pre-registros»), que queda sin lector al retirar `PlaceholderPage` y que la matriz congelada de UI-02.AC1 conserva. Los comentarios de código con «pre-registro» no son texto de interfaz y no se tocan.
+
+**Etiquetas con mayúscula inicial**: las nuevas (`dash_stat_*`, `dash_col_action`, `dash_indicators`, títulos de panel y de franja) y las existentes que muestran los dashboards (`feature_site`, `feature_patient`, `feature_arrival`, `feature_status`, `feature_complaint`, `feature_expires`, `common_document`, `common_birthdate`, `common_sex`) ya la tienen. **Sin «·»**: ningún texto de dashboard lo usa (el único del producto es `feature_api_ok` de `/estado`, fuera de alcance); las dos líneas de las filas y las columnas se separan con la rejilla, no con un carácter.
+
+**Horas** (D28): se añaden a `src/shared/lib/datetime.ts`
+
+| Lugar | Formateador | Ejemplo |
+|---|---|---|
+| Columna «Llegada» de enfermería y de medicina | `formatTimeBogota`, y debajo `formatDateBogota` (cada una en su elemento: la hora dentro de `<time dateTime>`) | «11:12 a. m.» y «28/10/26» |
+| Tarjeta de preregistro («Preregistro» y «Expira») | `formatDateTimeBogota` | «28/10/26, 8:05 a. m.» |
+| Aviso de llegada confirmada | `formatDateTimeBogota`, sin punto añadido tras la hora | «Llegada confirmada. Hora de llegada: 28/10/26, 12:03 p. m.» |
+| Pantallas fuera de alcance (`/atenciones`, detalle, línea de tiempo, capturas, `/estado`) | `formatBogota` (sin cambio) | «28/10/26, 11:12:00 a. m.» |
+
+Las pruebas unitarias usan horas UTC fijas: `2026-10-27T13:05:00.000Z` → «8:05 a. m.», «27/10/26» y «27/10/26, 8:05 a. m.»; `2026-10-28T04:30:00.000Z` (cruza la medianoche de Bogotá) → «11:30 p. m.» y «27/10/26, 11:30 p. m.». Comparan con expresiones que usan `\s` entre la hora y «a.», y entre «a.» y «m.» (por ejemplo `/^8:05\sa\.\sm\.$/`), y las pruebas de pantalla comparan con `norm(formatX(...))`: así no dependen de si `Intl` usa un espacio normal, duro o duro estrecho.
+
+## Marco privado y marca única (R39, D26)
+
+- `src/app/router/routes.tsx`: la ruta `{ element: <AppShell />, … }` añade `handle: { privateFrame: true }` (el tipo `FrameHandle` se exporta desde `shared/ui/Layout.tsx`, que `app/` puede importar).
+- `src/shared/ui/Layout.tsx`: `const privateFrame = useMatches().some((m) => (m.handle as FrameHandle | undefined)?.privateFrame === true)`. Con `privateFrame`, la cabecera no pinta el `Link` con `Brand` y el contenedor suma la clase `layout--private`; sin él, nada cambia (`/`, `/login`, `/estado` y cualquier ruta pública). `Layout` solo se monta con un router de datos (`createMemoryRouter` en `renderApp`, `createBrowserRouter` en producción), donde `useMatches` está disponible; ninguna prueba lo monta con `MemoryRouter`.
+- DOM resultante en `/recepcion`, `/triage`, `/cola` y `/reportes`: `header.layout__header` > `div.layout__header-inner` > `div.layout__tools` (tema, idioma y preferencias), sin enlace «Asclepio»; la marca es la de `.shell__heading` de la barra lateral (`<strong>Asclepio</strong>`, con la imagen decorativa), una sola vez.
+- Pruebas existentes: `uiFoundation.test.tsx` `R1` (la marca en `/` y `/login`) no cambia y es la que fija que las pantallas públicas la conservan; `AppShell.test.tsx`, `routes.test.tsx` y `privacy.test.tsx` no afirman la marca ni el rol `banner` (búsqueda en `src`). Las pruebas nuevas de R39 van en `dashboards.test.tsx`: por cada rol, en su dashboard, `getAllByText('Asclepio')` tiene un solo elemento y está dentro de la región «Sesión» de la barra lateral, no hay enlace con el nombre «Asclepio» y el `banner` contiene el botón «Cambiar tema», el selector de idioma y «Preferencias»; en `/`, `/login` y `/estado` el enlace «Asclepio» sigue presente.
+- Casos aceptados: mientras `RequireSession` muestra la carga o el error del perfil la cabecera ya no tiene marca (son estados sin marco y transitorios), y el marco real oculta el botón de tema por debajo de 480 px (regla vigente de `index.css`).
+
+## Accesibilidad y modos de color (R3, R30 a R32)
+
+- **Regiones y encabezados**: un `h1` por pantalla; «Indicadores» es una región (`aria-label`) con una lista; cada panel y la franja «pendiente» son regiones nombradas por su `h2`; las tarjetas de preregistro son `article` con un único `h3` (el nombre); las tablas no llevan encabezados por fila. No se añaden landmarks `nav`.
+- **Orden de foco = orden del DOM = orden visual**, sin `tabindex` positivo (al no haber columna lateral, no hay desfase entre lo que se ve y lo que se recorre): enlace de salto, herramientas del marco, barra lateral, acciones del encabezado («Actualizar», «Registro directo»), botones «Reintentar: …» de las celdas con error, selector «Sede», controles del panel (casilla y botones de cada tarjeta, o enlace de cada fila), pie (paginación o enlace) y franja (sin controles).
+- **Regiones vivas**: solo las que ya existen (`Notice` = `status`, `ActionError` y errores de panel = `alert`, carga de panel = `status`). Las celdas no tienen región viva (D8). No se añade `aria-live`.
+- **Tablas** (D24): `table`, `row`, `columnheader` y `cell` explícitos, nombre por `aria-labelledby` (el `h2` del panel), encabezado «Acción» visualmente oculto; al apilarse, el `thead` sigue en el árbol de accesibilidad y las etiquetas CSS llevan alternativa vacía para no leerse dos veces; la hora va en `<time dateTime>`.
+- **Nombres únicos para controles repetidos**: el enlace de captura conserva el nombre exacto «Capturar información clínica» y se asocia a su fila con `aria-describedby` (apunta a la celda del nombre); lo mismo en «Ver atención»; los «Reintentar» de celdas y de filas por sede llevan el nombre «Reintentar: {indicador o sede}».
+- **Nota de actualización** (R38, D25): «Se actualiza cada 30 s» es texto plano sin `aria-live` ni `role="status"`, y su punto es decorativo (`::before`): el lector de pantalla la lee en su sitio y no anuncia cada ciclo.
+- **Refresco automático** (R37, D19): no hay regiones vivas nuevas ni estado de carga cuando se refrescan datos ya mostrados, así que el lector de pantalla no anuncia cada ciclo de 30 s; «Actualizar» no se deshabilita (usa `aria-busy`) y la paginación depende solo de los datos, de modo que ningún refresco quita el foco al botón enfocado; las filas y tarjetas se identifican por `key` = id para conservar el nodo enfocado, la casilla de identidad y el motivo de rechazo a medio escribir; no se llama a `scrollTo` ni a `scrollIntoView`.
+- **Iconos decorativos** con `aria-hidden="true"`; el estado siempre es texto real dentro de la insignia o la celda (R30).
+- **Movimiento**: las únicas animaciones nuevas (pulso del esqueleto y giro del icono de «Actualizar») están bajo `@media (prefers-reduced-motion: no-preference)`; además la regla global de `index.css` las anula con movimiento reducido.
+- **Texto al 200 %**: medidas en `rem`, sin `height` fijo en contenedores de texto (solo `min-height`), `min-width: 0` en cada hijo de rejilla y `overflow-wrap: anywhere` heredado; las únicas dos cajas con `overflow: hidden` son la barra de resumen (recorta el radio) y el `thead` oculto de 1 px.
+- **Contraste y modos de color**: se mira, en T13, el botón suave (`--accent-hover` sobre `--accent-soft`) y cada insignia (`--tone` sobre `--tone-bg`) en claro, oscuro, alto contraste, sepia, grises y alternativo; los tokens ya cambian en esos modos.
+- **Cómo se verifica** (T13): (1) pruebas de DOM por rol, nombre y posición relativa (`compareDocumentPosition`); (2) prueba de fuente CSS (sin colores literales, `rem`, `min-width: 0`, puntos de corte de contenedor, `proportional-nums`, pulso bajo `no-preference`); (3) en navegador, con las preferencias de la aplicación: modo **escala de grises** (cada estado distinguible solo por icono y texto), **alto contraste**, **sepia** y **alternativo**, en claro y oscuro; escala de texto **200 %**; recorrido con Tab; medida de `scrollWidth` = `clientWidth` a 375, 768, 1024 y 1440 px y a 200 %. Capturas en `docs/ui-evidence/` y registro en `docs/ui-dashboards-verification.md`. El zoom nativo del navegador y la emulación de movimiento reducido siguen siendo comprobación manual de plataforma, como en UI-01 y F-03.
+
+## Guía de voz (R33)
+
+`shared/ui/Layout.tsx` calcula hoy `guideKey` por ruta y `/cola` y `/reportes` caen en `guide_pending`. El cambio es de dos ramas nuevas antes del respaldo: `pathname === '/cola'` → `guide_queue` y `pathname === '/reportes'` → `guide_reports` (NURSE y ADMIN en `/cola` oyen `guide_queue`). `guide_reception` y `clinical_guide_tray` cambian de texto para mencionar los indicadores (tabla i18n). `guide_pending` se conserva como respaldo de las rutas sin guía propia (`/estado`, vistas «sin permiso»). `VoiceGuide` no cambia: ya cancela y reinicia al cambiar ruta, idioma o texto (A → B → A) y nunca lee el DOM ni datos; las guías nuevas no llevan datos de pacientes. Las cuatro guías (`guide_reception`, `clinical_guide_tray`, `guide_queue` y `guide_reports`) dicen, sin cifras, que la pantalla se actualiza sola y que «Actualizar» consulta al instante.
+
+## Destino de `PlaceholderPage` y de `common_pending*` (D13)
+
+- `src/shared/ui/PlaceholderPage.tsx` se **elimina** (y su prueba propia, si existe). Lo sustituye `PendingStrip`.
+- `common_pending_label` («Próximamente») es la insignia de `PendingStrip`; `common_pending` («Esta funcionalidad llega en {feature}.») es su frase, con `feature` = `F-06` en `/cola` y `F-07` en `/reportes` (literal en la feature, porque `features/queue` y `features/reports` no pueden leer `ROLE_ROUTES` de `app/router`).
+- `routes.tsx` deja de importar `PlaceholderPage`; las cinco rutas de `ROLE_ROUTES` tienen pantalla real, así que se elimina el respaldo `?? [...]` (queda `?? []` solo por tipos y lo cubre una prueba que recorre `ROLE_ROUTES`). Los campos `title` y `feature` de `RoleRoute` quedan sin lector; **no se tocan** porque UI-02.AC1 congela la matriz (limpieza futura). La clase `.pending-badge` de `index.css` pasa a la lista de retiradas.
+- La prueba `R23: el marcador del inicio de %s…` de `routes.test.tsx` (F-01-web, PHYSICIAN y ADMIN) deja de aplicar, igual que dejó de aplicar a RECEPTION (F-02-web D4) y a NURSE (F-03-web): se acota a ADMIN en T8 y se elimina en T9, y la sustituyen R15 a R18 de este slice, que comprueban el `h1`, la franja sin acciones y la ausencia de niveles, tiempos y gráficos.
+
+## Riesgos y pruebas
+
+### Qué se prueba con integración y qué con pruebas unitarias
+
+- **Unitarias**: `countOf` (99 → exacto, 100 → «100+», `offset` + recibidas en la bandeja), `indicatorOf` (el error gana a datos antiguos; 403 → `forbidden`), `autoRefresh` (30 s, pestaña oculta, foco, reconexión, 403), `ENCOUNTER_STATUS_VIEW` (los seis estados tienen icono, tono y etiqueta; los tonos existen en el CSS), los tres formateadores de hora (horas UTC fijas, D28) y la **prueba de fuente CSS** (`dashboard.css` y `main.tsx` leídos como texto) con estas comprobaciones: sin colores literales fuera de `color-mix(in oklch, <token> …)`; `main.tsx` importa `dashboard.css` después de `index.css`; `proportional-nums` en `.summary__value` y `tabular-nums` solo en `.cell-time` y `.num`; unidades `rem`, ninguna `width`, `min-width` ni `max-width` en `px` salvo la caja de 1 px del `thead` oculto, ninguna `height` fija en contenedores de texto (se exceptúan `.skeleton`, `.summary__icon`, `.pending__icon`, `.panel-state__icon`); `overflow: hidden` solo en `.summary` y en el `thead` oculto; columnas con `minmax(0, …)` y `min-width: 0` en `.dashboard`, `.stack` y `.panel`; los dos contenedores y sus cortes (`dashboard` a 30 y 56 rem, `panel` a 40 rem, con `max-width` de 29.99 y 39.99 rem); la barra de resumen con `gap: 1px`, `repeat(var(--cells`, columna final `minmax(15rem, 19rem)` y `.summary__list` en `display: contents`; `.data-table` con relleno vertical de 0.75 rem y apilado con `data-label`; `.prereg__facts` con `1.6fr` y `1fr`; `.button--sm` de 2.25 rem bajo `.dashboard`; `.pending` con borde discontinuo; ningún «·» en el archivo; pulso y giro solo bajo `prefers-reduced-motion: no-preference`; las reglas de `.layout--private`.
+- **Componentes** (Testing Library, sin red): `DashboardPage` (orden de las zonas), `PageHeader`, `LiveNote`, `RefreshButton`, `SummaryBar` y `SummaryCell` (`--cells`, lista, estados), `SummaryFilter`, `Panel`, `PanelState`, `StatusBadge`, `DataTable`, `DataRow` y `DataCell` (roles, `data-label`, columna oculta) y `PendingStrip`, por rol, nombre y orden.
+- **Integración React con red simulada** (`fakeApi`, frontera de red, sin mockear hooks): cada dashboard con su rol (`renderFeature`) y la aplicación completa (`renderApp`) para rutas, permisos, privacidad, guía, marca y la matriz de peticiones por rol.
+
+### Trazabilidad R → prueba prevista
+
+Todas las pruebas de este slice viven bajo `describe('UI-02-web …')` y su nombre empieza por `R<n>:`. «Componentes» = `src/shared/ui/dashboard.test.tsx`; «CSS» = `src/shared/ui/dashboardStyles.test.ts`; «hooks» = `src/shared/hooks/encounterQueries.test.tsx`; «recepción», «enfermería», «medicina» y «administración» = `ReceptionDashboard.test.tsx`, `TriageDashboard.test.tsx`, `QueuePage.test.tsx` y `ReportsPage.test.tsx` en su feature; «transversal» = `src/app/router/dashboards.test.tsx`.
+
+| R | Archivo | Prueba prevista |
+|---|---|---|
+| R1 | transversal | `R1: cada rol aterriza en su dashboard, NURSE y ADMIN abren /cola y toda ruta de ROLE_ROUTES tiene pantalla` |
+| R2 | componentes, transversal | `R2: un único h1 con el nombre de navegación, un párrafo de descripción y las acciones` (cuatro roles) |
+| R3 | componentes y una por feature | `R3: encabezado, región «Indicadores» con lista, panel y franja con h2, en ese orden de documento y sin columna lateral` |
+| R4 | CSS | `R4: el CSS nuevo no declara colores literales, se carga después de index.css y no añade dependencias` |
+| R5 | componentes, CSS | `R5: la celda muestra icono, etiqueta y cifra sin línea de ámbito`; `R5: la cifra usa cifras proporcionales y solo las columnas usan cifras tabulares` |
+| R6 | hooks | `R6: solo se piden endpoints del contrato, sin horas, y las horas salen en Bogotá` |
+| R7 | hooks, administración | `R7: una petición por indicador y una por sede; la caché solo guarda { count, capped }` |
+| R8 | hooks, enfermería | `R8: 99 se muestra exacto, 100 como «100+» y la bandeja llena como «50+»` |
+| R9 | recepción | `R9: indicadores de preregistros y de espera y filtro «Sede» en la barra de resumen` |
+| R10 | recepción | `R10: cada preregistro es un article con sus datos en cuatro filas de dos columnas, identidad con icono y texto y acciones pequeñas de distinta variante` |
+| R11 | recepción | `R11: «Registro directo» es el único botón sólido del encabezado, junto a «Actualizar» secundario` |
+| R12 | recepción | `R12: confirma con identidad verificada, rechaza con motivo y vuelve a pedir la bandeja y, tras confirmar, el indicador de espera` |
+| R13 | enfermería | `R13: el indicador de enfermería sale de la bandeja, sigue la sede y no añade peticiones` |
+| R14 | enfermería | `R14: tabla con nombre y documento, sede, hora y fecha, sin insignia de estado, enlace de captura suave, pie con página y paginación y filtros en la URL` |
+| R15 | medicina | `R15: tres indicadores con una petición por estado, sin sede y sin filtro` |
+| R16 | medicina | `R16: atenciones recientes con limit=8, sin documento, con insignia, «Ver atención» y pie` |
+| R17 | administración | `R17: tres indicadores y tabla simple por sede con su conteo, pie y enlace, sin datos de pacientes` |
+| R18 | medicina, administración | `R18: la franja pendiente nombra F-06 o F-07 y no tiene acciones, niveles, tiempos ni gráficos` |
+| R19 | componentes y una por feature | `R19: carga por celda y por panel sin afectar a los demás` |
+| R20 | componentes y una por feature | `R20: vacío con icono y mensaje (con pista y enlace en recepción) y cifra 0` |
+| R21 | componentes, hooks, enfermería y una por feature | `R21: error de un panel o de una celda, también en un refresco, con Reintentar propio y en lugar de los datos antiguos, sin afectar al resto` |
+| R22 | componentes, hooks y una por feature | `R22: 403 de un panel o de una celda sin datos y sin más repeticiones por intervalo` |
+| R23 | hooks, enfermería | `R23: el refresco conserva el contenido y la altura sin estado de carga` |
+| R24 | hooks y una por dashboard, con temporizadores falsos | `R24: repite todas las peticiones del dashboard cada 30 s con la pestaña visible y con «Actualizar»` |
+| R25 | hooks y una por dashboard | `R25: sin repeticiones por foco, reconexión ni con la pestaña oculta` |
+| R26 | una por feature | `R26: sin IA ni niveles; sin documento en /cola y /reportes; sin pacientes en /reportes` |
+| R27 | transversal | `R27: sin datos de pacientes en consola, URL ni almacenamiento en los cuatro dashboards` |
+| R28 | transversal | `R28: matriz de peticiones por rol, sin preregistros para otros roles y sin peticiones en rutas prohibidas` |
+| R29 | transversal | `R29: las claves dash_*, las guías y los textos cambiados existen con los mismos parámetros en los cinco catálogos y sin las claves retiradas` |
+| R30 | componentes | `R30: cada estado y cada celda tienen icono, texto y tono y ninguno depende solo del color` |
+| R31 | componentes, CSS | `R31: tablas con table, row, columnheader y cell explícitos, nombres únicos en controles repetidos, orden de foco igual al del DOM y movimiento solo cuando se permite` |
+| R32 | CSS + evidencia T13 | `R32: unidades relativas, sin alturas fijas ni recortes de texto` |
+| R33 | transversal | `R33: la guía de /cola y /reportes narra texto estático propio; /recepcion y /triage mencionan sus indicadores y la actualización` |
+| R34 | CSS, componentes (`SummaryBar` escribe `--cells`) + evidencia T13 | `R34: contenedores dashboard (30 y 56 rem) y panel (40 rem), columnas de la barra de resumen según --cells, preregistros en dos columnas y tablas apiladas con sus etiquetas` |
+| R35 | CSS + evidencia T13 | `R35: columnas con minmax(0, …), contenedores con min-width: 0 y sin anchos fijos en px` (la medida real a cuatro anchos va en `docs/ui-dashboards-verification.md`) |
+| R36 | transversal | `R36: CONSUMED_CONTRACT sigue en 0.4.0, sin fetch fuera de shared/api ni imports entre features` |
+| R37 | componentes y una por dashboard, con temporizadores falsos | `R37: un refresco conserva el nodo enfocado, el estado local de las filas y la altura, sin estado de carga ni desplazamiento programático` |
+| R38 | componentes (`LiveNote`), una por dashboard y transversal (cinco catálogos) | `R38: cada dashboard muestra «Se actualiza cada 30 s» en la cabecera del panel, como texto plano con punto decorativo, y la clave dash_live existe con {seconds} en los cinco idiomas` |
+| R39 | transversal | `R39: la marca «Asclepio» aparece una sola vez en el marco privado, con la cabecera reducida a las herramientas, y se conserva en /, /login y /estado` |
+| R40 | transversal | `R40: los textos en español de los dashboards usan «preregistro», etiquetas con mayúscula inicial y ningún «·»` |
+| R41 | `src/shared/lib/datetime.test.ts`, recepción, enfermería y medicina | `R41: las horas de los dashboards salen en Bogotá sin segundos (tablas con hora y fecha; tarjetas y aviso con fecha y hora)` |
+
+R32, R34 y R35 describen geometría que jsdom no calcula: sus pruebas fijan la **regla CSS** y la verdad la da la medición en navegador (T13), registrada con `scrollWidth` y `clientWidth` a 375, 768, 1024 y 1440 px y a 200 %. R37 comprueba en jsdom la identidad del nodo enfocado, el estado local de las filas y la ausencia de desplazamiento programático (`scrollTo` y `scrollIntoView` sin llamadas); la posición real de desplazamiento y los saltos de maquetación se miden en navegador en T13. R40 lee los catálogos `es.json` con una lista explícita de claves (las de las tablas «Plan i18n» y «Escritura y horas»).
+
+### Pruebas existentes que cambian
+
+Cambian solo aserciones de DOM, de texto en español o de datos de red; las R de F-01-web, F-02-web y F-03-web se conservan. La búsqueda se hizo con `grep` sobre `src` (textos «pre-registro» y «Pre-registro», `formatBogota`, `Espacio de enfermería`, `heading` de nivel 3, marca «Asclepio»).
+
+| Archivo | Cambio | Por qué |
+|---|---|---|
+| `src/app/router/routes.test.tsx` | `HOME.RECEPTION.title` (línea 25) y el literal de `R5: si el rol no permite la ruta de origen…` (línea 157) pasan de «Recepción — bandeja de pre-registros» a `Recepción`; `R23: el marcador del inicio de %s…` se acota a ADMIN en T8 y se elimina en T9 | D3 (`h1` = nombre de navegación) y D13 (sin marcadores). Las aserciones `queryByText(/Esta funcionalidad llega en/)` de `R18` se conservan: siguen siendo ciertas para rutas prohibidas. |
+| `src/app/router/f02Routes.test.tsx` | `PAGES[0].title` (línea 28) pasa a `Recepción` (lo usa `R1: puede abrir $path`) | D3. |
+| `src/app/router/f02Transversal.test.tsx` | (1) línea 178: `findByText('Pre-registro rechazado.')` → `'Preregistro rechazado.'`; (2) línea 357: `/Pre-registro27\/10\/26, 11:30:00/` → `/Preregistro27\/10\/26, 11:30/`; (3) `R38` (líneas 327 a 329): la lista de `/atenciones` es la **última** petición de `GET /encounters` (las claves `limit` y `offset`); la primera es la del indicador de recepción (`limit` y `status`) | D27 y D28 para (1) y (2). (3): `/recepcion` ahora pide el indicador antes de navegar a `/atenciones`. Las líneas 363, 370 y 377 (`/atenciones`, detalle y línea de tiempo, con segundos) **no cambian**: pantallas fuera de alcance. |
+| `src/features/reception/components/ReceptionPage.test.tsx` | `setup()` añade `'GET /api/v1/encounters': json(200, { items: [] })`; `R7` (líneas 148 a 153): `Pre-registro${formatBogota(…)}` y `Expira${formatBogota(…)}` pasan a `Preregistro${norm(formatDateTimeBogota(…))}` y `Expira${norm(formatDateTimeBogota(…))}`; `R12` (líneas 271 a 274): el aviso es `Llegada confirmada. Hora de llegada: ${norm(formatDateTimeBogota(…))}` (sin el punto final añadido); los textos en español de `R8` (178), `R12` (281), `R13` (288, 290, 313, 315) y `R16` (427, 454, 455, 505, 510) pasan a «preregistro»; el import de `formatBogota` se sustituye por `formatDateTimeBogota` y `norm` | D27, D28 y D29. El dashboard pide el indicador de espera: sin handler respondería 404 y ensuciaría los casos de error. Ninguna otra aserción de F-02 cambia (`R4` a `R16`, `R37` y los `dt`/`dd` contiguos se conservan; `R9`, con su intervalo de 30 s y «Actualizar», sigue igual). |
+| `src/features/reception/components/FeatureLocalization.test.tsx` | `R14` (línea 214): el texto en español del conflicto pasa a «Este preregistro ya no está pendiente o el paciente ya tiene una atención activa.» (el inglés de la línea 220 no cambia) | D27. |
+| `src/app/router/f03Routes.test.tsx` | **`R3: paginates by 50…`** (líneas 159 a 161): `getAllByText(formatBogota(encounter.arrivalAt))` → `getAllByText(norm(formatTimeBogota(encounter.arrivalAt)))`. **`R21`**: se elimina la aserción del `h2` `Espacio de enfermería` (líneas 565 a 567) y la del `h3` con el nombre del paciente (líneas 568 a 573) se sustituye por `within(tray).findByRole('cell', { name: new RegExp(encounter.patient.fullName!) })` y por la comprobación de la tabla con sus tres `columnheader` (`Paciente`, `Sede`, `Llegada`). **Se conservan sin cambio** `R3: exposes a manual refresh…`, `R3: the tray does not refresh automatically on focus or reconnect` y `R4` | D15 (sin panel lateral), D28 (hora y fecha en elementos separados) y D30 (la fila de tabla no es un `h3`). Las dos `R3` del refresco son las únicas pruebas de F-03 que fijan el refresco de la bandeja: la de foco y reconexión sigue siendo cierta porque R25 mantiene `refetchOnWindowFocus` y `refetchOnReconnect` en `false` (el intervalo de 30 s no se dispara en sus 20 ms reales), y la de «Actualizar» sigue sumando exactamente una petición porque el indicador sale de la bandeja (D6) y el botón no se deshabilita (D19). Lo que queda revisado es el **texto** de F-03-web R3 y de F-03-web D3 (D14). |
+| `src/features/triage/hooks/clinicalCaptureHooks.test.tsx` y cualquier otra prueba que importe `useEncounters`, `PAGE_SIZE` o `ENCOUNTERS_KEY` de `features/triage/hooks/useEncounters` | Solo cambia la ruta de import (`shared/hooks/useEncounters`); las aserciones usan la constante `ENCOUNTERS_KEY`, no su valor | D4 (movimiento mecánico, sin cambio de comportamiento). |
+| `src/shared/lib/datetime.test.ts` | Se **añade** un bloque `describe('UI-02-web …')` con los formateadores nuevos; no cambia ninguna aserción de `formatBogota` ni de `formatCivilDate` | D28. |
+| Sin cambio (se ejecutan sin tocar) | `uiFoundation.test.tsx` (`R1`: la marca en `/` y `/login`), `AppShell.test.tsx`, `privacy.test.tsx`, `VoiceGuide.test.tsx`, `featureMessages.test.ts`, `problem.test.ts` (líneas 98 y 99: datos de muestra de `actionErrorMessage`, sin relación con las constantes del código), `DirectRegistrationPage.test.tsx` (línea 700, «El paciente ya tiene un pre-registro…»), `EncounterListPage.test.tsx` («Pre-registro (app)»), `EncounterDetailPage.test.tsx` («Pre-registro (referencia)» y `formatBogota`), `ClinicalCaptureHistory.test.tsx`, `StatusPage.test.tsx` y `FeatureLocalization.test.tsx` `R13` (`7:42:00`) | Afirman pantallas fuera de alcance, que conservan «pre-registro» con guion y la hora con segundos (D27, D28), o no dependen de la cabecera ni de los dashboards. |
+| Sin cambio, pero vigiladas por el sondeo de 30 s | `routes.test.tsx` `R14` (8 h simuladas con `/cola` abierto), `privacy.test.tsx` `R24: la expiración de la sesión…` (60 s simulados con `/triage` abierto) y `ReceptionPage.test.tsx` `R9` (30 s y 90 s simulados) | Con el intervalo, el reloj simulado dispara refrescos del dashboard montado. Sus aserciones no dependen de ellos: en `R14` y `R24` el dashboard solo recibe 404 y la sesión caduca igual; en `R9` solo se cuentan las peticiones de la bandeja. Si alguna falla por peticiones sin handler, se añade el handler de `GET /api/v1/encounters` sin tocar las aserciones. |
+
+**Revisado por PA-3**: de F-03-web, **R3** («sin temporizador ni KPI nuevos») y **D3**; de F-02-web, nada (R9 conserva los 30 s y «Actualizar»; el hook de la bandeja solo añade `refetchOnWindowFocus: false`, que ninguna prueba de F-02 fija). La búsqueda de `manualRefresh`, `focusManager`, `onlineManager` y `useFakeTimers` en `src` (T12) confirma que no queda otra prueba que fije el refresco manual.
+
+### Compatibilidad con las pruebas vigentes (el DOM nuevo debe cumplirla)
+
+- **Recepción**: el único `article` de la página es el de cada preregistro, con `aria-labelledby` y **un solo encabezado** (el nombre, `h3`); una sola casilla en toda la pantalla; un solo botón «Actualizar» y un solo enlace «Registro directo»; el selector de sede conserva la etiqueta exacta «Sede» y no hay otro control con esa etiqueta; «Preregistro» y «Expira» van en `dt` y `dd` contiguos a su fecha y hora; durante la carga inicial solo hay un `role="status"` (las celdas y la nota no lo llevan) y en un fallo solo un `role="alert"`; el nombre exacto «Reintentar» solo lo tiene el botón del panel (los de las celdas se llaman «Reintentar: …»); el error de una acción queda dentro de su tarjeta; `findByRole('status')` es único tras rechazar (solo el aviso).
+- **Enfermería**: región «Atenciones pendientes» con `h2` del mismo nombre; el enlace de captura tiene el nombre exacto «Capturar información clínica»; cada nombre de paciente está en su propio elemento (`getByText('Laura Gómez Pérez')` es único por fila) y la hora, en un `<time>` cuyo texto es solo la hora; un solo botón «Actualizar», que no se deshabilita durante un refresco (usa `aria-busy`), y un solo botón de nombre exacto «Reintentar» en un fallo; «Anterior» y «Siguiente» se deshabilitan solo por datos y no por `isFetching`; sin parámetros nuevos en la URL.
+- **Todos**: ningún dashboard escribe en `console`, en `localStorage` (solo existe la clave de preferencias) ni en la URL salvo `siteId` y `offset`; el texto «Se actualiza cada 30 s» no es un botón, un enlace ni una región con `role`, de modo que «Actualizar» sigue siendo el único control con ese nombre; ningún componente de dashboard usa hooks exclusivos del router de datos (`useMatches`, `useNavigation`, `useLoaderData`), porque `FeatureLocalization.test.tsx` monta `ReceptionPage` con `MemoryRouter` (solo `Layout` usa `useMatches`).
+
+### Datos sintéticos en `src/test/fakeApi.ts`
+
+Se amplía, sin tocar lo existente: `encounterSummaries(n, overrides?)` (n atenciones con ids únicos), `encountersFor(spec)` (un `Handler` que lee `status`, `siteId` y `limit` de la petición y responde `{ items }` con `min(cuenta, limit)` atenciones, para conteos de 0, 12, 99 y 100 por estado y por sede), `publicTenantsWith(sites)` (tenant con tres sedes para el desglose de administración), atenciones en cada uno de los seis estados, una sin documento (NN) y una `CANCELLED`. Todos con datos ficticios y horas UTC fijas. El ayudante `src/test/text.ts` exporta `norm`.
+
+### Verificación visual y entrega (T1 y T13)
+
+- **Antes** (T1, **antes de tocar `src/`**): los cuatro dashboards con datos sintéticos, en claro y oscuro, a 375 y 1440 px. **Después** (T13): lo mismo. Convención `docs/ui-evidence/ui02-<rol>-<antes|despues>-<claro|oscuro>-<375|1440>.jpg` con `<rol>` = `recepcion`, `enfermeria`, `medicina`, `administracion` (32 capturas). Adicionales: `ui02-<rol>-grises-1440.jpg` (cuatro, modo escala de grises), `ui02-recepcion-contraste-1440.jpg`, `ui02-recepcion-768.jpg` y `ui02-enfermeria-768.jpg`, `ui02-medicina-cien-mas-1440.jpg` (indicadores «100+»), `ui02-medicina-ceros-1440.jpg`, `ui02-medicina-200-1440.jpg` (texto al 200 %), `ui02-medicina-error-1440.jpg`, `ui02-recepcion-cargando-1440.jpg` y `ui02-recepcion-vacio-1440.jpg`.
+- **Parecido con la maqueta**: en T13 cada dashboard se compara con la captura aprobada que le corresponde (01 a 04 de escritorio claro, 05 y 06 oscuro, 07 a 09 estrecho y tableta, 10 a 14 estados) y el registro lista las diferencias; las desviaciones deliberadas de «Referencia visual aprobada» son las únicas esperadas.
+- **Mediciones** (sin captura): `scrollWidth` y `clientWidth` a 375, 768, 1024 y 1440 px y a 200 %; columnas de la barra de resumen por ancho (una, dos con filtro y última celda impar a fila completa, una fila con columna de filtro de 15 a 19 rem); tarjetas de preregistro en dos columnas desde 40 rem de panel y de igual altura con los botones abajo; tablas apiladas por debajo de 40 rem con «Sede», «Llegada» y «Estado» y el botón a ancho completo (y la tabla de sedes sin apilar); cinco idiomas a 375 px; los cuatro modos de color y ambos temas (incluido el contraste del botón suave y de las insignias); recorrido con Tab; **refresco automático** con la API sintética (foco en una fila o en «Actualizar», desplazamiento a media página y una llegada nueva entre dos ciclos de 30 s): foco, posición y altura conservados, sin salto de maquetación visible y con la bandeja de enfermería reordenada solo por la llegada; marca única y herramientas a la derecha en el marco privado y marca conservada en `/`, `/login` y `/estado`. Registro en `docs/ui-dashboards-verification.md` con la tabla R → prueba.
+- **API**: probar contra la API sintética local de UI-01 y F-03 (fuera del repo, en `../../local-analysis/`); si no está disponible, registrar la limitación exacta, como en esos slices. No se inventa ejecución real contra NestJS y PostgreSQL.
+- **Cierre** (T14): `./init.sh`, lint, typecheck, Vitest, `npm run api:types` sin diff, `npm run build` e `npm run i18n:check`.
+
+### Riesgos
+
+- **Selectores de pruebas vigentes**: unicidad de `status`, `alert`, `article`, casilla, botones y encabezados (lista arriba). Mitigación: la lista es parte del diseño y cada tarea de dashboard ejecuta la suite completa antes de marcarse.
+- **Consultas de contenedor, `:has()` y `display: contents`**: jsdom no las evalúa y la maqueta se verificó en navegador, no con pruebas. Mitigación: pruebas de fuente CSS de los dos contenedores, de `--cells` (el DOM sí escribe la variable) y del apilado, `role="list"` explícito en el `ul` y medición real (T13). El proyecto ya exige navegadores con `oklch()` y `color-mix()`, que llegaron después que las consultas de contenedor.
+- **Semántica de las tablas apiladas** (D24): cambiar el `display` de `table`, `tr` y `td` puede hacer que algún motor pierda su semántica; por eso los roles son explícitos y T13 recorre cada tabla con teclado en ancho estrecho. Las etiquetas generadas por CSS no las traduce el traductor del navegador, pero salen del catálogo localizado (`data-label`).
+- **Espacio de «a. m.»** (D28): `Intl` puede escribir un espacio normal, duro o duro estrecho según la versión de ICU. Mitigación: las pruebas comparan con `\s` y con `norm`; T2 comprueba el carácter real en el Node del proyecto y lo anota.
+- **Marca ausente durante la carga o el error del perfil** (D26): la ruta ya es privada y la cabecera muestra solo herramientas. Se acepta por transitorio y sin marco.
+- **Orden de carga del CSS** (D11): si alguien mueve el import de `dashboard.css` antes que `index.css`, `.layout--private` y los ajustes bajo `.dashboard` pierden contra reglas de igual especificidad. Mitigación: la prueba `R4` lee `main.tsx`.
+- **Una fila de enfermería ya no es un `h3`** (D30): quien navegue por encabezados no encuentra los pacientes; en su lugar tiene la navegación por filas y celdas de la tabla. Se acepta; las pruebas de F-03 que lo buscaban cambian.
+- **Escritura mezclada** (D27): «Preregistro» en los dashboards frente a «Pre-registro (referencia)» en el detalle de atención y en la landing. Es lo que acotan UI-02.AC12 y S3; el usuario aprobó el criterio con la maqueta. Unificarlo es trabajo de otro slice.
+- **Coste de peticiones con sondeo**: `/reportes` repite 3 + S peticiones de hasta 100 atenciones (≈ 70 kB cada una) **cada 30 s** por pestaña abierta (con diez sedes, trece peticiones por ciclo, 26 por minuto y hasta ≈ 0.9 MB por ciclo); `/cola` repite 4, recepción 2 y enfermería 1. Con la pestaña oculta el coste es 0. Es aceptable para el MVP con datos sintéticos y pocas sedes; un total desde la API (fuera de este slice) o un intervalo mayor en `/reportes` lo reducirían. No es un requisito ni una pregunta bloqueante.
+- **La bandeja de enfermería se reordena sola** (D21): con el orden `arrivalAt` descendente y `offset`, una llegada nueva empuja las filas una posición y, desde la segunda página, repite una fila de la anterior; quien apunta a una fila puede ver que se desplaza antes de pulsar. **Se acepta**: los nodos se conservan por id y el foco se mantiene (R37), la captura repite el nombre y el contexto de la atención y volver es inmediato. Mitigaciones posibles y no incluidas: pausar el sondeo mientras el foco esté en la lista o avisar de las llegadas nuevas sin reordenar; la cola de F-06, con orden propio por nivel y espera, lo reemplazará.
+- **Un fallo puntual de un refresco automático sustituye los datos por el error** (R21, D20): se **mantiene R21 tal cual** para no presentar datos obsoletos como actuales (política de F-03 R4, fijada por su prueba). El siguiente intervalo reintenta solo y «Reintentar» lo hace al instante. Coste aceptado: un fallo de red parpadea el panel y, en recepción, el error desmonta las tarjetas con su estado local (casilla de identidad y motivo de rechazo a medio escribir), igual que ya ocurre hoy con el sondeo de 30 s de F-02; el motivo es un solo campo y los fallos de red de un sondeo son excepcionales. Con un refresco que termina bien (R37) nada de eso se pierde.
+- **Pruebas con temporizadores simulados**: con el sondeo, avanzar el reloj simulado dispara refrescos de los dashboards montados (`routes.test.tsx` `R14` avanza 8 h; `privacy.test.tsx` `R24` avanza 60 s). Las aserciones no dependen de ellos, pero es el primer sitio donde mirar si aparece una prueba inestable.
+- **F-03-web revisado por decisión del usuario**: R3 y D3 dejan de ser literales («sin temporizador ni KPI nuevos», refresco manual). La spec de F-03-web no se reescribe; este slice documenta la revisión y las pruebas que la reflejan.
+- **«N+»**: una cifra «100+» no distingue 100 de 500. Mitigación: texto oculto «Al menos N», ausencia de línea de ámbito que sugiera exactitud y de gráficos.
+- **Movimiento de `useEncounters` y `ENCOUNTERS_KEY`**: toca varios archivos de `triage` (incluido `EncounterListPage`, que usa el hook en `/atenciones`) y cambia el prefijo de clave. Mitigación: cambio mecánico, la constante sigue siendo la que invalidan `useCancelEncounter` y los hooks de captura, y la suite de F-02 y F-03 (R13 de F-03: la lista se refresca tras capturar) lo cubre.
+- **`h1` de recepción**: otras pruebas pueden citar el texto antiguo; T6 busca `bandeja de pre-registros` en `src` y las actualiza.
+- **Clases CSS y claves retiradas**: solo tras confirmar con búsqueda que ningún componente las usa; ante la duda se conservan.
+- **Campos `title` y `feature` de `ROLE_ROUTES`** quedan sin lector (la matriz no cambia por UI-02.AC1); limpieza futura.
+- **Preguntas abiertas**: PA-1 a PA-5 están resueltas por el usuario (2026-10-28) y las tres propuestas de la maqueta v2 quedaron aprobadas (S6); no queda ninguna pregunta abierta. PA-1, PA-2, PA-4 y PA-5 aceptaron las propuestas de este diseño; PA-3 fue distinta (refresco automático cada 30 s en los cuatro dashboards) y está recogida en D14 y D19 a D21.
+- **Orden de entrega**: las capturas «antes» no se pueden tomar después de cambiar el código; T1 es previa a cualquier cambio.

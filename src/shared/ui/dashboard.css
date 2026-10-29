@@ -98,6 +98,8 @@
   margin-top: 0.25rem;
   font-size: 0.875rem;
   color: var(--muted);
+  /* Reparte las líneas: sin una palabra suelta en la segunda a 375 px. */
+  text-wrap: balance;
 }
 .page-actions {
   display: flex;
@@ -467,6 +469,7 @@
   margin: 0;
   font-size: 0.8125rem;
   line-height: 1.45;
+  text-wrap: balance;
 }
 .dashboard .reject {
   gap: var(--s3);
@@ -554,6 +557,7 @@
 .pending__text p {
   font-size: 0.875rem;
   color: var(--muted);
+  text-wrap: balance;
 }
 .pending__meta {
   display: flex;

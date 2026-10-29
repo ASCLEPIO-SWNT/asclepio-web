@@ -618,6 +618,20 @@ describe('UI-02-web hoja de estilos del dashboard', () => {
     expect(valueOf('.page-actions', 'flex-wrap')).toBe('wrap');
   });
 
+  it('R2: la descripción del encabezado reparte sus líneas para no dejar una palabra suelta a 375 px', () => {
+    // Medido en T13: «Estado de las atenciones y las llegadas más / recientes.» y «Resumen de las
+    // atenciones por estado y por / sede.» terminaban con una sola palabra en la segunda línea.
+    expect(valueOf('.page-header p', 'text-wrap')).toBe('balance');
+  });
+
+  it('R10: el texto de la casilla de identidad reparte sus líneas, sin «documento.» solo en la segunda', () => {
+    expect(valueOf('.dashboard .prereg .check', 'text-wrap')).toBe('balance');
+  });
+
+  it('R18: el texto de la franja «pendiente» reparte sus líneas, sin una segunda línea corta', () => {
+    expect(valueOf('.pending__text p', 'text-wrap')).toBe('balance');
+  });
+
   it('R31: el botón pequeño mide 2.25 rem y el suave se ajusta solo dentro de los dashboards', () => {
     expect(valueOf('.dashboard .button--sm', 'min-height')).toBe('2.25rem');
     expect(valueOf('.dashboard .button--sm', 'font-size')).toBe('0.8125rem');

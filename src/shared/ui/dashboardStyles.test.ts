@@ -634,6 +634,13 @@ describe('UI-02-web hoja de estilos del dashboard', () => {
     expect(valueOf('.prereg__facts dd', 'text-wrap')).toBe('balance');
   });
 
+  it('R8: el «+» de «100+» no agranda la línea: la fila de una sede con «100+» mide lo mismo que las demás', () => {
+    // Medido en T13 con el «+» a 1.25 rem dentro de una cifra de 1.125 rem: la fila de «100+»
+    // medía 62 px y las demás 58.7 px. Con line-height: 1 el «+» no hace crecer la caja de la línea.
+    expect(valueOf('.summary__plus', 'font-size')).toBe('1.25rem');
+    expect(valueOf('.summary__plus', 'line-height')).toBe('1');
+  });
+
   it('R18: el texto de la franja «pendiente» reparte sus líneas, sin una segunda línea corta', () => {
     expect(valueOf('.pending__text p', 'text-wrap')).toBe('balance');
   });

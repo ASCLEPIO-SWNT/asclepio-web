@@ -162,6 +162,8 @@
 .summary__plus {
   margin-left: 0.1rem;
   font-size: 1.25rem;
+  /* Sin esto el «+» (1.25 rem) hace crecer la línea de una cifra de 1.125 rem y la fila de «100+» mide más. */
+  line-height: 1;
   letter-spacing: 0;
   color: var(--muted);
 }

@@ -389,6 +389,14 @@
   text-align: right;
   white-space: nowrap;
 }
+/* Cifra de una fila de la tabla de sedes mientras carga (R19): un esqueleto del tamaño de la cifra. */
+.data-table td.num .skeleton {
+  display: inline-block;
+  width: 3rem;
+  height: 1.25rem;
+  border-radius: 0.5rem;
+  vertical-align: middle;
+}
 
 /* ---------- preregistros: tarjetas en dos columnas del mismo alto (D16) ---------- */
 .prereg-grid {

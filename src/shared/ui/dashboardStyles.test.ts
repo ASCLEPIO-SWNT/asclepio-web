@@ -565,6 +565,15 @@ describe('UI-02-web hoja de estilos del dashboard', () => {
     expect(valueOf('.badge', 'font-size')).toBe('0.75rem');
   });
 
+  it('R19: la cifra de una fila de la tabla de sedes tiene su propio esqueleto, del tamaño de la cifra y en rem', () => {
+    // La tabla de sedes resuelve la carga fila a fila: el esqueleto de 3.5 rem de un panel no cabe en una fila.
+    const selector = '.data-table td.num .skeleton';
+    expect(valueOf(selector, 'display')).toBe('inline-block');
+    expect(valueOf(selector, 'width')).toBe('3rem');
+    expect(valueOf(selector, 'height')).toBe('1.25rem');
+    expect(valueOf(selector, 'border-radius')).toBe('0.5rem');
+  });
+
   it('R30: cada tono semántico fija --tone y --tone-bg con los tokens existentes', () => {
     const tones: Record<string, [string, string]> = {
       accent: ['var(--accent)', 'var(--accent-soft)'],

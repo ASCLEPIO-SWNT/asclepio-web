@@ -579,7 +579,7 @@
 
 /* ---------- marco privado: la cabecera se reduce a las herramientas (UI-02.AC11, D26) ---------- */
 .layout--private .layout__header-inner {
-  max-width: 84rem;
+  max-width: 80rem;
   padding: 0;
   border: 0;
   border-radius: 0;

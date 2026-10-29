@@ -654,7 +654,9 @@ describe('UI-02-web hoja de estilos del dashboard', () => {
     const header = rulesOf('.layout--private .layout__header-inner');
     expect(header).toHaveLength(1);
     expect(Object.fromEntries(header[0].decls)).toEqual({
-      'max-width': '84rem',
+      // 80 rem: el contenido mide como máximo 80 rem (el `main` de 84 rem lleva 2 rem de relleno
+      // a cada lado), así que con 84 rem la píldora sobresalía 32 px por la derecha.
+      'max-width': '80rem',
       padding: '0',
       border: '0',
       'border-radius': '0',

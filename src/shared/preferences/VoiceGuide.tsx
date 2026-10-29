@@ -26,6 +26,26 @@ export function VoiceGuide({
   locale: Locale;
   route: string;
 }) {
+  return (
+    <VoiceGuidePlayback
+      key={`${route}:${locale}:${text}`}
+      text={text}
+      locale={locale}
+      route={route}
+    />
+  );
+}
+
+/** A new context owns new playback state; cancelled contexts cannot revive on return. */
+function VoiceGuidePlayback({
+  text,
+  locale,
+  route,
+}: {
+  text: string;
+  locale: Locale;
+  route: string;
+}) {
   const { t } = useI18n();
   const supported =
     typeof window.speechSynthesis !== 'undefined' &&

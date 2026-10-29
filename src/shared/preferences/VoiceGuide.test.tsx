@@ -140,3 +140,93 @@ it('R11: reports a current playback error when the API exists and ignores errors
   ).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Escuchar guía' })).toBeEnabled();
 });
+
+it.each(['active', 'failed'] as const)(
+  'R24: a cancelled %s guide starts fresh after route A → B → A and ignores its old callbacks',
+  (state) => {
+    const synthesis = {
+      speak: vi.fn(),
+      cancel: vi.fn(),
+      pause: vi.fn(),
+      resume: vi.fn(),
+      getVoices: () => [],
+    };
+    vi.stubGlobal('speechSynthesis', synthesis);
+    vi.stubGlobal(
+      'SpeechSynthesisUtterance',
+      class {
+        text: string;
+        constructor(text: string) {
+          this.text = text;
+        }
+        lang = '';
+      },
+    );
+    const view = render(
+      <VoiceGuide text="Guía estática" locale="es" route="/triage" />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Escuchar guía' }));
+    const old = synthesis.speak.mock.calls[0][0] as SpeechSynthesisUtterance;
+    if (state === 'failed')
+      act(() => {
+        old.onerror?.({
+          error: 'synthesis-unavailable',
+        } as SpeechSynthesisErrorEvent);
+      });
+    view.rerender(
+      <VoiceGuide text="Guía de captura" locale="es" route="/triage/another" />,
+    );
+    view.rerender(
+      <VoiceGuide text="Guía estática" locale="es" route="/triage" />,
+    );
+    act(() => {
+      old.onerror?.({ error: 'canceled' } as SpeechSynthesisErrorEvent);
+      old.onend?.(new Event('end') as SpeechSynthesisEvent);
+    });
+    expect(screen.getByRole('button', { name: 'Escuchar guía' })).toBeEnabled();
+    expect(
+      screen.queryByRole('button', { name: 'Pausar' }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        'La guía por voz no está disponible en este navegador.',
+      ),
+    ).not.toBeInTheDocument();
+    expect(synthesis.speak).toHaveBeenCalledOnce();
+  },
+);
+
+it('R24: changing guide language or authored text clears playback without speaking automatically', () => {
+  const synthesis = {
+    speak: vi.fn(),
+    cancel: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    getVoices: () => [],
+  };
+  vi.stubGlobal('speechSynthesis', synthesis);
+  vi.stubGlobal(
+    'SpeechSynthesisUtterance',
+    class {
+      text: string;
+      constructor(text: string) {
+        this.text = text;
+      }
+      lang = '';
+    },
+  );
+  const view = render(<VoiceGuide text="Guía" locale="es" route="/triage" />);
+  fireEvent.click(screen.getByRole('button', { name: 'Escuchar guía' }));
+  view.rerender(<VoiceGuide text="Guide" locale="en" route="/triage" />);
+  expect(
+    screen.queryByRole('button', { name: 'Pausar' }),
+  ).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'Escuchar guía' }));
+  view.rerender(
+    <VoiceGuide text="Updated guide" locale="en" route="/triage" />,
+  );
+  expect(
+    screen.queryByRole('button', { name: 'Pausar' }),
+  ).not.toBeInTheDocument();
+  expect(synthesis.speak).toHaveBeenCalledTimes(2);
+});

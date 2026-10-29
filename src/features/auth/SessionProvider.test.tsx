@@ -35,6 +35,8 @@ function renderWithSession(stored?: unknown) {
       typeof stored === 'string' ? stored : JSON.stringify(stored),
     );
   }
+  // Como main.tsx (UI-03-web R26): una restauración al arrancar, fuera del render.
+  session.restore();
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });

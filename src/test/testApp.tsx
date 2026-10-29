@@ -1,7 +1,7 @@
 import { QueryClient } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { SESSION_KEY } from '../shared/api/session';
+import { SESSION_KEY, session } from '../shared/api/session';
 import { TOKEN, inMs } from './fakeApi';
 import { AppProviders } from '../app/providers/AppProviders';
 import { routes } from '../app/router/routes';
@@ -24,6 +24,8 @@ export function renderApp({
         : stored;
     sessionStorage.setItem(SESSION_KEY, JSON.stringify(value));
   }
+  // Como main.tsx (UI-03-web R26): una restauración al arrancar, fuera del render.
+  session.restore();
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });

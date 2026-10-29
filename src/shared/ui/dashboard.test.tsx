@@ -950,9 +950,9 @@ describe('UI-02-web componentes del dashboard', () => {
     });
 
     it('R12: Notice sin icono conserva exactamente su marcado', () => {
-      const { container } = render(<Notice>Pre-registro rechazado.</Notice>);
+      const { container } = render(<Notice>Preregistro rechazado.</Notice>);
       expect(container.innerHTML).toBe(
-        '<div role="status" class="status status--ok notice">Pre-registro rechazado.</div>',
+        '<div role="status" class="status status--ok notice">Preregistro rechazado.</div>',
       );
     });
 

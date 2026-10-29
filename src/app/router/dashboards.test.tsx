@@ -1,9 +1,20 @@
+import { createHash } from 'node:crypto';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { posix } from 'node:path';
+import { inspect } from 'node:util';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { StaffRole } from '../../shared/api/client';
-import { session } from '../../shared/api/session';
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type MockInstance,
+} from 'vitest';
+import { CONSUMED_CONTRACT, type StaffRole } from '../../shared/api/client';
+import { SESSION_KEY, session } from '../../shared/api/session';
 import { translate } from '../../shared/i18n';
 import { LOCALES, type Locale } from '../../shared/i18n/locale';
 import {
@@ -14,6 +25,7 @@ import {
   SITE_ESTE,
   SITE_NORTE,
   SITE_SUR,
+  encounter,
   encountersFor,
   fakeApi,
   json,
@@ -841,6 +853,543 @@ describe('UI-02-web rutas y permisos de los dashboards', () => {
       expect(net.calls(PRE_REGISTRATIONS).length > 0).toBe(
         role === 'RECEPTION',
       );
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------------------------
+// Privacidad (T12, R27)
+// ---------------------------------------------------------------------------------------------
+
+type User = ReturnType<typeof userEvent.setup>;
+type Net = ReturnType<typeof fakeApi>;
+type Router = ReturnType<typeof renderApp>['router'];
+
+const CONSOLE_METHODS = [
+  'log',
+  'info',
+  'warn',
+  'error',
+  'debug',
+  'trace',
+] as const;
+const REJECT_REASON = 'Paciente no se presentó a la ventanilla';
+const SECOND_PRE_REGISTRATION = {
+  ...pendingPreRegistration,
+  id: 'c0c0c0c0-0000-4000-8000-000000000002',
+  chiefComplaintText: 'Fiebre y tos desde hace dos días',
+  patient: {
+    ...patient,
+    id: 'b0b0b0b0-0000-4000-8000-000000000009',
+    fullName: 'Ricardo Medina Soto',
+    documentNumber: '80456789',
+    birthDate: '1984-11-02',
+  },
+};
+/** Datos personales de la prueba: nombres, documentos, fechas de nacimiento y motivos (R27). */
+const PERSONAL: Array<string | RegExp> = [
+  patient.fullName!,
+  patient.documentNumber!,
+  patient.birthDate!,
+  '17/05/1990',
+  pendingPreRegistration.chiefComplaintText,
+  SECOND_PRE_REGISTRATION.patient.fullName,
+  SECOND_PRE_REGISTRATION.patient.documentNumber,
+  SECOND_PRE_REGISTRATION.patient.birthDate,
+  '02/11/1984',
+  SECOND_PRE_REGISTRATION.chiefComplaintText,
+  REJECT_REASON,
+  // Las atenciones de `encountersFor`: «Paciente ficticio N» y documentos 1000000000 + N.
+  /Paciente ficticio/,
+  /\b1000000\d{3}\b/,
+];
+
+/** Lo que de `text` es un dato personal de la prueba. */
+const leaksIn = (text: string) =>
+  PERSONAL.filter((secret) =>
+    typeof secret === 'string' ? text.includes(secret) : secret.test(text),
+  ).map(String);
+
+const urlOf = (router: Router) => {
+  const { pathname, search, hash } = router.state.location;
+  return `${pathname}${search}${hash}`;
+};
+
+/** «Actualizar» y un ciclo de 30 s: dos refrescos de lo que el dashboard repite. */
+async function refresh(user: User, net: Net) {
+  const start = net.requests.length;
+  await user.click(screen.getByRole('button', { name: 'Actualizar' }));
+  await waitFor(() => expect(net.requests.length).toBeGreaterThan(start));
+  await settled();
+  const manual = net.requests.length;
+  await act(() => vi.advanceTimersByTimeAsync(30_000));
+  await waitFor(() => expect(net.requests.length).toBeGreaterThan(manual));
+  await settled();
+}
+
+/** Qué hace cada dashboard en su prueba de privacidad: cargar, refrescar y operar (R27). */
+const PRIVACY_SCENARIOS: Array<{
+  role: StaffRole;
+  path: string;
+  routes: Record<string, Handler>;
+  run: (context: { user: User; net: Net }) => Promise<void>;
+}> = [
+  {
+    role: 'RECEPTION',
+    path: '/recepcion',
+    routes: {
+      [PRE_REGISTRATIONS]: json(200, [
+        pendingPreRegistration,
+        SECOND_PRE_REGISTRATION,
+      ]),
+      [`POST /api/v1/pre-registrations/${pendingPreRegistration.id}/confirm`]:
+        json(201, encounter),
+      [`POST /api/v1/pre-registrations/${SECOND_PRE_REGISTRATION.id}/reject`]:
+        json(200, {
+          id: SECOND_PRE_REGISTRATION.id,
+          status: 'REJECTED',
+          resolvedAt: '2026-10-27T15:00:00.000Z',
+        }),
+    },
+    run: async ({ user, net }) => {
+      await screen.findByRole('article', { name: patient.fullName! });
+      await settled();
+      await refresh(user, net);
+      // Cambia de sede: el filtro de recepción no viaja en la URL.
+      await user.selectOptions(screen.getByLabelText('Sede'), SITE_SUR.id);
+      await waitFor(() =>
+        expect(net.calls(PRE_REGISTRATIONS).at(-1)!.query.get('siteId')).toBe(
+          SITE_SUR.id,
+        ),
+      );
+      // Rechaza un preregistro con motivo.
+      const second = await screen.findByRole('article', {
+        name: SECOND_PRE_REGISTRATION.patient.fullName,
+      });
+      await user.click(
+        within(second).getByRole('button', { name: 'Rechazar' }),
+      );
+      await user.type(
+        within(second).getByLabelText('Motivo del rechazo'),
+        REJECT_REASON,
+      );
+      await user.click(
+        within(second).getByRole('button', { name: 'Confirmar rechazo' }),
+      );
+      await screen.findByText('Preregistro rechazado.');
+      // Confirma una llegada.
+      const first = await screen.findByRole('article', {
+        name: patient.fullName!,
+      });
+      await user.click(within(first).getByRole('checkbox'));
+      await user.click(
+        within(first).getByRole('button', { name: 'Confirmar llegada' }),
+      );
+      await screen.findByText(/Llegada confirmada\./);
+    },
+  },
+  {
+    role: 'NURSE',
+    path: '/triage',
+    // 120 atenciones: la bandeja llena una página de 50 y «Siguiente» queda habilitado.
+    routes: { [ENCOUNTERS]: encountersFor(() => 120) },
+    run: async ({ user, net }) => {
+      await screen.findByText('Paciente ficticio 1');
+      await settled();
+      await refresh(user, net);
+      // Cambia de sede y de página: `siteId` y `offset` son lo único que viaja en la URL.
+      await user.selectOptions(screen.getByLabelText('Sede'), SITE_NORTE.id);
+      await waitFor(() =>
+        expect(net.calls(ENCOUNTERS).at(-1)!.query.get('siteId')).toBe(
+          SITE_NORTE.id,
+        ),
+      );
+      await waitFor(() =>
+        expect(screen.getByRole('button', { name: 'Siguiente' })).toBeEnabled(),
+      );
+      await user.click(screen.getByRole('button', { name: 'Siguiente' }));
+      await waitFor(() =>
+        expect(net.calls(ENCOUNTERS).at(-1)!.query.get('offset')).toBe('50'),
+      );
+      await screen.findByText('Paciente ficticio 51');
+    },
+  },
+  {
+    role: 'PHYSICIAN',
+    path: '/cola',
+    routes: {},
+    run: async ({ user, net }) => {
+      await screen.findByText('Paciente ficticio 1');
+      await settled();
+      await refresh(user, net);
+    },
+  },
+  {
+    role: 'ADMIN',
+    path: '/reportes',
+    routes: {},
+    run: async ({ user, net }) => {
+      await screen.findByText(SITE_NORTE.name);
+      await settled();
+      await refresh(user, net);
+    },
+  },
+];
+
+describe('UI-02-web privacidad de los dashboards', () => {
+  let spies: MockInstance[] = [];
+
+  beforeEach(() => {
+    spies = CONSOLE_METHODS.map((method) => vi.spyOn(console, method));
+  });
+
+  afterEach(() => {
+    spies.forEach((spy) => spy.mockRestore());
+  });
+
+  const consoleOutput = () =>
+    spies
+      .flatMap((spy) => spy.mock.calls.flat() as unknown[])
+      .map((arg) =>
+        typeof arg === 'string' ? arg : inspect(arg, { depth: 6 }),
+      )
+      .join('\n');
+
+  it.each(PRIVACY_SCENARIOS)(
+    'R27: $role en $path, tras cargar, refrescar a mano y por intervalo y operar, no deja nombres, documentos, fechas de nacimiento ni motivos en la consola, la URL ni el almacenamiento',
+    async ({ role, path, routes, run }) => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const net = dashboardApi(role, routes);
+      const user = userEvent.setup({ delay: null });
+      const { router } = renderApp({ entries: [path], stored: true });
+      const urls = [urlOf(router)];
+      const stop = router.subscribe(() => urls.push(urlOf(router)));
+      await screen.findByRole('heading', { level: 1 });
+
+      await run({ user, net });
+      stop();
+
+      // La URL: solo la ruta del dashboard y, en /triage, `siteId` y `offset`.
+      for (const url of urls) {
+        const { pathname, search, hash } = new URL(url, 'http://localhost');
+        expect(pathname, url).toBe(path);
+        expect(hash, url).toBe('');
+        for (const name of new URLSearchParams(search).keys())
+          expect(
+            path === '/triage' && (name === 'siteId' || name === 'offset'),
+            `${url}: parámetro ${name}`,
+          ).toBe(true);
+        expect(leaksIn(decodeURIComponent(url)), url).toEqual([]);
+      }
+      if (path === '/triage')
+        expect(urls.some((url) => url.includes('offset=50'))).toBe(true);
+      // La consola.
+      expect(leaksIn(consoleOutput()), 'consola').toEqual([]);
+      // El almacenamiento: solo preferencias en localStorage y solo la sesión en sessionStorage.
+      expect(Object.keys(localStorage)).toEqual([PREFERENCES_KEY]);
+      expect(JSON.parse(localStorage.getItem(PREFERENCES_KEY)!)).toEqual(
+        DEFAULT_PREFERENCES,
+      );
+      expect(Object.keys(sessionStorage)).toEqual([SESSION_KEY]);
+      expect(
+        Object.keys(
+          JSON.parse(sessionStorage.getItem(SESSION_KEY)!) as object,
+        ).sort(),
+      ).toEqual(['accessToken', 'expiresAt']);
+      for (const [name, store] of [
+        ['localStorage', localStorage],
+        ['sessionStorage', sessionStorage],
+      ] as const)
+        expect(
+          leaksIn(
+            Object.keys(store)
+              .map((key) => `${key}=${store.getItem(key)}`)
+              .join('\n'),
+          ),
+          name,
+        ).toEqual([]);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------------------------
+// Arquitectura y contrato (T12, R36)
+// ---------------------------------------------------------------------------------------------
+
+/** Los import y export de un archivo: `from '…'`, `import('…')` e `import '…'`. */
+function specifiersOf(source: string): string[] {
+  return [
+    /\bfrom\s+['"]([^'"]+)['"]/g,
+    /\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g,
+    /^\s*import\s+['"]([^'"]+)['"]/gm,
+  ].flatMap((pattern) =>
+    [...source.matchAll(pattern)].map((match) => match[1]),
+  );
+}
+
+/** La feature a la que pertenece una ruta de `src`, o `undefined` si no es de una feature. */
+const featureOf = (file: string) => /^src\/features\/([^/]+)\//.exec(file)?.[1];
+
+describe('UI-02-web arquitectura y contrato', () => {
+  it('R36: la web consume el contrato 0.4.0 y sus tipos generados no cambian', () => {
+    expect(CONSUMED_CONTRACT).toBe('0.4.0');
+    // Huellas de lo que `npm run api:types` generó desde 0.4.0. Si un cambio de contrato los
+    // regenera a propósito, se actualizan aquí junto con CONSUMED_CONTRACT.
+    const sha256 = (file: string) =>
+      createHash('sha256').update(readFileSync(file)).digest('hex');
+    expect(sha256('src/shared/api/schema.d.ts')).toBe(
+      '4aa1abd68b07ea5f0671b3afae41d4c911ad52638c5bf2485a44993c9376ffb7',
+    );
+    expect(sha256('src/features/triage/clinicalContract.generated.ts')).toBe(
+      '3f3d5ba029f59f394ad73bafa89b9b6f4cb5ed780ca7c3e8a94bde4cfbc3fd7c',
+    );
+  });
+
+  it('R36: fetch y axios solo existen en shared/api, el cliente HTTP central', () => {
+    const sources = appSources();
+    // La búsqueda recorre las features de los dashboards y la carpeta del cliente.
+    expect(sources).toContain('src/shared/api/client.ts');
+    expect(sources).toContain('src/features/queue/components/QueuePage.tsx');
+    expect(sources).toContain(
+      'src/features/reports/components/ReportsPage.tsx',
+    );
+    expect(
+      sources
+        .filter((file) => !file.startsWith('src/shared/api/'))
+        .filter((file) =>
+          /\bfetch\s*\(|\baxios\b/.test(readFileSync(file, 'utf8')),
+        ),
+    ).toEqual([]);
+  });
+
+  it('R36: ninguna feature importa de otra feature, ni por ruta relativa', () => {
+    const crossings: string[] = [];
+    for (const file of appSources()) {
+      const own = featureOf(file);
+      if (!own) continue;
+      for (const specifier of specifiersOf(readFileSync(file, 'utf8'))) {
+        if (!specifier.startsWith('.')) continue;
+        // Con la barra final, un import a la carpeta de una feature también cuenta.
+        const target = `${posix.join(posix.dirname(file), specifier)}/`;
+        const other = featureOf(target);
+        if (other && other !== own) crossings.push(`${file} -> ${specifier}`);
+      }
+    }
+    expect(crossings).toEqual([]);
+    // Lo que usan varios dashboards vive en shared/ y lo importan las features desde ahí.
+    for (const file of [
+      'src/features/reception/components/ReceptionPage.tsx',
+      'src/features/triage/components/TriageTrayPage.tsx',
+      'src/features/queue/components/QueuePage.tsx',
+      'src/features/reports/components/ReportsPage.tsx',
+    ])
+      expect(readFileSync(file, 'utf8'), file).toMatch(
+        /from '\.\.\/\.\.\/\.\.\/shared\/hooks\/useEncounter/,
+      );
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Escritura en español (T12, R40)
+// ---------------------------------------------------------------------------------------------
+
+/** Las nueve claves de «Escritura y horas» (design.md) con su texto en español después del cambio. */
+const PREREGISTRO: Record<string, string> = {
+  feature_pr_rejected: 'Preregistro rechazado.',
+  feature_tray_empty: 'No hay preregistros pendientes.',
+  feature_tray_pending: 'Preregistros pendientes',
+  feature_confirm_conflict:
+    'Este preregistro ya no está pendiente o el paciente ya tiene una atención activa.',
+  feature_pr_gone: 'Este preregistro ya no existe.',
+  feature_reject_conflict: 'Este preregistro ya no está pendiente.',
+  feature_pr_label: 'Preregistro',
+  feature_reject_form: 'Rechazar preregistro',
+  feature_rejecting: 'Rechazando el preregistro…',
+};
+
+/** Las claves de design.md («Plan i18n»: las 36 nuevas y las dos guías que cambian). */
+const PLAN_I18N_KEYS = [
+  ...Object.keys(NEW_MESSAGES),
+  'guide_reception',
+  'clinical_guide_tray',
+];
+
+/** Las que design.md reutiliza sin cambio y que los dashboards muestran. */
+const REUSED_KEYS = [
+  'common_nav_recepcion',
+  'common_nav_triage',
+  'common_nav_cola',
+  'common_nav_reportes',
+  'common_pending',
+  'common_pending_label',
+  'common_retry',
+  'common_forbidden',
+  'feature_refresh',
+  'feature_registration_direct',
+  'feature_site',
+  'feature_sites_all',
+  'feature_sites_error',
+  'feature_tray_loading',
+  'feature_tray_error',
+  'feature_patient',
+  'feature_arrival',
+  'feature_status',
+  'feature_encounter_view',
+  'feature_verified',
+  'feature_unverified',
+  'feature_complaint',
+  'feature_expires',
+  'feature_verify_identity',
+  'feature_confirm_arrival',
+  'feature_confirming_arrival',
+  'feature_reject',
+  'feature_reject_reason',
+  'feature_reject_confirm',
+  'feature_back',
+  'feature_arrival_confirmed',
+  'clinical_tray_intro',
+  'clinical_pending',
+  'clinical_tray_loading',
+  'clinical_tray_error',
+  'clinical_tray_empty',
+  'clinical_open',
+  'clinical_page',
+  'feature_previous',
+  'feature_next',
+  'common_birthdate',
+  'common_estimated_age',
+  'common_years',
+  'common_sex',
+  'common_document',
+];
+
+/** Todos los textos que pintan los dashboards: los de «Plan i18n», los nueve y los reutilizados. */
+const DASHBOARD_KEYS = [
+  ...new Set([...PLAN_I18N_KEYS, ...Object.keys(PREREGISTRO), ...REUSED_KEYS]),
+];
+
+/** Etiquetas, títulos de panel y de franja: empiezan con mayúscula (UI-02.AC12). */
+const LABEL_KEYS = [
+  'dash_indicators',
+  'dash_stat_preregistered',
+  'dash_stat_waiting',
+  'dash_stat_triaged',
+  'dash_stat_in_care',
+  'dash_col_action',
+  'dash_queue_recent',
+  'dash_reports_by_site',
+  'dash_queue_pending_title',
+  'dash_reports_pending_title',
+  'feature_tray_pending',
+  'clinical_pending',
+  'feature_pr_label',
+  'feature_site',
+  'feature_patient',
+  'feature_arrival',
+  'feature_status',
+  'feature_complaint',
+  'feature_expires',
+  'common_document',
+  'common_birthdate',
+  'common_sex',
+];
+
+/** Cómo llama cada idioma al preregistro: R40 pide conservarlo tal cual. */
+const PREREGISTRATION_TERM: Record<Exclude<Locale, 'es'>, RegExp> = {
+  en: /pre-registration/i,
+  pt: /pré-registro/i,
+  fr: /préinscription/i,
+  de: /voranmeldung/i,
+};
+
+/** Los textos con guion que design.md deja fuera de los dashboards (UI-02.AC12 y S3). */
+const HYPHEN_OUT_OF_SCOPE = [
+  'feature_arrival_conflict',
+  'feature_origin_pr',
+  'feature_pr_reference',
+  'landing_description',
+  'landing_step1_title',
+  'landing_capability_mobile',
+  // Sin lector desde T6; T14 la retira de los cinco catálogos.
+  'feature_reception_title',
+];
+
+describe('UI-02-web escritura en español de los dashboards', () => {
+  const es = merged('es');
+
+  it('R40: las nueve claves que pasan a «preregistro» lo escriben sin guion, con el texto de design.md', () => {
+    for (const [key, text] of Object.entries(PREREGISTRO))
+      expect(es[key], key).toBe(text);
+  });
+
+  it('R40: en español, ningún texto de los dashboards escribe «pre-registro» con guion', () => {
+    for (const key of DASHBOARD_KEYS) {
+      expect(es[key], key).toEqual(expect.any(String));
+      expect(es[key], key).not.toMatch(/pre-registr/i);
+    }
+    // Los que nombran el preregistro lo escriben junto.
+    for (const key of [
+      'dash_stat_preregistered',
+      'dash_reception_lead',
+      'guide_reception',
+    ])
+      expect(es[key], key).toMatch(/preregistr/i);
+  });
+
+  it('R40: el guion solo queda en los textos que design.md deja fuera de los dashboards', () => {
+    const hyphenated = Object.keys(es).filter((key) =>
+      /pre-registr/i.test(es[key]),
+    );
+    expect(
+      hyphenated.filter((key) => !HYPHEN_OUT_OF_SCOPE.includes(key)),
+    ).toEqual([]);
+    // Y los que design.md deja fuera conservan su escritura (S3: las demás pantallas no cambian).
+    for (const key of HYPHEN_OUT_OF_SCOPE.filter(
+      (name) => name !== 'feature_reception_title',
+    ))
+      expect(es[key], key).toMatch(/pre-registr/i);
+  });
+
+  it.each(LOCALES)(
+    'R40: ningún texto de los dashboards usa «·» como separador (%s)',
+    (locale) => {
+      const all = merged(locale);
+      for (const key of DASHBOARD_KEYS) {
+        expect(all[key], `${locale}/${key}`).toEqual(expect.any(String));
+        expect(all[key], `${locale}/${key}`).not.toContain('·');
+      }
+    },
+  );
+
+  it('R40: las etiquetas, los títulos de panel y los de franja empiezan con mayúscula inicial', () => {
+    for (const key of LABEL_KEYS) {
+      expect(es[key], key).toEqual(expect.any(String));
+      expect(es[key], key).toMatch(/^\p{Lu}/u);
+    }
+  });
+
+  it.each(['en', 'pt', 'fr', 'de'] as const)(
+    'R40: %s conserva su terminología del preregistro en las nueve claves',
+    (locale) => {
+      const all = merged(locale);
+      for (const key of Object.keys(PREREGISTRO)) {
+        expect(all[key], `${locale}/${key}`).toMatch(
+          PREREGISTRATION_TERM[locale],
+        );
+        expect(all[key], `${locale}/${key}`).not.toMatch(/preregistr/i);
+      }
+    },
+  );
+
+  it.each(DASHBOARDS)(
+    'R40: $role no pinta «·» ni «pre-registro» en pantalla',
+    async ({ role, path, title }) => {
+      dashboardApi(role);
+      renderApp({ entries: [path], stored: true });
+      await screen.findByRole('heading', { level: 1, name: title });
+      await settled();
+      expect(document.body.textContent).not.toContain('·');
+      expect(document.body.textContent).not.toMatch(/pre-registr/i);
     },
   );
 });

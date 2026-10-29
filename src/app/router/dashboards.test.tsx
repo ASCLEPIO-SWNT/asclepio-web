@@ -292,6 +292,27 @@ describe('UI-02-web catálogos i18n de los dashboards', () => {
     }
   });
 
+  it.each(LOCALES)(
+    'R29: las cinco claves que T14 retira ya no existen en ningún catálogo de %s',
+    (locale) => {
+      for (const key of RETIRED_T14_KEYS) {
+        for (const group of GROUPS)
+          expect(
+            catalogs[locale][group][key],
+            `${locale}/${group}/${key}`,
+          ).toBeUndefined();
+      }
+    },
+  );
+
+  it('R29: las cinco claves que T14 retira ya no aparecen en el código de la aplicación', () => {
+    for (const file of appSources()) {
+      const source = readFileSync(file, 'utf8');
+      for (const key of RETIRED_T14_KEYS)
+        expect(source.includes(key), `${file} cita ${key}`).toBe(false);
+    }
+  });
+
   it('R29: los mensajes se compilan y se resuelven por idioma con sus parámetros', () => {
     expect(translate('es', 'dash_at_least', { count: 100 })).toBe(
       'Al menos 100',
@@ -692,6 +713,17 @@ const FORBIDDEN_CASES = Object.entries(FORBIDDEN).flatMap(([role, paths]) =>
 const LANDINGS = DASHBOARDS.flatMap((dashboard) =>
   ['/app', dashboard.path].map((entry) => ({ ...dashboard, entry })),
 );
+/**
+ * Claves de la pantalla anterior de recepción y del panel de enfermería de F-03 que ningún componente
+ * lee desde UI-02-web (T6, T7 y T11): T14 las retira de los cinco catálogos.
+ */
+const RETIRED_T14_KEYS = [
+  'feature_reception_title',
+  'clinical_workspace',
+  'clinical_workflow_title',
+  'clinical_workflow_body',
+  'clinical_waiting_only',
+];
 const ROUTE_CASES = ROLE_ROUTES.flatMap((route) =>
   route.roles.map((role) => ({ role, path: route.path })),
 );
@@ -1310,8 +1342,6 @@ const HYPHEN_OUT_OF_SCOPE = [
   'landing_description',
   'landing_step1_title',
   'landing_capability_mobile',
-  // Sin lector desde T6; T14 la retira de los cinco catálogos.
-  'feature_reception_title',
 ];
 
 describe('UI-02-web escritura en español de los dashboards', () => {
@@ -1344,9 +1374,7 @@ describe('UI-02-web escritura en español de los dashboards', () => {
       hyphenated.filter((key) => !HYPHEN_OUT_OF_SCOPE.includes(key)),
     ).toEqual([]);
     // Y los que design.md deja fuera conservan su escritura (S3: las demás pantallas no cambian).
-    for (const key of HYPHEN_OUT_OF_SCOPE.filter(
-      (name) => name !== 'feature_reception_title',
-    ))
+    for (const key of HYPHEN_OUT_OF_SCOPE)
       expect(es[key], key).toMatch(/pre-registr/i);
   });
 

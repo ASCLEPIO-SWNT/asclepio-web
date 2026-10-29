@@ -60,3 +60,12 @@ export type ComplaintSource = Encounter['complaintSource'];
 export type DocumentType = NonNullable<Patient['documentType']>;
 export type Sex = NonNullable<Patient['sex']>;
 export type EventActorType = Schemas['EventActorDto']['type'];
+
+// F-03-web: aliases of the published clinical capture contract (no handwritten DTOs).
+export type CreateVitalSigns = Schemas['CreateVitalSignsDto'];
+export type VitalSigns = Schemas['VitalSignsDto'];
+export type CreateSymptomFindings = Schemas['CreateSymptomFindingsDto'];
+export type SymptomFinding = Schemas['SymptomFindingDto'];
+export type SymptomFindingKind = Schemas['SymptomFindingKind'];
+export type ConsciousnessLevel = Schemas['ConsciousnessLevel'];
+export type ClinicalCapture = Schemas['ClinicalCaptureDto'];

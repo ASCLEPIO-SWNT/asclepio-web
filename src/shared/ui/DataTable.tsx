@@ -70,19 +70,23 @@ const CELL_CLASS = {
 /**
  * Celda de una fila. `label` va a `data-label`: al apilarse la tabla, el CSS la muestra como
  * etiqueta de la celda. `kind` fija la alineación: nombre (`main`), hora (`time`), cifra (`num`)
- * o acción (`actions`).
+ * o acción (`actions`). `id` permite que el control de la fila describa su acción con la celda
+ * del nombre (`aria-describedby`), porque los controles repetidos se distinguen por su fila.
  */
 export function DataCell({
+  id,
   label,
   kind,
   children,
 }: {
+  id?: string;
   label?: string;
   kind?: keyof typeof CELL_CLASS;
   children: ReactNode;
 }) {
   return (
     <td
+      id={id}
       role="cell"
       data-label={label}
       className={kind ? CELL_CLASS[kind] : undefined}

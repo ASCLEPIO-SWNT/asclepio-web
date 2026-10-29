@@ -815,6 +815,38 @@ describe('UI-02-web componentes del dashboard', () => {
       ]);
     });
 
+    it('R31: DataCell acepta un id para que el control de la fila lo use en aria-describedby', () => {
+      render(
+        <>
+          <h2 id="t">Tabla</h2>
+          <DataTable
+            labelledBy="t"
+            columns={[{ id: 'patient', header: 'Paciente' }]}
+          >
+            <DataRow>
+              <DataCell kind="main" id="paciente-1">
+                Daniel Castro Mora
+              </DataCell>
+            </DataRow>
+          </DataTable>
+        </>,
+      );
+      const cell = screen.getByRole('cell', { name: 'Daniel Castro Mora' });
+      expect(cell).toHaveAttribute('id', 'paciente-1');
+      // Sin `id`, la celda no lo inventa.
+      expect(
+        render(
+          <table>
+            <tbody>
+              <tr>
+                <DataCell>otra</DataCell>
+              </tr>
+            </tbody>
+          </table>,
+        ).container.querySelector('td'),
+      ).not.toHaveAttribute('id');
+    });
+
     it('R34: la tabla simple (por sede) lo declara para no apilarse', () => {
       render(<Table simple />);
       expect(

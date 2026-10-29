@@ -420,3 +420,16 @@ Solo las de las etapas anteriores y estas dos, nuevas en C1: `routes.test.tsx` (
 - **T14, lo que ya no tiene lector**: `grep` en `src` (sin pruebas) no encuentra `feature_reception_title`, `clinical_workspace`, `clinical_workflow_title`, `clinical_workflow_body` ni `clinical_waiting_only`; ningún componente usa ya `.pending-badge` (solo lo usaba `PlaceholderPage`, borrada en T11) ni `.cards`, `.clinical-board`, `.clinical-tray`, `.clinical-patient*`, `.clinical-empty*`, `.clinical-pagination`, `.clinical-summary*` ni `.pre-registration` (quedan solo los nombres de clase de `index.css`; los `id` `pre-registration-…` de `PreRegistrationCard` no son clases). Al retirar `feature_reception_title` conviene quitar su entrada de `HYPHEN_OUT_OF_SCOPE` en `dashboards.test.tsx` (la prueba la tolera con una comprobación de subconjunto y pasa igual). Los campos `title` y `feature` de `RoleRoute` siguen sin lector, por decisión de `design.md`.
 - **`dashboards.test.tsx` es ya un archivo grande** (103 pruebas): lo que comparten las secciones (`DASHBOARDS`, `dashboardApi`, `settled`, `stubSpeech`, `appSources`, `merged` y `paramsOf`) está definido arriba de cada una; si T14 añade su sección R29 (claves retiradas), puede reutilizarlos.
 - **Búsqueda de `Pre-registro`**: ver la auditoría de T12 (solo quedan los textos fuera de alcance de `design.md`, `feature_reception_title` y comentarios o pruebas de pantallas fuera de alcance).
+
+---
+
+# Etapa C2, verificación visual y cierre (T13 y T14)
+
+Fecha: 2026-10-29, America/Bogota. Rol `implementer`. Parte de `feat/ui-02-web-dashboards` en `28baf45` (etapas A, B y C1 verificadas por el `leader`: 42 archivos y 742 pruebas en verde, `./init.sh` en verde). Esta sección se anota subpaso a subpaso y cada subpaso se confirma con su commit; si la sesión se corta, el `leader` retoma leyendo esta nota y `git log`. La nota de cierre (tabla R1 a R41, resultado de `./init.sh` y limitaciones) va al final.
+
+Herramientas de verificación (fuera del repo, `../../local-analysis/ui02-verification/`): `ui02-preview-api.mjs` (API sintética, puerto 3012), `c2-lib.mjs` (arranque de Chromium, inicio de sesión por la interfaz, cambio de preferencias con el panel «Preferencias» de la propia aplicación) y un script por bloque (`c2-*.mjs`). Build de la rama a `dist-c2/` (`VITE_API_URL=http://127.0.0.1:3012 npm run build -- --outDir … --emptyOutDir`) y servido con `vite preview` en el puerto 5186.
+
+## Paso 0, ajuste de T10 hallado por el `leader` (hecho)
+
+- **Prueba primero**: `dashboardStyles.test.ts` (`R39: las reglas del marco privado…`) pasa a esperar `max-width: 80rem` y se vio fallar (`"max-width": "84rem"` recibido). Luego `dashboard.css`: `.layout--private .layout__header-inner` pasa de `84rem` a `80rem`. Commit `7faee41` (`fix(ui): align the private header tools with the content edge`).
+- **Medición en Chromium** con el build de la rama (`c2-frame-edge.mjs`, los cuatro roles, sesión iniciada por la interfaz): el borde derecho de `.layout__tools` y el de `.shell` coinciden (diferencia 0) a 1280 px (1248), 1440 px (1360) y 1920 px (1600); `.dashboard` termina en la misma x. La herramienta más a la derecha ya no sobresale 32 px (antes: 1392 frente a 1360 a 1440 px).

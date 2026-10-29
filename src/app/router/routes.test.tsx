@@ -111,8 +111,8 @@ describe('rutas y sesión', () => {
     );
   });
 
-  // F-03 supplies the nursing workspace; only medicine and reports remain placeholders.
-  it.each(['PHYSICIAN', 'ADMIN'] as const)(
+  // UI-02 supplies the reception, nursing and medicine dashboards; only reports remains a placeholder.
+  it.each(['ADMIN'] as const)(
     'R23: el marcador del inicio de %s tiene h1 y la feature que lo trae, sin acciones',
     async (role) => {
       fakeApi({ 'GET /api/v1/me': json(200, staffMe[role]) });

@@ -1,4 +1,5 @@
 import type { RouteObject } from 'react-router';
+import { queueRoutes } from '../../features/queue/routes';
 import { receptionRoutes } from '../../features/reception/routes';
 import { StatusPage } from '../../features/status/StatusPage';
 import { encounterRoutes, triageRoutes } from '../../features/triage/routes';
@@ -17,6 +18,7 @@ const FEATURE_ROUTES: Partial<Record<string, RouteObject[]>> = {
   '/recepcion': receptionRoutes,
   '/atenciones': encounterRoutes,
   '/triage': triageRoutes,
+  '/cola': queueRoutes,
 };
 
 /** Configuración de rutas (D6, D7, D8, D13). Se exporta para montarla en memoria en las pruebas. */

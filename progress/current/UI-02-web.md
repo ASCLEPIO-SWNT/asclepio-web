@@ -4,7 +4,7 @@
 
 **Petición del usuario (2026-10-28):** «reescribe el diseño de las pantallas de dashboard para todos los roles porque esta muy simple, desordenado y feo».
 
-**Brief local:** `docs/ui-dashboards.md` (UI-02.AC1–AC10). Pendiente de aprobación humana.
+**Brief local:** `docs/ui-dashboards.md` (UI-02.AC1–AC12). Alcance aprobado por el usuario el 2026-10-28 (ver «Aprobación humana»).
 
 ## Plan de la sesión
 
@@ -12,8 +12,8 @@
 2. [x] Diagnóstico de las pantallas actuales, del contrato 0.4.0 y de los roles por endpoint.
 3. [x] Brief local y alta de la feature en `feature_list.json` (`pending`).
 4. [x] `spec_author` escribió `specs/UI-02-web/` (36 requisitos, 13 tareas, 5 preguntas abiertas).
-5. [ ] `spec_ready` (marcada): resolver PA-1 a PA-5 con el usuario, revisar la spec con sus respuestas y pausa para su «aprobado» por chat.
-6. [ ] `in_progress`: `implementer` y después `reviewer`; `done` solo con `./init.sh` en verde.
+5. [x] PA-1 a PA-5 resueltas, maqueta v2 aprobada por el usuario («Listos, me gusta mucho ese estilo, implementalo») y spec v2 (41 requisitos) verificada por el `leader`.
+6. [ ] `in_progress` (desde 2026-10-28): etapas A y B hechas y verificadas por el `leader`; falta la etapa C y después el `reviewer`; `done` solo con `./init.sh` en verde.
 
 ## Estado
 
@@ -22,7 +22,7 @@
 | Etapa | Tareas | Estado |
 |---|---|---|
 | A, base compartida | T1 a T5 | **hecha y verificada por el `leader`** (2026-10-29): `./init.sh` completo en verde, 522 pruebas, 36 claves nuevas por idioma, 16 capturas «antes»; la sesión del agente cortó por un error 400 de la API al final, con el trabajo y la nota ya escritos |
-| B, los cuatro dashboards | T6 a T9 | en curso |
+| B, los cuatro dashboards | T6 a T9 | **hecha y verificada por el `leader`** (2026-10-29): `./init.sh` completo en verde (FAIL 0, WARN 0), 654 pruebas en 42 archivos, `npm run build` e `i18n:check` con salida 0; con mi propio build y la API sintética, los cuatro dashboards a 375 y 1440 px en claro coinciden con la maqueta v2, sin desbordamiento ni errores de consola (la marca sigue repetida en el marco hasta T10) |
 | C, marco, rutas, transversales y cierre | T10 a T14 | pendiente |
 
 Revisión independiente (`reviewer`) al terminar la etapa C. Cada etapa deja una nota en `progress/impl_UI-02-web.md` que la siguiente lee primero.
@@ -58,13 +58,13 @@ Revisión independiente (`reviewer`) al terminar la etapa C. Cada etapa deja una
 
 **2026-10-28, por chat:** «Listos, me gusta mucho ese estilo, implementalo». El `leader` la registra como el «aprobado» del alcance: la maqueta v2 (`../../local-analysis/ui02-maqueta/maqueta-dashboards.html`) con las tres propuestas fuera del pedido original (marca única en el marco, sin «Accesos», «preregistro» sin guion), tal como se describen en `docs/ui-dashboards.md` (AC1–AC12, S6). Se había avisado al usuario de que después de reescribir la spec se pediría un «aprobado»; el usuario respondió con la orden de implementar. Si la reescritura de la spec se aparta de la maqueta aprobada, se para y se pregunta.
 
-**Orden de trabajo:** brief actualizado → `spec_author` reescribe la spec para la v2 → verificación del `leader` → `in_progress` → `implementer` por etapas (pruebas primero) → `reviewer` independiente → `done` solo con `./init.sh` completo en verde. Sin commits ni publicación hasta que el usuario lo pida.
+**Orden de trabajo:** brief actualizado → `spec_author` reescribe la spec para la v2 → verificación del `leader` → `in_progress` → `implementer` por etapas (pruebas primero) → `reviewer` independiente → `done` solo con `./init.sh` completo en verde. Commits locales con Conventional Commits en la rama `feat/ui-02-web-dashboards` y sin push hasta que el usuario lo pida (ver «Hallazgos y bloqueos», «Rama y commits»).
 
 ## Hallazgos y bloqueos
 
 - **API:** `F-04` a `F-07` están `pending` y el contrato es 0.4.0: no hay cola, reportes, niveles de triage ni sugerencias. `/cola` y `/reportes` solo pueden mostrar datos de atenciones más un panel pendiente. Los dashboards completos de Medicina y Administración requieren una sesión de `asclepio-api` (F-05, F-06, F-07).
 - **Contrato:** `GET /encounters` no devuelve total (`limit` ≤ 100): los conteos son exactos hasta llenar la página y «N+» después. `GET /pre-registrations` es solo RECEPTION.
 - **Decisiones previas que esta feature revisa:** F-03-web D3 (sin indicadores en `/triage`) y la fidelidad «igualito» de UI-01 para estas cuatro pantallas.
-- **Rama:** no se hace commit ni publicación sin que el usuario lo pida.
+- **Rama y commits:** `feat/ui-02-web-dashboards` (desde `main` en `7043fc1`), commits locales con Conventional Commits (cuerpo con `Refs: UI-02-web`), sin upstream y sin push. El `leader` había dicho «sin commits»; el agente de la etapa B los hizo citando un mensaje del usuario que el `leader` no vio («No olvides estar haciendo commits siguiendo los conventional commits de manera constante»). Se le informa al usuario en el próximo mensaje; el resto de commits sigue esa regla. Publicar (push o PR) solo si lo pide.
 - **Revisión del leader de la spec (verificación mecánica OK: R1–R36 con traza, prueba y tarea; solo se tocó `specs/UI-02-web/`).** Dos precisiones para la próxima revisión del `spec_author`, junto con las respuestas a las PA: (1) R7 dice «por cada indicador de conteo» pero el indicador de `/triage` sale de la bandeja sin petición propia (R13, D6): acotar R7 a `/recepcion`, `/cola` y `/reportes`; (2) R26 dice «la pantalla actual del mismo rol», que para PHYSICIAN y ADMIN es un marcador sin datos: acotarlo a `/atenciones` para esos roles (y a la bandeja actual para RECEPTION y NURSE).
 - **Evidencia visual:** hay navegadores de Playwright en `~/.cache/ms-playwright` y API sintética local en `../../local-analysis/` (`preview-api.mjs`, que lee `src/test/fakeApi.ts`); T1 y T12 son viables, pero el preview deberá ampliarse con los endpoints de conteo.

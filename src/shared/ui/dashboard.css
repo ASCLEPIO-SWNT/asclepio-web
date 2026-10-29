@@ -27,6 +27,14 @@
   --tone: var(--muted);
   --tone-bg: color-mix(in oklch, var(--muted) 12%, var(--card));
 }
+/*
+ * --accent sobre --accent-soft mide 4.39:1 en el modo normal claro, por debajo del 4.5:1 del texto
+ * pequeño de una insignia («Clasificada»). El texto usa --accent-hover, el par del botón suave
+ * (6.18:1 en ese modo y más en los demás); el icono del chip de resumen conserva --tone.
+ */
+.badge.tone--accent {
+  color: var(--accent-hover);
+}
 
 /* ---------- dashboard: contenedor de consulta y rejilla vertical ---------- */
 .dashboard {

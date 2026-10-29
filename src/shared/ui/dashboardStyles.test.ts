@@ -651,6 +651,16 @@ describe('UI-02-web hoja de estilos del dashboard', () => {
     }
   });
 
+  it('R30: el texto de la insignia de tono accent usa --accent-hover, el mismo par del botón suave, porque --accent sobre --accent-soft no llega a 4.5:1 en claro', () => {
+    // Medido en T13 con 7150 pares de texto en cinco modos de color, ambos temas y 24 estados: el único
+    // par por debajo del mínimo era «Clasificada» (--accent #087c7a sobre --accent-soft #e2f3f1) con 4.39:1
+    // en el modo normal claro. --accent-hover sobre --accent-soft es el par del botón suave: 6.18:1.
+    expect(valueOf('.badge.tone--accent', 'color')).toBe('var(--accent-hover)');
+    // Los demás tonos (y el icono del chip de resumen, que no es texto) siguen con su token.
+    expect(valueOf('.tone--accent', '--tone')).toBe('var(--accent)');
+    expect(valueOf('.badge.tone--ok', 'color')).toBeUndefined();
+  });
+
   it('R4: la escala única de espacios y de radios es local al dashboard y es la del diseño', () => {
     const scale = {
       '--s1': '0.25rem',

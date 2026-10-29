@@ -7,8 +7,7 @@ Fecha: 2026-10-28, America/Bogota. Brief: `docs/ui-dashboards.md` (UI-02.AC1 a A
 | Parte | Tarea | Estado |
 | --- | --- | --- |
 | Commit de partida, procedimiento, datos, 16 capturas «antes» y línea base de R35 | T1 | Hecho |
-| Capturas «después» y adicionales, comparación con la maqueta, mediciones, idiomas, modos de color y contraste, teclado y movimiento | T13 | Hecho |
-| Refresco automático con temporizadores reales y pestaña oculta, y tabla R → prueba | T13 | Pendiente |
+| Capturas «después» y adicionales, comparación con la maqueta, mediciones, idiomas, modos de color y contraste, teclado, movimiento, refresco automático con temporizadores reales y pestaña oculta, y tabla R → prueba | T13 | Hecho (2026-10-29) |
 
 ## Commit de partida
 
@@ -261,6 +260,40 @@ En los 11 escenarios: ninguna parada sin indicador de foco, ningún aro recortad
 
 Las transiciones de 0.16 s de botones y campos son las de `index.css` (anteriores a esta feature) y desaparecen con la preferencia de movimiento reducido por la regla global.
 
+### Refresco automático (R23, R24 y R37)
+
+**Método** (`c2-refresh.mjs`, temporizadores reales, ventana de 1280 por 600 px para que haya recorrido de desplazamiento): en cada escenario se pone el foco en un nodo, se desplaza la página a media altura, se añade una llegada con `POST /__arrive` y se espera un ciclo de 30 s completo. Un sondeo en cada fotograma (`requestAnimationFrame`) anota la altura de los paneles y del documento, `scrollY`, si el nodo enfocado sigue siendo el activo y si aparece algún esqueleto o `role="status"` (un `MutationObserver` cuenta los añadidos). En todos: **foco conservado en 0 fotogramas sin foco, `scrollY` sin cambio (salto 0 px), alturas sin caída (solo suben cuando entran filas), 0 esqueletos o regiones de estado añadidos y la cadencia de peticiones igual a la de `design.md`.**
+
+| Dashboard y escenario | Ciclo (peticiones) | Foco y desplazamiento | Altura y filas | Estado local |
+| --- | --- | --- | --- | --- |
+| Recepción, foco en el motivo de rechazo de la tarjeta 2 | a los 28.0 s, 2 (`/pre-registrations` y `/encounters?limit=100&status=WAITING_TRIAGE`) | foco conservado; `scrollY` 421 a 421 | paneles 1114 px, documento 1441 px, sin cambio; 3 tarjetas con los mismos nodos y el mismo orden | casilla de la tarjeta 1 marcada y motivo «motivo a medio escribir» intactos |
+| Recepción, foco en «Confirmar llegada» de la tarjeta 1 | 27.0 s, 2 | igual | igual | igual |
+| Recepción, foco en la casilla de la tarjeta 1 | 27.1 s, 2 | igual | igual | igual |
+| Recepción, foco en «Actualizar» | 27.0 s, 2 | igual | igual | igual |
+| Enfermería, foco en el enlace de captura de la primera fila | 28.1 s, 1 (`/encounters?limit=50&offset=0&status=WAITING_TRIAGE`) | foco conservado; `scrollY` 223 a 223 | paneles 718 a 927 px (8 a 11 filas: las otras sesiones de la verificación, que corrían a la vez, habían añadido 3 llegadas); las 8 anteriores conservan nodo y orden; las 3 nuevas, arriba | sin estado local |
+| Enfermería, foco en el enlace de la fila 3, llegada nueva | 27.0 s, 1 | foco conservado; `scrollY` 327 a 327 | 927 a 1205 px (11 a 15 filas); anteriores intactas y nuevas arriba | sin estado local |
+| Enfermería, foco en «Actualizar» | 27.0 s, 1 | foco conservado; `scrollY` 466 a 466 | 1205 a 1344 px (15 a 17 filas) | sin estado local |
+| Enfermería, foco en «Siguiente» con una página llena (50 en espera) | 28.1 s, 1 | foco conservado en «Siguiente» (que sigue habilitado); `scrollY` 1683 a 1683 | paneles 3639 px y documento 3966 px, sin cambio; 49 de 50 filas siguen con el mismo nodo (la 50.ª sale al entrar la llegada), mismo orden | sin estado local |
+| Medicina, foco en «Ver atención» de la fila 3 | 28.1 s, 4 (tres conteos con `limit=100` y `/encounters?limit=8&offset=0`) | foco conservado; `scrollY` 274 a 274 | paneles 706 px y documento 1147 px, sin cambio; 7 de 8 filas siguen con el mismo nodo (sale la última al entrar la llegada, que queda arriba); la fila enfocada baja 70 px en la ventana (268 a 338 px), el desplazamiento no cambia | sin estado local |
+| Medicina, foco en «Actualizar» | 27.0 s, 4 | foco conservado; `scrollY` 274 a 274 | igual (7 de 8) | sin estado local |
+| Administración, foco en «Actualizar» | 28.0 s, 6 (tres conteos y uno por sede) | foco conservado; `scrollY` 88 a 88 | paneles 333 px y documento 775 px, sin cambio; las 3 filas de sedes con los mismos nodos | sin estado local |
+| Administración, foco en «Ver todas las atenciones» | 27.1 s, 6 | igual | igual | sin estado local |
+
+- **Coste por ciclo** (una vez cada 30 s): recepción 2 peticiones, enfermería 1, medicina 4 y administración 3 + S con S = 3 sedes, es decir 6; las sedes (`/public/tenants`) no se repiten. Coincide con la tabla de `design.md`.
+- **La bandeja de enfermería solo se reordena por la llegada**: las filas existentes conservan su orden y su nodo, y las nuevas entran arriba (la lista llega ordenada por llegada descendente).
+- **Observación de diseño**: cuando entra una fila nueva arriba, la lista baja una fila (70 px) y la fila que tiene el foco puede salir de la ventana; el nodo con foco, `scrollY`, el estado local y las alturas (nunca menores que antes) se conservan, como pide R37, pero lo que se estaba mirando se desplaza. Es inherente a una lista con llegadas arriba y a la decisión de no llamar a `scrollTo`; se anota y no se cambia.
+
+**Pestaña oculta** (`c2-hidden.mjs`, temporizadores reales, los cuatro roles a la vez): Chromium sin interfaz no puede ocultar una pestaña (Playwright mantiene visibles todas las páginas), así que se emula lo único que lee TanStack Query, `document.visibilityState` y `document.hidden`, y se lanza el evento `visibilitychange` como haría el navegador; los temporizadores y las peticiones son los reales.
+
+| Dashboard | Ciclo con la pestaña visible (control) | Oculta durante 65 s (más de dos ciclos) | Al volver, en 4 s | Siguiente ciclo |
+| --- | --- | --- | --- | --- |
+| Recepción | 2 peticiones | **0** | 0 (sin ráfaga) | 2 peticiones, 22.3 s después de volver |
+| Enfermería | 1 | **0** | 0 | 1, a los 22.3 s |
+| Medicina | 4 | **0** | 0 | 4, a los 22.3 s |
+| Administración | 6 | **0** | 0 | 6, a los 22.2 s |
+
+Con la pestaña oculta no hay peticiones; al volver no hay ráfaga (`refetchOnWindowFocus: false`, `refetchOnReconnect: false`) y el sondeo continúa en su cadencia de 30 s, con el coste aceptado en D14 (hasta 30 s para ver datos nuevos tras volver; «Actualizar» los trae al instante).
+
 ### Correcciones hechas durante T13
 
 Cada una con su prueba en rojo primero (`src/shared/ui/dashboardStyles.test.ts` y, donde cambia el marcado, la del componente) y su commit; ninguna toca pantallas fuera de los cuatro dashboards y la cabecera del marco privado.
@@ -284,6 +317,54 @@ Con la mirada de quien diseña (alineaciones, espacios, cortes de línea, cajas 
 - «Confirmar llegada» se ve apagado mientras la casilla no está marcada (control deshabilitado, regla de F-02-web, exento de WCAG 1.4.3).
 - Con una tabla de ancho automático, las columnas se reparten según el contenido: un estado o un nombre más largo mueve las columnas unos píxeles al refrescar («Sede» a 657 px con los seis estados y a 665 px con dos); sin desbordamiento ni salto vertical. Fijarlas (`table-layout: fixed`) cambiaría el aspecto aprobado.
 - Los tres huecos entre bloques son iguales (24 px) y los bordes izquierdos del título, la barra de resumen, el panel y la franja coinciden (x = 368 a 1440 px); no hay cajas que sobren.
+
+### Tabla R → prueba
+
+Generada con `c2-rtable.py` (fuera del repo) sobre el informe JSON de `npx vitest run --reporter=json`: 752 pruebas en 42 archivos, todas en verde. El script comprueba de forma mecánica que cada R1 a R41 tiene al menos una prueba cuyo nombre empieza por «R<n>:» bajo un `describe('UI-02-web …')`, y sale con error si falta alguna. Resultado: **ninguna R sin prueba**. Los archivos van sin el prefijo `src/`; el nombre completo de cada prueba es `archivo::R<n>: …`.
+
+| R | Pruebas | Archivos (número de pruebas) |
+| --- | --- | --- |
+| R1 | 20 | `app/router/dashboards.test.tsx` (20) |
+| R2 | 11 | `app/router/dashboards.test.tsx` (4); `features/queue/components/QueuePage.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/ui/dashboard.test.tsx` (2); `shared/ui/dashboardStyles.test.ts` (2) |
+| R3 | 10 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/ui/dashboard.test.tsx` (5); `shared/ui/dashboardStyles.test.ts` (1) |
+| R4 | 6 | `shared/ui/dashboardStyles.test.ts` (6) |
+| R5 | 4 | `shared/ui/dashboard.test.tsx` (1); `shared/ui/dashboardStyles.test.ts` (3) |
+| R6 | 2 | `shared/hooks/encounterQueries.test.tsx` (1); `shared/lib/datetime.test.ts` (1) |
+| R7 | 6 | `features/reports/components/ReportsPage.test.tsx` (1); `shared/hooks/encounterQueries.test.tsx` (5) |
+| R8 | 18 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (5); `shared/hooks/encounterQueries.test.tsx` (5); `shared/lib/counts.test.ts` (3); `shared/ui/dashboard.test.tsx` (1); `shared/ui/dashboardStyles.test.ts` (1) |
+| R9 | 1 | `features/reception/components/ReceptionDashboard.test.tsx` (1) |
+| R10 | 5 | `features/reception/components/ReceptionDashboard.test.tsx` (3); `shared/ui/dashboardStyles.test.ts` (2) |
+| R11 | 1 | `features/reception/components/ReceptionDashboard.test.tsx` (1) |
+| R12 | 6 | `features/reception/components/ReceptionDashboard.test.tsx` (4); `shared/ui/dashboard.test.tsx` (2) |
+| R13 | 1 | `features/triage/components/TriageDashboard.test.tsx` (1) |
+| R14 | 6 | `features/triage/components/TriageDashboard.test.tsx` (5); `shared/hooks/encounterQueries.test.tsx` (1) |
+| R15 | 4 | `features/queue/components/QueuePage.test.tsx` (2); `features/reports/components/ReportsPage.test.tsx` (1); `shared/lib/encounterStatus.test.ts` (1) |
+| R16 | 12 | `features/queue/components/QueuePage.test.tsx` (11); `shared/hooks/encounterQueries.test.tsx` (1) |
+| R17 | 3 | `features/reports/components/ReportsPage.test.tsx` (3) |
+| R18 | 4 | `features/queue/components/QueuePage.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `shared/ui/dashboard.test.tsx` (1); `shared/ui/dashboardStyles.test.ts` (1) |
+| R19 | 11 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (2); `features/reports/components/ReportsPage.test.tsx` (2); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/lib/indicator.test.ts` (1); `shared/ui/dashboard.test.tsx` (3); `shared/ui/dashboardStyles.test.ts` (1) |
+| R20 | 8 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/lib/indicator.test.ts` (1); `shared/ui/dashboard.test.tsx` (3) |
+| R21 | 20 | `features/queue/components/QueuePage.test.tsx` (3); `features/reception/components/ReceptionDashboard.test.tsx` (4); `features/reports/components/ReportsPage.test.tsx` (4); `features/triage/components/TriageDashboard.test.tsx` (3); `shared/hooks/encounterQueries.test.tsx` (2); `shared/lib/indicator.test.ts` (1); `shared/lib/refresh.test.ts` (1); `shared/ui/dashboard.test.tsx` (2) |
+| R22 | 20 | `features/queue/components/QueuePage.test.tsx` (4); `features/reception/components/ReceptionDashboard.test.tsx` (4); `features/reports/components/ReportsPage.test.tsx` (4); `features/triage/components/TriageDashboard.test.tsx` (2); `shared/hooks/encounterQueries.test.tsx` (2); `shared/lib/indicator.test.ts` (1); `shared/lib/refresh.test.ts` (1); `shared/ui/dashboard.test.tsx` (2) |
+| R23 | 5 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/hooks/encounterQueries.test.tsx` (1) |
+| R24 | 7 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/hooks/encounterQueries.test.tsx` (2); `shared/lib/refresh.test.ts` (1) |
+| R25 | 12 | `features/queue/components/QueuePage.test.tsx` (2); `features/reception/components/ReceptionDashboard.test.tsx` (2); `features/reports/components/ReportsPage.test.tsx` (2); `features/triage/components/TriageDashboard.test.tsx` (2); `shared/hooks/encounterQueries.test.tsx` (3); `shared/lib/refresh.test.ts` (1) |
+| R26 | 4 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1) |
+| R27 | 4 | `app/router/dashboards.test.tsx` (4) |
+| R28 | 22 | `app/router/dashboards.test.tsx` (16); `features/queue/components/QueuePage.test.tsx` (3); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1) |
+| R29 | 13 | `app/router/dashboards.test.tsx` (13) |
+| R30 | 11 | `shared/lib/encounterStatus.test.ts` (2); `shared/ui/dashboard.test.tsx` (7); `shared/ui/dashboardStyles.test.ts` (2) |
+| R31 | 7 | `shared/ui/dashboard.test.tsx` (4); `shared/ui/dashboardStyles.test.ts` (3) |
+| R32 | 4 | `shared/ui/dashboardStyles.test.ts` (4) |
+| R33 | 17 | `app/router/dashboards.test.tsx` (17) |
+| R34 | 13 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/ui/dashboard.test.tsx` (2); `shared/ui/dashboardStyles.test.ts` (7) |
+| R35 | 1 | `shared/ui/dashboardStyles.test.ts` (1) |
+| R36 | 5 | `app/router/dashboards.test.tsx` (3); `shared/hooks/encounterQueries.test.tsx` (2) |
+| R37 | 8 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (2); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (2); `shared/ui/dashboard.test.tsx` (2) |
+| R38 | 7 | `app/router/dashboards.test.tsx` (1); `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/ui/dashboard.test.tsx` (1); `shared/ui/dashboardStyles.test.ts` (1) |
+| R39 | 10 | `app/router/dashboards.test.tsx` (8); `shared/ui/dashboard.test.tsx` (1); `shared/ui/dashboardStyles.test.ts` (1) |
+| R40 | 18 | `app/router/dashboards.test.tsx` (17); `features/reception/components/ReceptionDashboard.test.tsx` (1) |
+| R41 | 8 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/lib/datetime.test.ts` (5) |
 
 ### Limitaciones y comprobaciones de plataforma
 

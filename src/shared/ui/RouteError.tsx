@@ -16,8 +16,9 @@ export function RouteError({ homePath }: { homePath: string }) {
   const navigate = useNavigate();
   const location = useLocation();
   const loadFailed = isFeatureLoadError(error);
-  const retry = () => {
-    if (loadFailed) retryFailedFeatureLoads();
+  const retry = async () => {
+    // R14: primero se vuelve a pedir el código que falló; después se monta la ruta otra vez.
+    if (loadFailed) await retryFailedFeatureLoads();
     // Una navegación a la misma ruta reinicia el boundary de React Router y la vuelve a montar.
     void navigate(`${location.pathname}${location.search}`, {
       replace: true,
@@ -42,7 +43,7 @@ export function RouteError({ homePath }: { homePath: string }) {
         )}
       </p>
       <div className="actions">
-        <button type="button" className="button" onClick={retry}>
+        <button type="button" className="button" onClick={() => void retry()}>
           {t('common_retry')}
         </button>
         <Link className="button button--secondary" to={homePath}>

@@ -1,5 +1,5 @@
 import type { RouteObject } from 'react-router';
-import type { TitleHandle } from '../../shared/hooks/useDocumentTitle';
+import { REPORT_PAGES } from './pages';
 import { ReportsPage } from './components/ReportsPage';
 
 /**
@@ -11,6 +11,6 @@ export const reportRoutes: RouteObject[] = [
   {
     path: '/reportes',
     element: <ReportsPage />,
-    handle: { titleKey: 'common_nav_reportes' } satisfies TitleHandle,
+    handle: REPORT_PAGES['/reportes'],
   },
 ];

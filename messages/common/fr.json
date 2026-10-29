@@ -115,5 +115,6 @@
   "common_route_error_title": "Un problème est survenu sur cet écran",
   "common_route_error_body": "Impossible d’afficher l’écran. Vous pouvez réessayer ou revenir à l’accueil.",
   "common_route_chunk_error_body": "Impossible de charger l’écran. Vérifiez votre connexion et réessayez.",
-  "common_route_home": "Retour à l’accueil"
+  "common_route_home": "Retour à l’accueil",
+  "common_route_loading": "Chargement de l’écran…"
 }

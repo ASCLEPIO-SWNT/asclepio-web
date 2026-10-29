@@ -115,5 +115,6 @@
   "common_route_error_title": "Algo salió mal en esta pantalla",
   "common_route_error_body": "No se pudo mostrar la pantalla. Puedes reintentar o volver al inicio.",
   "common_route_chunk_error_body": "No se pudo cargar la pantalla. Revisa tu conexión y vuelve a intentarlo.",
-  "common_route_home": "Volver al inicio"
+  "common_route_home": "Volver al inicio",
+  "common_route_loading": "Cargando la pantalla…"
 }

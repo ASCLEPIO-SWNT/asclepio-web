@@ -115,5 +115,6 @@
   "common_route_error_title": "Auf diesem Bildschirm ist ein Fehler aufgetreten",
   "common_route_error_body": "Der Bildschirm konnte nicht angezeigt werden. Sie können es erneut versuchen oder zum Start zurückkehren.",
   "common_route_chunk_error_body": "Der Bildschirm konnte nicht geladen werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
-  "common_route_home": "Zurück zum Start"
+  "common_route_home": "Zurück zum Start",
+  "common_route_loading": "Bildschirm wird geladen…"
 }

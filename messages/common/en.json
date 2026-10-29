@@ -115,5 +115,6 @@
   "common_route_error_title": "Something went wrong on this screen",
   "common_route_error_body": "The screen could not be displayed. You can try again or go back to the start.",
   "common_route_chunk_error_body": "The screen could not be loaded. Check your connection and try again.",
-  "common_route_home": "Back to start"
+  "common_route_home": "Back to start",
+  "common_route_loading": "Loading the screen…"
 }

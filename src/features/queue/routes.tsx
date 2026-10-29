@@ -1,5 +1,5 @@
 import type { RouteObject } from 'react-router';
-import type { TitleHandle } from '../../shared/hooks/useDocumentTitle';
+import { QUEUE_PAGES } from './pages';
 import { QueuePage } from './components/QueuePage';
 
 /**
@@ -11,6 +11,6 @@ export const queueRoutes: RouteObject[] = [
   {
     path: '/cola',
     element: <QueuePage />,
-    handle: { titleKey: 'common_nav_cola' } satisfies TitleHandle,
+    handle: QUEUE_PAGES['/cola'],
   },
 ];

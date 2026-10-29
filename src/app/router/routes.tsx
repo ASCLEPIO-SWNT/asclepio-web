@@ -1,15 +1,16 @@
 import type { ReactNode } from 'react';
 import type { RouteObject } from 'react-router';
-import { queueRoutes } from '../../features/queue/routes';
-import { receptionRoutes } from '../../features/reception/routes';
-import { reportRoutes } from '../../features/reports/routes';
+import { QUEUE_PAGES } from '../../features/queue/pages';
+import { RECEPTION_PAGES } from '../../features/reception/pages';
+import { REPORT_PAGES } from '../../features/reports/pages';
 import { StatusPage } from '../../features/status/StatusPage';
-import { encounterRoutes, triageRoutes } from '../../features/triage/routes';
+import { ENCOUNTER_PAGES, TRIAGE_PAGES } from '../../features/triage/pages';
 import type { TitleHandle } from '../../shared/hooks/useDocumentTitle';
 import { Layout, type FrameHandle } from '../../shared/ui/Layout';
 import { AppRouteError, PublicRouteError } from './AppRouteError';
 import { AppShell } from './AppShell';
 import { HomeRedirect } from './HomeRedirect';
+import { lazyFeatureRoutes } from './lazyFeature';
 import { LoginRoute } from './LoginRoute';
 import { RequireRole } from './RequireRole';
 import { RequireSession } from './RequireSession';
@@ -19,14 +20,27 @@ import { PublicHome } from '../PublicHome';
 /**
  * La pantalla de cada ruta de la matriz de roles (D4 de F-02-web, D13 de UI-02-web). Todas la
  * tienen: no queda ningún marcador, y `?? []` es solo por tipos (lo cubre una prueba que recorre
- * `ROLE_ROUTES`).
+ * `ROLE_ROUTES`). El código de cada feature privada se descarga de forma diferida, un fragmento
+ * por feature (UI-03-web R12, D10): triage y la consulta de atenciones comparten fragmento.
  */
+const loadTriage = () => import('../../features/triage/routes');
+
 export const FEATURE_ROUTES: Partial<Record<string, RouteObject[]>> = {
-  '/recepcion': receptionRoutes,
-  '/atenciones': encounterRoutes,
-  '/triage': triageRoutes,
-  '/cola': queueRoutes,
-  '/reportes': reportRoutes,
+  '/recepcion': lazyFeatureRoutes(RECEPTION_PAGES, () =>
+    import('../../features/reception/routes').then((m) => m.receptionRoutes),
+  ),
+  '/atenciones': lazyFeatureRoutes(ENCOUNTER_PAGES, () =>
+    loadTriage().then((m) => m.encounterRoutes),
+  ),
+  '/triage': lazyFeatureRoutes(TRIAGE_PAGES, () =>
+    loadTriage().then((m) => m.triageRoutes),
+  ),
+  '/cola': lazyFeatureRoutes(QUEUE_PAGES, () =>
+    import('../../features/queue/routes').then((m) => m.queueRoutes),
+  ),
+  '/reportes': lazyFeatureRoutes(REPORT_PAGES, () =>
+    import('../../features/reports/routes').then((m) => m.reportRoutes),
+  ),
 };
 
 /** Pantallas públicas; las pruebas pueden sustituirlas (UI-03-web R8). */

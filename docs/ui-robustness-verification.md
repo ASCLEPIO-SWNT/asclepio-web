@@ -28,3 +28,15 @@ Aviso de `vite build`: **sí** («Some chunks are larger than 500 kB after minif
 ## Estabilidad de la suite «después» de T2 (R28)
 
 Medidas (D19): `maxWorkers: '50%'` en `vite.config.ts` (sin `testTimeout` global) y `userEvent.setup({ delay: null })` en las dos pruebas R40 de `f02Transversal.test.tsx` y en R11 de `ClinicalCaptureForms.test.tsx` (misma secuencia y mismas aserciones; solo se omite la espera de un macrotask por tecla). Prueba más larga tras el cambio: 1,8 s (antes 5,3 s). `f03Routes.test.tsx` R3: 1,9–2,2 s, sin cambios necesarios. Tres `./init.sh` seguidos: VERDE, FAIL 0, WARN 0 (3/3).
+
+## Medida del build «después» de T12 (R12)
+
+| Fragmento | Bruto | gzip |
+|---|---:|---:|
+| `assets/index-*.js` (inicial: marco, rutas públicas, login, guards, vendor) | 654,16 kB | 195,65 kB |
+| `assets/routes-*.js` (triage + atenciones) | 30,26 kB | 7,99 kB |
+| `assets/routes-*.js` (recepción) | 20,56 kB | 6,11 kB |
+| `assets/routes-*.js` (cola / reportes) | 3,57 kB y 3,26 kB | 1,45 kB y 1,38 kB |
+| compartidos (`SummaryCell`, `SummaryFilter`, `labels`, `PendingStrip`, `DataTable`, `StatusBadge`, `useSites`) | 0,51–6,51 kB | 0,36–2,07 kB |
+
+El aviso de >500 kB **persiste** (el inicial lo forman sobre todo React, React Router, TanStack Query y los catálogos de los cinco idiomas); el fragmento inicial es **menor que antes** (712,55 → 654,16 kB; gzip 207,87 → 195,65 kB), que es la condición alternativa de R12. No se añadió `manualChunks`: separar el vendor no reduce lo que descarga la primera pantalla.

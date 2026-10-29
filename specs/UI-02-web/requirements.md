@@ -81,7 +81,7 @@ Glosario de la spec:
 - **R38** (Ubicuo) El sistema deberá mostrar en la cabecera del panel de trabajo de cada dashboard, a la derecha del `h2`, el texto «Se actualiza cada 30 s» con un punto de estado decorativo y sin región viva, traducido a los cinco idiomas con la clave `dash_live`. (→ UI-02.AC6)
 - **R39** (Ubicuo) El sistema deberá mostrar en el marco privado la marca «Asclepio» una sola vez, en la barra lateral, con una cabecera reducida a las herramientas de tema, idioma y preferencias alineadas a la derecha, con el borde derecho de las herramientas alineado con el del contenido, y deberá conservar la cabecera con la marca en `/`, `/login` y `/estado`. (→ UI-02.AC11)
 - **R40** (Ubicuo) El sistema deberá escribir en español, en los textos de los cuatro dashboards, «preregistro» sin guion, las etiquetas con mayúscula inicial y ningún «·» como separador, y deberá conservar en inglés, portugués, francés y alemán su terminología. (→ UI-02.AC12)
-- **R41** (Ubicuo) El sistema deberá mostrar las horas de los dashboards en `America/Bogota` sin segundos: en las tablas, la hora y debajo la fecha; en las tarjetas de preregistro y en el aviso de llegada confirmada, la fecha y la hora. (→ UI-02.AC12, UI-02.AC3)
+- **R41** (Ubicuo) El sistema deberá mostrar las horas de los dashboards en `America/Bogota` sin segundos y sin separar la hora de «a. m.» o «p. m.» ni partir esos indicadores (espacio duro U+00A0 entre la hora y el indicador y dentro de él, igual en cualquier motor y versión de ICU, y espacio normal entre la fecha y la hora): en las tablas, la hora y debajo la fecha; en las tarjetas de preregistro y en el aviso de llegada confirmada, la fecha y la hora. (→ UI-02.AC12, UI-02.AC3)
 
 ## Preguntas abiertas
 

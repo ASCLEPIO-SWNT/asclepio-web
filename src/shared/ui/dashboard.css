@@ -49,11 +49,16 @@
 }
 .dashboard p,
 .dashboard dl,
-.dashboard dd,
-.dashboard ul {
+.dashboard dd {
   margin: 0;
 }
-.dashboard ul {
+/*
+ * Restablecimiento de las listas con especificidad cero: el relleno de una lista con clase
+ * (`.prereg-grid`) tiene que ganarle. Con `.dashboard ul` (clase y elemento) le ganaba y las
+ * tarjetas de preregistro quedaban pegadas al borde del panel.
+ */
+:where(.dashboard) ul {
+  margin: 0;
   padding: 0;
   list-style: none;
 }

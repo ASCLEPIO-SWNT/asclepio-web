@@ -471,6 +471,14 @@ describe('UI-02-web hoja de estilos del dashboard', () => {
     );
   });
 
+  it('R34: el restablecimiento de listas no pisa el relleno de la cuadrícula de preregistros', () => {
+    // `.dashboard ul` (clase y elemento) le ganaba a `.prereg-grid` (una clase) y dejaba las
+    // tarjetas pegadas al borde del panel, sin el relleno de la maqueta.
+    expect(rulesOf('.dashboard ul')).toHaveLength(0);
+    expect(valueOf(':where(.dashboard) ul', 'padding')).toBe('0');
+    expect(valueOf('.prereg-grid', 'padding')).toBe('var(--s5)');
+  });
+
   it('R34: las tablas con encabezado se apilan como tarjetas por debajo de 40 rem de panel y la de sedes no', () => {
     const narrow = '@container panel (max-width: 39.99rem)';
     const stacked = '.data-table:not(.data-table--simple)';

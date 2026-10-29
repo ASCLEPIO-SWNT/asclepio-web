@@ -84,7 +84,7 @@
   "landing_team": "Notre équipe",
   "guide_home": "Voici la présentation d’Asclepio. Utilisez Accès du personnel pour vous connecter. Les étapes et les rôles de l’équipe se trouvent plus bas.",
   "guide_login": "Saisissez votre e-mail et votre mot de passe, puis sélectionnez Se connecter. Les Préférences permettent de régler la langue, le thème et la lecture.",
-  "guide_reception": "Choisissez un site pour consulter les pré-enregistrements. Vérifiez l’identité avant de confirmer l’arrivée. Vous pouvez refuser avec un motif ou ouvrir l’enregistrement direct.",
+  "guide_reception": "Les indicateurs montrent combien de pré-enregistrements attendent une confirmation et combien de prises en charge attendent le triage. La page s’actualise automatiquement à intervalles réguliers ; utilisez Actualiser pour consulter immédiatement. Choisissez un site pour filtrer les indicateurs et les pré-enregistrements. Vérifiez l’identité avant de confirmer l’arrivée. Vous pouvez refuser avec un motif ou ouvrir l’enregistrement direct.",
   "guide_registration": "Recherchez le patient par document ou créez un patient. Utilisez l’option patient non identifié si nécessaire. Vérifiez le site et les données avant d’enregistrer l’arrivée.",
   "guide_encounters": "Choisissez un site et les filtres. Ouvrez une prise en charge pour voir ses détails et sa chronologie. Utilisez la pagination pour changer de page.",
   "guide_detail": "Cette page affiche les détails et la chronologie. Si votre rôle le permet, vous pouvez annuler avec un motif. Le guide ne lit aucune information du patient.",

@@ -84,7 +84,7 @@
   "landing_team": "Our team",
   "guide_home": "This is the Asclepio introduction. Use Staff access to sign in. Below you will find the process steps and team roles.",
   "guide_login": "Enter your email and password, then select Sign in. Use Preferences to adjust language, theme or reading options.",
-  "guide_reception": "Select a site to review pre-registrations. Verify identity before confirming arrival. You can reject a pre-registration with a reason or open direct registration.",
+  "guide_reception": "The indicators show how many pre-registrations are waiting for confirmation and how many encounters are waiting for triage. The screen updates on its own periodically; use Refresh to check right away. Select a site to filter the indicators and the pre-registrations. Verify identity before confirming arrival. You can reject a pre-registration with a reason or open direct registration.",
   "guide_registration": "Search by document or register a new patient. Use the unidentified patient option when needed. Review the site and details before registering arrival.",
   "guide_encounters": "Select a site and list filters. Open an encounter to review its details and timeline. Use pagination controls to change pages.",
   "guide_detail": "This screen shows encounter details and timeline. If your role allows it, you can cancel it with a reason. The guide does not read patient information.",

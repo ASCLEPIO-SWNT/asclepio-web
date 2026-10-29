@@ -176,7 +176,7 @@
   "clinical_state_error": "Unable to verify the status. Refresh the encounter before recording again.",
   "clinical_history_loading": "Loading clinical captures…",
   "clinical_history_error": "Unable to load clinical captures.",
-  "clinical_guide_tray": "This is the nursing tray. Select a site, refresh the list and open an encounter to record clinical information. Use Previous and Next to change pages.",
+  "clinical_guide_tray": "This is the nursing tray. The indicator shows how many encounters are waiting for triage. The list updates on its own periodically; use Refresh to check right away. Select a site and open an encounter to record clinical information. Use Previous and Next to change pages.",
   "clinical_guide_capture": "Review the encounter context. Complete and save the vital signs. In the other form, add symptoms, findings or chief complaint notes. The forms save separately. Review captures in the history. The guide does not read clinical data.",
   "clinical_guide_detail": "Review encounter details, the clinical history available to your role and the timeline. Nursing staff can open capture when the encounter is awaiting triage. The guide does not read patient data.",
   "clinical_vitals_title": "Vital signs",

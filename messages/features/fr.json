@@ -176,7 +176,7 @@
   "clinical_state_error": "Impossible de vérifier l’état. Actualisez la prise en charge avant toute nouvelle saisie.",
   "clinical_history_loading": "Chargement des saisies cliniques…",
   "clinical_history_error": "Impossible de charger les saisies cliniques.",
-  "clinical_guide_tray": "Voici la liste du personnel infirmier. Sélectionnez un site, actualisez la liste et ouvrez une prise en charge pour saisir les informations cliniques. Utilisez Précédente et Suivante pour changer de page.",
+  "clinical_guide_tray": "Voici la liste du personnel infirmier. L’indicateur montre combien de prises en charge attendent le triage. La liste s’actualise automatiquement à intervalles réguliers ; utilisez Actualiser pour consulter immédiatement. Sélectionnez un site et ouvrez une prise en charge pour saisir les informations cliniques. Utilisez Précédente et Suivante pour changer de page.",
   "clinical_guide_capture": "Vérifiez le contexte de la prise en charge. Complétez et enregistrez les constantes. Dans l’autre formulaire, ajoutez des symptômes, des constats ou des précisions du motif. Les formulaires s’enregistrent séparément. Consultez l’historique. Le guide ne lit aucune donnée clinique.",
   "clinical_guide_detail": "Consultez les détails, l’historique clinique accessible à votre rôle et la chronologie. Le personnel infirmier peut ouvrir la saisie si la prise en charge attend le triage. Le guide ne lit aucune donnée du patient.",
   "clinical_vitals_title": "Constantes vitales",

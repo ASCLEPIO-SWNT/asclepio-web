@@ -176,7 +176,7 @@
   "clinical_state_error": "Não foi possível verificar o estado. Atualize o atendimento antes de registrar novamente.",
   "clinical_history_loading": "Carregando os registros clínicos…",
   "clinical_history_error": "Não foi possível carregar os registros clínicos.",
-  "clinical_guide_tray": "Esta é a lista de enfermagem. Selecione uma unidade, atualize a lista e abra um atendimento para registrar informações clínicas. Use Anterior e Próxima para mudar de página.",
+  "clinical_guide_tray": "Esta é a lista de enfermagem. O indicador mostra quantos atendimentos aguardam triagem. A lista se atualiza sozinha periodicamente; use Atualizar para consultar na hora. Selecione uma unidade e abra um atendimento para registrar informações clínicas. Use Anterior e Próxima para mudar de página.",
   "clinical_guide_capture": "Revise o contexto do atendimento. Preencha e salve os sinais vitais. No outro formulário, adicione sintomas, achados ou complementos do motivo. Os formulários são salvos separadamente. Consulte os registros no histórico. A orientação não lê dados clínicos.",
   "clinical_guide_detail": "Consulte os dados do atendimento, o histórico clínico disponível para seu perfil e a linha do tempo. A enfermagem pode abrir o registro se o atendimento estiver em espera de triagem. A orientação não lê dados do paciente.",
   "clinical_vitals_title": "Sinais vitais",

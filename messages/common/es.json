@@ -84,7 +84,7 @@
   "landing_team": "Nuestro equipo",
   "guide_home": "Esta es la presentación de Asclepio. Usa Acceso del personal para iniciar sesión. Más abajo encontrarás los pasos del proceso y los roles del equipo.",
   "guide_login": "Introduce tu correo y contraseña y pulsa Ingresar. Usa Preferencias para ajustar el idioma, el tema o la lectura.",
-  "guide_reception": "Selecciona una sede para consultar los pre-registros. Verifica la identidad antes de confirmar la llegada. Puedes rechazar un pre-registro con motivo o abrir el registro directo.",
+  "guide_reception": "Los indicadores muestran cuántos preregistros esperan confirmación y cuántas atenciones esperan triage. La pantalla se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Selecciona una sede para filtrar los indicadores y los preregistros. Verifica la identidad antes de confirmar la llegada. Puedes rechazar un preregistro con motivo o abrir el registro directo.",
   "guide_registration": "Busca al paciente por documento o registra un paciente nuevo. Usa el registro NN si no está identificado. Revisa la sede y los datos antes de registrar la llegada.",
   "guide_encounters": "Selecciona una sede y los filtros de la lista. Abre una atención para consultar sus datos y su línea de tiempo. Usa los controles de paginación para cambiar de página.",
   "guide_detail": "Esta pantalla muestra el detalle y la línea de tiempo de la atención. Si tu rol lo permite, puedes cancelarla indicando un motivo. La guía no lee información del paciente.",

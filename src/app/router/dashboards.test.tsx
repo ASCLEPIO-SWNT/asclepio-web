@@ -1,10 +1,15 @@
 import { readFileSync } from 'node:fs';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StaffRole } from '../../shared/api/client';
 import { session } from '../../shared/api/session';
 import { translate } from '../../shared/i18n';
 import { LOCALES, type Locale } from '../../shared/i18n/locale';
+import {
+  DEFAULT_PREFERENCES,
+  PREFERENCES_KEY,
+} from '../../shared/preferences/storage';
 import {
   SITE_ESTE,
   SITE_NORTE,
@@ -12,6 +17,7 @@ import {
   encountersFor,
   fakeApi,
   json,
+  patient,
   pendingPreRegistration,
   publicTenantsWith,
   staffMe,
@@ -433,6 +439,186 @@ describe('UI-02-web marco privado y marca única', () => {
       expect(container.querySelector('.layout')).not.toHaveClass(
         'layout--private',
       );
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------------------------
+// Guía de voz (T11, R33)
+// ---------------------------------------------------------------------------------------------
+
+/** La guía que narra cada dashboard (`Layout`): estática, propia de su pantalla (R33). */
+const GUIDES = [
+  { role: 'RECEPTION', path: '/recepcion', key: 'guide_reception' },
+  { role: 'NURSE', path: '/triage', key: 'clinical_guide_tray' },
+  { role: 'PHYSICIAN', path: '/cola', key: 'guide_queue' },
+  { role: 'NURSE', path: '/cola', key: 'guide_queue' },
+  { role: 'ADMIN', path: '/cola', key: 'guide_queue' },
+  { role: 'ADMIN', path: '/reportes', key: 'guide_reports' },
+] as const satisfies ReadonlyArray<{
+  role: StaffRole;
+  path: string;
+  key: string;
+}>;
+
+/** Las cuatro guías de los dashboards: todas dicen que la pantalla se actualiza sola. */
+const FOUR_GUIDES = [
+  'guide_reception',
+  'clinical_guide_tray',
+  'guide_queue',
+  'guide_reports',
+] as const;
+
+/** Cómo cada idioma llama a un indicador (la guía de recepción y la de enfermería los mencionan). */
+const INDICATOR_WORD: Record<Locale, RegExp> = {
+  es: /indicador/i,
+  en: /indicator/i,
+  pt: /indicador/i,
+  fr: /indicateur/i,
+  de: /kennzahl/i,
+};
+
+/** Doble de `speechSynthesis` (como en F-03 R24): recoge lo que se narra, sin audio. */
+function stubSpeech() {
+  const synthesis = {
+    speak: vi.fn(),
+    cancel: vi.fn(),
+    pause: vi.fn(),
+    resume: vi.fn(),
+    getVoices: () => [],
+  };
+  vi.stubGlobal('speechSynthesis', synthesis);
+  vi.stubGlobal(
+    'SpeechSynthesisUtterance',
+    class {
+      text: string;
+      lang = '';
+      constructor(text: string) {
+        this.text = text;
+      }
+    },
+  );
+  return synthesis;
+}
+
+/** Espera a que ninguna celda ni panel esté cargando: así la guía se pide con datos en pantalla. */
+const settled = () =>
+  waitFor(() => {
+    expect(document.querySelector('[aria-busy="true"]')).toBeNull();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+  });
+
+describe('UI-02-web guía de voz de los dashboards', () => {
+  it.each(LOCALES)(
+    'R33: las cuatro guías dicen que la pantalla se actualiza sola y nombran «Actualizar», sin cifras ni parámetros (%s)',
+    (locale) => {
+      const all = merged(locale);
+      for (const key of FOUR_GUIDES) {
+        const text = all[key];
+        expect(paramsOf(text), `${locale}/${key}`).toEqual([]);
+        expect(text, `${locale}/${key}`).not.toMatch(/\d/);
+        // El botón de la pantalla se llama igual que en la guía: «Actualizar», «Refresh»…
+        expect(text, `${locale}/${key}`).toContain(all.feature_refresh);
+        expect(text, `${locale}/${key}`).not.toBe(all.guide_pending);
+      }
+      // Las de recepción y enfermería mencionan sus indicadores (R33).
+      for (const key of ['guide_reception', 'clinical_guide_tray']) {
+        expect(all[key], `${locale}/${key}`).toMatch(INDICATOR_WORD[locale]);
+      }
+    },
+  );
+
+  it('R33: en español, la guía de recepción y la de enfermería llevan el texto de design.md', () => {
+    const all = merged('es');
+    expect(all.guide_reception).toBe(
+      'Los indicadores muestran cuántos preregistros esperan confirmación y cuántas atenciones esperan triage. La pantalla se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Selecciona una sede para filtrar los indicadores y los preregistros. Verifica la identidad antes de confirmar la llegada. Puedes rechazar un preregistro con motivo o abrir el registro directo.',
+    );
+    expect(all.clinical_guide_tray).toBe(
+      'Esta es la bandeja de enfermería. El indicador muestra cuántas atenciones esperan triage. La lista se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Selecciona una sede y abre una atención para registrar la información clínica. Usa Anterior y Siguiente para cambiar de página.',
+    );
+  });
+
+  it.each(GUIDES)(
+    'R33: $role oye $key en $path, texto estático sin cifras, sin datos de pacientes y sin el texto de «pendiente»',
+    async ({ role, path, key }) => {
+      const synthesis = stubSpeech();
+      dashboardApi(role);
+      const user = userEvent.setup();
+      renderApp({ entries: [path], stored: true });
+      await screen.findByRole('heading', { level: 1 });
+      await settled();
+
+      await user.click(
+        screen.getByText('Preferencias', { selector: 'summary span' }),
+      );
+      await user.click(screen.getByRole('button', { name: 'Escuchar guía' }));
+      const utterance = synthesis.speak.mock
+        .calls[0][0] as SpeechSynthesisUtterance;
+
+      // Es exactamente la guía propia de la pantalla y no la de «pendiente».
+      expect(utterance.text).toBe(translate('es', key));
+      expect(utterance.text).not.toBe(translate('es', 'guide_pending'));
+      expect(utterance.text).not.toContain('Esta funcionalidad está pendiente');
+      expect(utterance.text).toContain('Actualizar');
+      expect(utterance.text).toMatch(/se actualiza sola/i);
+      // Sin cifras (las de los indicadores están en pantalla) ni datos de pacientes.
+      expect(utterance.text).not.toMatch(/\d/);
+      for (const personal of [
+        patient.fullName!,
+        patient.documentNumber!,
+        pendingPreRegistration.chiefComplaintText,
+        'Paciente ficticio',
+      ]) {
+        expect(utterance.text).not.toContain(personal);
+      }
+      if (key === 'guide_reception' || key === 'clinical_guide_tray')
+        expect(utterance.text).toMatch(/indicador/);
+    },
+  );
+
+  it.each(['en', 'pt', 'fr', 'de'] as const)(
+    'R33: la guía de /cola y la de /reportes se narran en el idioma elegido (%s)',
+    async (locale) => {
+      localStorage.setItem(
+        PREFERENCES_KEY,
+        JSON.stringify({ ...DEFAULT_PREFERENCES, locale }),
+      );
+      const synthesis = stubSpeech();
+      dashboardApi('ADMIN');
+      const user = userEvent.setup();
+      const { router } = renderApp({ entries: ['/cola'], stored: true });
+      await screen.findByRole('heading', { level: 1 });
+
+      for (const [path, key] of [
+        ['/cola', 'guide_queue'],
+        ['/reportes', 'guide_reports'],
+      ] as const) {
+        if (router.state.location.pathname !== path)
+          await router.navigate(path);
+        await screen.findByRole('heading', {
+          level: 1,
+          name: translate(locale, `common_nav_${path.slice(1)}`),
+        });
+        await settled();
+        const opened = screen.getByText(
+          translate(locale, 'common_preferences'),
+          {
+            selector: 'summary span',
+          },
+        );
+        if (!opened.closest('details')?.hasAttribute('open'))
+          await user.click(opened);
+        await user.click(
+          screen.getByRole('button', {
+            name: translate(locale, 'common_voice_start'),
+          }),
+        );
+        const utterance = synthesis.speak.mock.calls.at(
+          -1,
+        )![0] as SpeechSynthesisUtterance;
+        expect(utterance.text).toBe(translate(locale, key));
+        expect(utterance.text).not.toBe(translate(locale, 'guide_pending'));
+      }
     },
   );
 });

@@ -176,7 +176,7 @@
   "clinical_state_error": "No se pudo comprobar el estado. Actualiza la atención antes de volver a registrar.",
   "clinical_history_loading": "Cargando las capturas clínicas…",
   "clinical_history_error": "No se pudieron cargar las capturas clínicas.",
-  "clinical_guide_tray": "Esta es la bandeja de enfermería. Selecciona una sede, actualiza la lista y abre una atención para registrar la información clínica. Usa Anterior y Siguiente para cambiar de página.",
+  "clinical_guide_tray": "Esta es la bandeja de enfermería. El indicador muestra cuántas atenciones esperan triage. La lista se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Selecciona una sede y abre una atención para registrar la información clínica. Usa Anterior y Siguiente para cambiar de página.",
   "clinical_guide_capture": "Revisa el contexto de la atención. Completa y guarda los signos vitales. En el otro formulario puedes añadir síntomas, hallazgos o precisiones del motivo. Los formularios se guardan por separado. Consulta las capturas en el historial. La guía no lee datos clínicos.",
   "clinical_guide_detail": "Consulta los datos de la atención, el historial clínico disponible para tu rol y la línea de tiempo. Enfermería puede abrir la captura si la atención está en espera de triage. La guía no lee datos del paciente.",
   "clinical_vitals_title": "Signos vitales",

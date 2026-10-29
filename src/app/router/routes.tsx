@@ -4,7 +4,7 @@ import { receptionRoutes } from '../../features/reception/routes';
 import { reportRoutes } from '../../features/reports/routes';
 import { StatusPage } from '../../features/status/StatusPage';
 import { encounterRoutes, triageRoutes } from '../../features/triage/routes';
-import { Layout } from '../../shared/ui/Layout';
+import { Layout, type FrameHandle } from '../../shared/ui/Layout';
 import { PlaceholderPage } from '../../shared/ui/PlaceholderPage';
 import { AppShell } from './AppShell';
 import { HomeRedirect } from './HomeRedirect';
@@ -37,6 +37,9 @@ export const routes: RouteObject[] = [
           { path: '/app', element: <HomeRedirect /> },
           {
             element: <AppShell />,
+            // Marco privado: la marca es la de la barra lateral y la cabecera solo lleva
+            // las herramientas (D26, R39). `Layout` lo lee con `useMatches`.
+            handle: { privateFrame: true } satisfies FrameHandle,
             children: ROLE_ROUTES.map((route) => ({
               element: <RequireRole roles={route.roles} />,
               children: FEATURE_ROUTES[route.path] ?? [

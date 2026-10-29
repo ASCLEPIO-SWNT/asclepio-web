@@ -1,7 +1,23 @@
 import { readFileSync } from 'node:fs';
-import { describe, expect, it } from 'vitest';
+import { screen, within } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { StaffRole } from '../../shared/api/client';
+import { session } from '../../shared/api/session';
 import { translate } from '../../shared/i18n';
 import { LOCALES, type Locale } from '../../shared/i18n/locale';
+import {
+  SITE_ESTE,
+  SITE_NORTE,
+  SITE_SUR,
+  encountersFor,
+  fakeApi,
+  json,
+  pendingPreRegistration,
+  publicTenantsWith,
+  staffMe,
+  type Handler,
+} from '../../test/fakeApi';
+import { renderApp } from './testApp';
 
 type Group = 'common' | 'features';
 
@@ -300,4 +316,123 @@ describe('UI-02-web catálogos i18n de los dashboards', () => {
       }
     }
   });
+});
+
+// ---------------------------------------------------------------------------------------------
+// Pruebas con la aplicación completa (`renderApp`): marco, rutas, guía de voz y transversales
+// ---------------------------------------------------------------------------------------------
+
+const ME = 'GET /api/v1/me';
+const TENANTS = 'GET /api/v1/public/tenants';
+const PRE_REGISTRATIONS = 'GET /api/v1/pre-registrations';
+const ENCOUNTERS = 'GET /api/v1/encounters';
+
+/** Los cuatro dashboards, uno por rol (`HOME_BY_ROLE`), con el `h1` de su entrada de navegación. */
+const DASHBOARDS = [
+  { role: 'RECEPTION', path: '/recepcion', title: 'Recepción' },
+  { role: 'NURSE', path: '/triage', title: 'Triage' },
+  { role: 'PHYSICIAN', path: '/cola', title: 'Cola priorizada' },
+  { role: 'ADMIN', path: '/reportes', title: 'Reportes' },
+] as const satisfies ReadonlyArray<{
+  role: StaffRole;
+  path: string;
+  title: string;
+}>;
+
+/** La red simulada que sirve a los cuatro dashboards: perfil, sedes, preregistros y atenciones. */
+function dashboardApi(role: StaffRole, routes: Record<string, Handler> = {}) {
+  return fakeApi({
+    [ME]: json(200, staffMe[role]),
+    [TENANTS]: json(200, publicTenantsWith([SITE_NORTE, SITE_SUR, SITE_ESTE])),
+    [PRE_REGISTRATIONS]: json(200, [pendingPreRegistration]),
+    [ENCOUNTERS]: encountersFor(() => 3),
+    ...routes,
+  });
+}
+
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+  sessionStorage.clear();
+  session.clear();
+});
+
+describe('UI-02-web marco privado y marca única', () => {
+  it.each(DASHBOARDS)(
+    'R39: $role ve «Asclepio» una sola vez, en la barra lateral, y la cabecera solo lleva las herramientas ($path)',
+    async ({ role, path, title }) => {
+      dashboardApi(role);
+      const { container } = renderApp({ entries: [path], stored: true });
+      await screen.findByRole('heading', { level: 1, name: title });
+
+      // La marca es la de la barra lateral (región «Sesión»): un solo texto y un solo logotipo.
+      const brand = screen.getAllByText('Asclepio');
+      expect(brand).toHaveLength(1);
+      const sidebar = screen.getByRole('region', { name: 'Sesión' });
+      expect(sidebar).toContainElement(brand[0]);
+      const marks = container.querySelectorAll(
+        'img[src="/images/asclepio-mark.png"]',
+      );
+      expect(marks).toHaveLength(1);
+      expect(sidebar).toContainElement(marks[0] as HTMLElement);
+      expect(
+        screen.queryByRole('link', { name: 'Asclepio' }),
+      ).not.toBeInTheDocument();
+
+      // La cabecera se reduce a las herramientas: tema, idioma y preferencias.
+      const banner = screen.getByRole('banner');
+      expect(within(banner).queryByText('Asclepio')).not.toBeInTheDocument();
+      expect(
+        within(banner).getByRole('button', { name: 'Cambiar tema' }),
+      ).toBeInTheDocument();
+      expect(within(banner).getAllByLabelText('Idioma')[0]).toBeInstanceOf(
+        HTMLSelectElement,
+      );
+      expect(
+        within(banner).getByText('Preferencias', { selector: 'summary span' }),
+      ).toBeInTheDocument();
+      // La clase que reduce la cabecera y alinea las herramientas a la derecha (CSS de T4).
+      expect(container.querySelector('.layout')).toHaveClass('layout--private');
+    },
+  );
+
+  it('R39: el resto de pantallas del marco privado, /atenciones y la vista «Sin permiso», también muestran la marca una sola vez', async () => {
+    dashboardApi('RECEPTION');
+    const { router } = renderApp({ entries: ['/atenciones'], stored: true });
+    await screen.findByRole('heading', { level: 1, name: 'Atenciones' });
+    expect(screen.getAllByText('Asclepio')).toHaveLength(1);
+    expect(
+      screen.queryByRole('link', { name: 'Asclepio' }),
+    ).not.toBeInTheDocument();
+
+    await router.navigate('/reportes');
+    await screen.findByRole('heading', {
+      level: 1,
+      name: 'No tienes permiso para ver esta página.',
+    });
+    expect(screen.getAllByText('Asclepio')).toHaveLength(1);
+    expect(
+      screen.queryByRole('link', { name: 'Asclepio' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it.each(['/', '/login', '/estado'])(
+    'R39: %s conserva la cabecera con la marca «Asclepio» como enlace a /',
+    async (path) => {
+      fakeApi({
+        'GET /api/v1/health': json(200, {
+          status: 'ok',
+          time: '2026-10-27T00:42:00.000Z',
+        }),
+      });
+      const { container } = renderApp({ entries: [path] });
+      const link = await screen.findByRole('link', { name: 'Asclepio' });
+      expect(link).toHaveAttribute('href', '/');
+      expect(link.closest('header')).toHaveClass('layout__header');
+      expect(within(link).getByText('Asclepio')).toBeInTheDocument();
+      expect(container.querySelector('.layout')).not.toHaveClass(
+        'layout--private',
+      );
+    },
+  );
 });

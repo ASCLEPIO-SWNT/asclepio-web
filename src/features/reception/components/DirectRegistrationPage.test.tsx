@@ -17,6 +17,7 @@ import {
   publicTenants,
   type Handler,
 } from '../../../test/fakeApi';
+import { setCurrentLocale } from '../../../shared/i18n/locale';
 import { renderFeature } from '../../../test/renderFeature';
 import { receptionRoutes } from '../routes';
 
@@ -808,5 +809,26 @@ describe('UI-03-web 422 del alta NN con edad estimada', () => {
         'La fecha de nacimiento no puede ser posterior a hoy.',
       ),
     ).not.toBeInTheDocument();
+  });
+});
+
+describe('UI-03-web textos traducidos', () => {
+  it('R20: el error de la búsqueda sale del catálogo del idioma activo, no en español', async () => {
+    setCurrentLocale('en');
+    const { user } = setup({ [SEARCH]: networkError() });
+    const form = screen.getByRole('form', { name: 'Search for a patient' });
+    await user.selectOptions(
+      within(form).getByLabelText('Document type'),
+      'Citizenship identity card',
+    );
+    await user.type(
+      within(form).getByLabelText('Document number'),
+      '1032456789',
+    );
+    await user.click(within(form).getByRole('button', { name: 'Search' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'Could not connect to the server. Check your connection and try again.',
+    );
+    expect(screen.queryByText(/No se pudo conectar/)).not.toBeInTheDocument();
   });
 });

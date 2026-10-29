@@ -31,9 +31,9 @@ import {
   type PatientWithDocumentForm,
 } from '../schemas';
 
-const CONFLICT_MESSAGE = 'Ya existe un paciente con ese documento.';
-const FUTURE_BIRTH_DATE_MESSAGE =
-  'La fecha de nacimiento no puede ser posterior a hoy.';
+// Claves de catálogo (UI-03-web R20); `featureMessage`/`fieldMessage` las traducen al mostrarlas.
+const CONFLICT_MESSAGE = 'feature_patient_conflict';
+const FUTURE_BIRTH_DATE_MESSAGE = 'feature_birth_future';
 
 type FormValues = PatientWithDocumentForm & NnPatientForm;
 const SERVER_FIELDS: Path<FormValues>[] = [

@@ -25,9 +25,9 @@ import {
   type ArrivalForm as ArrivalFormValues,
 } from '../schemas';
 
-const CONFLICT_MESSAGE =
-  'El paciente ya tiene un pre-registro pendiente o una atención activa. Revisa la bandeja.';
-const INVALID_MESSAGE = 'La sede o el paciente ya no son válidos.';
+// Claves de catálogo (UI-03-web R20); `featureMessage` las traduce al mostrarlas.
+const CONFLICT_MESSAGE = 'feature_arrival_conflict';
+const INVALID_MESSAGE = 'feature_arrival_invalid';
 
 /** Paciente seleccionado y registro de su llegada (R24–R27). */
 export function ArrivalForm({

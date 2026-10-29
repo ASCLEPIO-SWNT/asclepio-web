@@ -60,7 +60,9 @@ export function DirectRegistrationPage() {
 
       <PatientSearch busy={search.isFetching} onSearch={onSearch} />
       {params && search.isError && (
-        <ActionError>{actionErrorMessage(problemOf(search.error))}</ActionError>
+        <ActionError>
+          {featureMessage(actionErrorMessage(problemOf(search.error)))}
+        </ActionError>
       )}
       {noResults && !created && (
         <div className="search-result">

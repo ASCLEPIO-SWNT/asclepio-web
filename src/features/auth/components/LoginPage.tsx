@@ -18,9 +18,8 @@ import { useSession } from '../useSession';
 const DEFAULT_RETRY_AFTER_SECONDS = 60;
 
 const END_REASON_MESSAGES: Record<EndReason, string | null> = {
-  expired: 'Tu sesión expiró. Vuelve a iniciar sesión.',
-  patient:
-    'Esta web es solo para el personal. Los pacientes usan la app móvil.',
+  expired: 'feature_expired',
+  patient: 'feature_patient_access',
   logout: null,
 };
 
@@ -30,17 +29,17 @@ function problemMessage(
 ): string {
   switch (problem.kind) {
     case 'unauthorized':
-      return 'Correo o contraseña incorrectos.';
+      return 'feature_wrong_credentials';
     case 'rateLimited':
       return problem.retryAfterSeconds !== undefined
         ? t('feature_rate_limited_seconds', {
             seconds: problem.retryAfterSeconds,
           })
-        : 'Demasiados intentos. Espera un momento e inténtalo de nuevo.';
+        : 'feature_rate_limited';
     case 'network':
-      return 'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
+      return 'feature_network_error';
     case 'other':
-      return 'No se pudo iniciar sesión. Inténtalo de nuevo.';
+      return 'feature_login_error';
   }
 }
 

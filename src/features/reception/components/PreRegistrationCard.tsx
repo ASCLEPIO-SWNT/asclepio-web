@@ -26,13 +26,14 @@ import { useConfirmPreRegistration } from '../hooks/useConfirmPreRegistration';
 import { useRejectPreRegistration } from '../hooks/useRejectPreRegistration';
 import { RejectForm } from './RejectForm';
 
+// Claves de catálogo (UI-03-web R20); `featureMessage` las traduce al mostrarlas.
 const CONFIRM_MESSAGES = {
-  409: 'Este preregistro ya no está pendiente o el paciente ya tiene una atención activa.',
-  404: 'Este preregistro ya no existe.',
+  409: 'feature_confirm_conflict',
+  404: 'feature_pr_gone',
 };
 const REJECT_MESSAGES = {
-  409: 'Este preregistro ya no está pendiente.',
-  404: 'Este preregistro ya no existe.',
+  409: 'feature_reject_conflict',
+  404: 'feature_pr_gone',
 };
 
 /** 409 y 404 vuelven a pedir la bandeja (R13, R16). */

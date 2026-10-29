@@ -13,7 +13,8 @@ import { TextAreaField } from '../../../shared/ui/TextAreaField';
 import { useCancelEncounter } from '../hooks/useCancelEncounter';
 import { reasonSchema, type Reason, type ReasonForm } from '../schemas';
 
-const CONFLICT_MESSAGE = 'La atención ya está cerrada o cancelada.';
+// Clave de catálogo (UI-03-web R20); la página la traduce con `featureMessage`.
+const CONFLICT_MESSAGE = 'feature_cancel_conflict';
 
 /**
  * "Cancelar atención" con su motivo (R34–R36). "Volver" no llama a la API. El error de

@@ -1,6 +1,12 @@
 import { recordedVitalSigns } from '../../features/triage/testing/clinicalFixtures';
 import { focusManager, onlineManager } from '@tanstack/react-query';
-import { act, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  fireEvent,
+  screen,
+  waitFor,
+  within,
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '../../shared/api/schema';
@@ -535,5 +541,171 @@ describe('F-03 nurse routes', () => {
     expect(
       screen.getByText(formatBogota(recordedVitalSigns.recordedAt)),
     ).toBeVisible();
+  });
+
+  it('R21: keeps the nursing tray, patient context and independent forms in the legacy section hierarchy without duplicate headings or actions', async () => {
+    const { user } = setup();
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Triage' }),
+    ).toBeVisible();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    const navigation = screen.getByRole('navigation', { name: 'Principal' });
+    expect(
+      within(navigation)
+        .getAllByRole('link')
+        .map((link) => link.textContent),
+    ).toEqual(['Triage', 'Cola priorizada', 'Atenciones']);
+    const tray = screen.getByRole('region', { name: 'Atenciones pendientes' });
+    expect(
+      within(tray).getByRole('heading', {
+        level: 2,
+        name: 'Atenciones pendientes',
+      }),
+    ).toBeVisible();
+    expect(
+      screen.getByRole('heading', { level: 2, name: 'Espacio de enfermería' }),
+    ).toBeVisible();
+    expect(
+      await within(tray).findByRole('heading', {
+        level: 3,
+        name: encounter.patient.fullName!,
+      }),
+    ).toBeVisible();
+    expect(screen.getAllByRole('button', { name: 'Actualizar' })).toHaveLength(
+      1,
+    );
+    expect(
+      within(tray).getAllByRole('link', {
+        name: 'Capturar información clínica',
+      }),
+    ).toHaveLength(1);
+    await user.click(
+      within(tray).getByRole('link', { name: 'Capturar información clínica' }),
+    );
+
+    const vitals = await screen.findByRole('form', { name: 'Signos vitales' });
+    const findings = screen.getByRole('form', {
+      name: 'Síntomas, hallazgos y notas',
+    });
+    expect(
+      screen.getAllByRole('heading', { level: 1, name: 'Captura clínica' }),
+    ).toHaveLength(1);
+    const context = screen.getByRole('region', {
+      name: 'Contexto de la atención',
+    });
+    expect(context).toHaveTextContent(encounter.patient.fullName!);
+    expect(context).toHaveTextContent(encounter.chiefComplaintText);
+    expect(context).toHaveTextContent(encounter.siteName);
+    expect(
+      within(vitals).getAllByRole('heading', {
+        level: 2,
+        name: 'Signos vitales',
+      }),
+    ).toHaveLength(1);
+    expect(
+      within(findings).getAllByRole('heading', {
+        level: 2,
+        name: 'Síntomas, hallazgos y notas',
+      }),
+    ).toHaveLength(1);
+    expect(
+      within(vitals).getAllByRole('button', { name: 'Guardar toma' }),
+    ).toHaveLength(1);
+    expect(
+      within(findings).getAllByRole('button', { name: 'Guardar hallazgos' }),
+    ).toHaveLength(1);
+    expect(
+      screen.getAllByRole('link', { name: 'Volver a la bandeja de triage' }),
+    ).toHaveLength(1);
+  });
+
+  it('R22: translates both forms, labels and accessible validation into five languages while preserving literal clinical text', async () => {
+    const { net, user } = setup({ path: `/triage/${ENCOUNTER_ID}` });
+    await screen.findByRole('button', { name: 'Guardar toma' });
+    const literal = `Síntoma literal de José Müller: ${'á'.repeat(501)}`;
+    await user.type(screen.getByLabelText(/Frecuencia cardiaca/), '301');
+    await user.selectOptions(screen.getByLabelText('Tipo'), 'FINDING');
+    fireEvent.change(screen.getByLabelText('Descripción'), {
+      target: { value: literal },
+    });
+    await user.click(screen.getByRole('button', { name: 'Guardar toma' }));
+    await user.click(screen.getByRole('button', { name: 'Guardar hallazgos' }));
+    const cases = [
+      {
+        locale: 'es',
+        vitals: 'Signos vitales',
+        findings: 'Síntomas, hallazgos y notas',
+        heart: 'Frecuencia cardiaca',
+        description: 'Descripción',
+        range: 'El rango admitido es de 20 a 300 lpm.',
+        length: 'La descripción admite como máximo 500 caracteres.',
+      },
+      {
+        locale: 'en',
+        vitals: 'Vital signs',
+        findings: 'Symptoms, findings and notes',
+        heart: 'Heart rate',
+        description: 'Description',
+        range: 'The allowed range is 20 to 300 lpm.',
+        length: 'The description allows at most 500 characters.',
+      },
+      {
+        locale: 'pt',
+        vitals: 'Sinais vitais',
+        findings: 'Sintomas, achados e notas',
+        heart: 'Frequência cardíaca',
+        description: 'Descrição',
+        range: 'O intervalo permitido é de 20 a 300 lpm.',
+        length: 'A descrição admite no máximo 500 caracteres.',
+      },
+      {
+        locale: 'fr',
+        vitals: 'Constantes vitales',
+        findings: 'Symptômes, constats et notes',
+        heart: 'Fréquence cardiaque',
+        description: 'Description',
+        range: 'La plage autorisée est de 20 à 300 lpm.',
+        length: 'La description accepte au maximum 500 caractères.',
+      },
+      {
+        locale: 'de',
+        vitals: 'Vitalwerte',
+        findings: 'Symptome, Befunde und Notizen',
+        heart: 'Herzfrequenz',
+        description: 'Beschreibung',
+        range: 'Der zulässige Bereich beträgt 20 bis 300 lpm.',
+        length: 'Die Beschreibung darf höchstens 500 Zeichen enthalten.',
+      },
+    ];
+    for (const item of cases) {
+      await user.selectOptions(
+        screen.getAllByRole('combobox', {
+          name: /Idioma|Language|Langue|Sprache/,
+        })[0],
+        item.locale,
+      );
+      const vitals = screen.getByRole('form', { name: item.vitals });
+      const findings = screen.getByRole('form', { name: item.findings });
+      const heart = within(vitals).getByRole('spinbutton', {
+        name: new RegExp(item.heart),
+      });
+      const description = within(findings).getByRole('textbox', {
+        name: item.description,
+      });
+      expect(heart).toHaveAttribute('aria-invalid', 'true');
+      expect(heart).toHaveAccessibleDescription(item.range);
+      expect(heart).toHaveValue(301);
+      expect(description).toHaveAttribute('aria-invalid', 'true');
+      expect(description).toHaveAccessibleDescription(item.length);
+      expect(description).toHaveValue(literal);
+      expect(screen.getByText(encounter.chiefComplaintText)).toBeVisible();
+      expect(screen.getByText(encounter.patient.fullName!)).toBeVisible();
+    }
+    expect(
+      net.calls(`POST /api/v1/encounters/${ENCOUNTER_ID}/vital-signs`),
+    ).toHaveLength(0);
+    expect(
+      net.calls(`POST /api/v1/encounters/${ENCOUNTER_ID}/symptom-findings`),
+    ).toHaveLength(0);
   });
 });

@@ -116,7 +116,7 @@ Se anota tarea a tarea; la nota de cierre de la etapa (tabla R → prueba, prueb
 Prueba primero: `ReceptionDashboard.test.tsx` se vio fallar entera (32 de 33; solo pasaba la negativa de R26) antes de tocar el código.
 
 - **Código**: `ReceptionPage.tsx` pasa a componer `DashboardPage`, `PageHeader` (`h1` = `common_nav_recepcion`, descripción `dash_reception_lead`, `RefreshButton` y «Registro directo» como único botón sólido), `SummaryBar` con dos `SummaryCell` («Preregistros pendientes», derivada de la longitud de la bandeja, y «En espera de triage», con `useEncounterCount({ status: 'WAITING_TRIAGE', siteId })`) y `SummaryFilter` con el selector «Sede» (el error de sedes sale en esa celda), y `Panel` con `LiveNote`, el aviso y el error huérfano de acción arriba del cuerpo, `PanelState` y la `ul.prereg-grid` (`key` = id). «Actualizar» repite la bandeja y el conteo; confirmar invalida además `ENCOUNTERS_KEY`; rechazar, solo la bandeja. `PreRegistrationCard.tsx` (tarjeta `article` con un `h3`, insignia de identidad `ShieldCheckIcon`/ok o `ExclamationTriangleIcon`/warn, datos en `dt`/`dd` contiguos dentro de `div`, casilla y botones pequeños al pie, `formatDateTimeBogota`, `CONFIRM_MESSAGES` y `REJECT_MESSAGES` con «preregistro») y `RejectForm.tsx` (`form reject`, «Confirmar rechazo» y «Volver» pequeños). `usePendingPreRegistrations.ts` usa `autoRefresh()` (`TRAY_REFRESH_MS` queda como alias de `DASHBOARD_REFRESH_MS`). Las nueve claves de «preregistro» en `messages/features/es.json` y las tres entradas de `featureMessages.ts`.
-- **Pruebas nuevas** (`ReceptionDashboard.test.tsx`, 33, bajo `describe('UI-02-web dashboard de recepción')`): R3, R8, R9, R10 (2), R11, R12 (4), R19 (2), R20, R21 (4), R22 (4), R23, R24, R25 (2), R26, R28, R34, R37 (2), R38, R40 y R41. Helper nuevo `src/test/scroll.ts` (`watchScrolling`: cuenta las llamadas a `window.scrollTo`, `Element.scrollTo` y `Element.scrollIntoView`; lo reutilizan T7 a T9). Mutaciones comprobadas (12 de 13 detectadas; la 13.ª era un cambio de comportamiento que se revirtió, ver abajo): «Actualizar» sin repetir el conteo, confirmar sin invalidar, `key` por índice, foco y reconexión activos, `formatBogota`, punto añadido al aviso, conteo sin sede, 403 pintado como error, tono de identidad, «Registro directo» secundario y nota viva con `role`.
+- **Pruebas nuevas** (`ReceptionDashboard.test.tsx`, 33, bajo `describe('UI-02-web dashboard de recepción')`): R3, R8, R9, R10 (2), R11, R12 (4), R19 (2), R20, R21 (4), R22 (4), R23, R24, R25 (2), R26, R28, R34, R37 (2), R38, R40 y R41. Helper nuevo `src/test/scroll.ts` (`watchScrolling`: cuenta las llamadas a `window.scrollTo`, `Element.scrollTo` y `Element.scrollIntoView`; lo reutilizan T7 a T9). Mutaciones comprobadas (11 válidas, todas detectadas; la 12.ª estaba mal formada y se descartó, y la 13.ª era un cambio de comportamiento que se revirtió, ver abajo): «Actualizar» sin repetir el conteo, confirmar sin invalidar, `key` por índice, foco y reconexión activos, `formatBogota`, punto añadido al aviso, conteo sin sede, 403 pintado como error, tono de identidad, «Registro directo» secundario y nota viva con `role`.
 - **Pruebas existentes tocadas** (solo lo que lista `design.md`): `ReceptionPage.test.tsx` (handler de `GET /encounters` en `setup()`, `Preregistro`/`Expira` con `norm(formatDateTimeBogota(…))`, aviso sin punto añadido, textos y dos títulos de prueba en «preregistro»), `FeatureLocalization.test.tsx` (`R14`), `f02Transversal.test.tsx` (líneas 178 y 357 y `R38`: la lista de `/atenciones` es la última petición de atenciones, y se comprueba también que la primera es la del indicador, `limit` y `status`), `f02Routes.test.tsx` (título `Recepción`) y `routes.test.tsx` (`Recepción` en `HOME` y en `R5`). Quedan citas de «pre-registro» solo en lo que `design.md` deja fuera (`roleMatrix.ts`, `ArrivalForm`, `featureMessages.ts` para el conflicto de llegada, `/atenciones`, la landing, comentarios y datos de muestra de `problem.test.ts` y `dashboard.test.tsx`).
 - **Corrección de la etapa A (visual)**: al comparar con la captura 01 de la maqueta, las tarjetas quedaban pegadas al borde del panel: `.dashboard ul` (clase y elemento) pisaba el relleno de `.prereg-grid` (una clase). El restablecimiento de listas pasa a `:where(.dashboard) ul` (especificidad cero, como el `ul` de la maqueta) en `dashboard.css`, con una prueba nueva en `dashboardStyles.test.ts` (`R34: el restablecimiento de listas no pisa el relleno…`, que falla con el CSS anterior).
 - **Comprobación visual** (Chromium con el arnés, tema claro y oscuro, 375, 768 y 1440 px; fuera del repo): sin desbordamiento (`scrollWidth` = `clientWidth`), barra de resumen en tres columnas a 1440 px (dos indicadores y filtro de 304 px), dos columnas con el filtro a fila completa a 768 px y una a 375 px, tarjetas en dos columnas de la misma altura a 1440 y 768 px y en una a 375 px, nota «Se actualiza cada 30 s» a la derecha del título del panel y botones abajo. Parece la captura 01 y la 07 de la maqueta; la única diferencia visible es el marco (la cabecera aún repite la marca; es T10, etapa C).
@@ -153,3 +153,136 @@ Prueba primero: `ReportsPage.test.tsx` se escribió antes que el código, pero n
 - **Pruebas existentes tocadas** (solo lo que lista `design.md`): `routes.test.tsx` elimina `R23: el marcador del inicio de %s…` (ya no queda ningún marcador). El campo `feature` de la constante `HOME` de ese archivo queda sin lector (limpieza para T12). Las aserciones `queryByText(/Esta funcionalidad llega en/)` de `R18` y `R19` se conservan: siguen siendo ciertas para las rutas prohibidas.
 - **Comprobación visual** (Chromium con el arnés, claro y oscuro, 375, 768 y 1440 px, y los estados por fila con peticiones interceptadas; fuera del repo): sin desbordamiento; tres celdas, tabla simple con la cifra a la derecha (no se apila ni a 375 px), pie «3 sedes» y franja discontinua de F-07 como en la captura 04 de la maqueta; «100+», «Sin permiso», «No se pudo cargar» con «Reintentar» y el esqueleto de una fila se ven bien y la fila cargando mide lo mismo que las cargadas (sin salto de maquetación). A 375 px el nombre de una sede con error envuelve en dos líneas porque la insignia y el botón no se parten; no desborda.
 - **Desviaciones**: ninguna respecto de la spec. Decisión menor: el 403 de las sedes (`GET /public/tenants` es público y no debería darse) se muestra como el resto de paneles, con `PanelState forbidden` («No tienes permiso para ver esta página.»), porque la matriz solo nombra «Sin permiso» para las celdas y las filas.
+
+---
+
+# Etapa B, nota de cierre (T6 a T9)
+
+Fecha: 2026-10-29, America/Bogota. Rol `implementer`. T6, T7, T8 y T9 hechas y marcadas `[x]` en `specs/UI-02-web/tasks.md`, en orden y con la prueba `R<n>:` escrita primero (ver la salvedad de T9). Contrato 0.4.0 sin cambios, `package.json` y `package-lock.json` intactos, sin `console`, sin TODOs, sin colores literales en el CSS nuevo, sin archivos temporales dentro del repo, sin imports entre features y sin procesos en marcha. No se tocó `feature_list.json`, `docs/ui-dashboards.md`, `requirements.md` ni `design.md`, ni nada de `../asclepio-api/`. La feature sigue `in_progress`: la etapa C (T10 a T14) y la revisión independiente están pendientes.
+
+## Resultado
+
+| Comprobación | Resultado |
+| --- | --- |
+| `./init.sh` completo | VERDE, FAIL 0, WARN 0 (lint, typecheck y pruebas); log en `../../local-analysis/ui02-verification/init-etapa-b.log` |
+| `npm test` | 42 archivos y **654 pruebas** en verde (etapa A: 38 y 522; +4 archivos y +132 pruebas netas: 134 nuevas y 2 retiradas). La suite completa se ejecutó tras cada tarea y al cierre, siempre en verde |
+| `npm run i18n:check` | Correcto (salida 0). La etapa B no añade claves: solo cambia el texto español de nueve claves de `features` |
+| `npm run build` | Correcto (1368 módulos) |
+| Lint y typecheck | Sin errores ni avisos |
+| Mutaciones | 11 (T6), 14 (T7), 14 (T8) y 16 (T9) mutaciones válidas del código o del CSS; todas las detecta alguna prueba y el código se restauró idéntico (scripts fuera del repo) |
+| Comprobación visual | Chromium con el arnés de la etapa A, los cuatro dashboards en claro y oscuro a 375, 768 y 1440 px y los estados por fila de `/reportes` con peticiones interceptadas: sin desbordamiento (`scrollWidth` = `clientWidth`) y con el aspecto de las capturas 01 a 04, 07 y 08 de la maqueta. La evidencia formal (T13) sigue pendiente |
+
+## Commits (a petición expresa del usuario, a mitad de la sesión)
+
+El usuario escribió en el chat «No olvides estar haciendo commits siguiendo los conventional commits de manera constante», lo que sustituye la regla inicial de «no hacer commit» (que venía del `leader`). Se creó la rama `feat/ui-02-web-dashboards` desde `main` (`7043fc1`), con Conventional Commits, `Refs: UI-02-web` y la atribución, sin `push`, sin `stash` y sin `reset`. Como el árbol de partida tenía sin confirmar la spec del `leader` y toda la etapa A, esas piezas se confirmaron primero por temas (los archivos que mezclaban etapa A con cambios de B se confirmaron en su estado de la etapa A, y se comprobó en un `worktree` temporal que ese árbol pasa la suite de la etapa A; su única falla allí, `clinicalSchemas.test.ts`, lee `../asclepio-api` y ese directorio no existe fuera del repo):
+
+| Commit | Contenido |
+| --- | --- |
+| `1887307` `docs(ui-02): specify the role dashboards redesign` | brief, requisitos, diseño, tareas, nota viva y `feature_list.json` del `leader` |
+| `684718f` `docs(ui-02): add the "before" evidence…` | T1 |
+| `c748122` `feat(shared): add encounter counts, the refresh policy…` | T2 |
+| `668f345` `feat(i18n): add the dashboard messages in five languages` | T3 |
+| `41759d2` `feat(ui): add the dashboard stylesheet and the shared dashboard components` | T4 y T5 |
+| `d5accac` `docs(ui-02): record the shared base stage (T1 to T5)` | nota de la etapa A |
+| `3015f49` `fix(ui): keep the padding of the preregistration grid over the list reset` | corrección de la etapa A hallada en T6 |
+| `d6c49f8` `feat(reception): rebuild the reception page as a dashboard` | T6 |
+| `1d2c282` `feat(ui): let table cells carry an id` | `DataCell` con `id` (T7 y T8) |
+| `2dc513e` `feat(triage): rebuild the nursing tray as a dashboard` | T7 |
+| `a511d9b` `feat(queue): add the medicine dashboard` | T8 |
+| `7b662e8` `feat(ui): size the loading skeleton of a table figure` | regla CSS de T9 |
+| `fa1945b` `feat(reports): add the administration dashboard` | T9 |
+
+Esta nota de cierre se confirma aparte (`docs(ui-02): record the stage B closing note`).
+
+## Archivos
+
+### Creados
+
+- `src/features/reception/components/ReceptionDashboard.test.tsx`, `src/features/triage/components/TriageDashboard.test.tsx`, `src/features/queue/components/QueuePage.test.tsx` y `src/features/reports/components/ReportsPage.test.tsx`.
+- `src/features/queue/components/QueuePage.tsx` y `routes.tsx` (`queueRoutes`); `src/features/reports/components/ReportsPage.tsx`, `SiteCountTable.tsx` y `routes.tsx` (`reportRoutes`).
+- `src/test/scroll.ts` (`watchScrolling`: cuenta las llamadas a `window.scrollTo`, `Element.scrollTo` y `Element.scrollIntoView`; lo usa R37 en los cuatro dashboards).
+
+### Tocados
+
+- `src/features/reception/`: `components/ReceptionPage.tsx`, `PreRegistrationCard.tsx`, `RejectForm.tsx` y `hooks/usePendingPreRegistrations.ts` (`autoRefresh()`).
+- `src/features/triage/components/TriageTrayPage.tsx`.
+- `src/app/router/routes.tsx` (`'/cola'` y `'/reportes'` en `FEATURE_ROUTES`).
+- `src/shared/ui/DataTable.tsx` (`DataCell` con `id` opcional) y `src/shared/ui/dashboard.css` (dos cambios: el restablecimiento de listas pasa a `:where(.dashboard) ul`, y la regla `.data-table td.num .skeleton`).
+- `src/shared/lib/featureMessages.ts` (tres entradas) y `messages/features/es.json` (nueve claves).
+- `specs/UI-02-web/tasks.md` (T6 a T9 en `[x]`).
+- Pruebas existentes (tabla más abajo) y las de la etapa A que ganan una prueba: `src/shared/ui/dashboard.test.tsx` (+1) y `src/shared/ui/dashboardStyles.test.ts` (+2).
+
+### Fuera del repo (`../../local-analysis/ui02-verification/`)
+
+`capture-etapa-b.mjs` (captura un dashboard a varios anchos y temas y vuelca columnas, alturas y apilado), `states-admin.mjs` (estados por fila de `/reportes` con peticiones interceptadas), `dist-etapa-b/` (build «después» de esta etapa) e `init-etapa-b.log`. Reutilizables en T13 (`POST /__reset` antes de cada serie; compilar con `VITE_API_URL=http://127.0.0.1:3012 npm run build -- --outDir <carpeta fuera del repo> --emptyOutDir` y servir con `vite preview` en el puerto 5186).
+
+## Trazabilidad R → `archivo::prueba` (solo lo hecho en la etapa B)
+
+Abreviaturas: `rec` = `src/features/reception/components/ReceptionDashboard.test.tsx`; `enf` = `src/features/triage/components/TriageDashboard.test.tsx`; `med` = `src/features/queue/components/QueuePage.test.tsx`; `adm` = `src/features/reports/components/ReportsPage.test.tsx`; `css` = `src/shared/ui/dashboardStyles.test.ts`; `ui` = `src/shared/ui/dashboard.test.tsx`. Todas viven bajo `describe('UI-02-web …')`; los nombres se citan por su inicio.
+
+| R | Pruebas |
+| --- | --- |
+| R2 | `rec::R3: encabezado con un h1 y su descripción…` y `rec::R11…`; `enf::R2: «Actualizar» es la única acción…`; `med::R2…`; `adm::R2…` |
+| R3 | `rec::R3: encabezado con un h1…`; `enf::R3…`; `med::R3…` (con la franja); `adm::R3…` (con la franja) |
+| R7 | `adm::R7: una petición por indicador y una por sede…` (la caché de los seis conteos guarda solo `{ count, capped }`); `rec::R9…` y `med::R15…` (una petición por indicador) |
+| R8 | `rec::R8: con 100 atenciones en espera…`; `enf::R8: con offset %i y %i atenciones…` (5); `med::R8…`; `adm::R8: con 0, 99 y 100 atenciones…` |
+| R9 | `rec::R9: «Preregistros pendientes» sale de la bandeja…` |
+| R10 | `rec::R10: cada preregistro es un article…`; `rec::R10: un paciente sin documento omite «Documento»…` |
+| R11 | `rec::R11: «Registro directo» es el único botón sólido…` |
+| R12 | `rec::R12: confirmar envía { identityVerified: true }…`; `rec::R12: rechazar abre el formulario dentro de la tarjeta…`; `rec::R12: con %i el error de acción queda en contexto…` (409 y 404) |
+| R13 | `enf::R13: la cifra sale de la propia bandeja, sin petición adicional, y sigue la sede` |
+| R14 | `enf::R14: la tabla tiene Paciente, Sede y Llegada…`; `enf::R14: la sede y la página viven en la URL…`; `enf::R14: el pie lleva «Página N»…`; `enf::R14: «Anterior» y «Siguiente» se deshabilitan solo por los datos…`; `enf::R14: sin página anterior «Anterior» está deshabilitado y con 50 atenciones…` |
+| R15 | `med::R15: tres indicadores, uno por estado…`; `med::R15: cada celda lleva el icono y el tono de su estado`; `adm::R15…` |
+| R16 | `med::R16: pide las 8 atenciones más recientes sin filtros…`; `med::R16: la fila %s lleva una insignia…` (seis estados); `med::R16: cada fila muestra la sede y la llegada…`; `med::R16: el pie dice «Las 6 atenciones más recientes»…`; `med::R16: con %i filas el pie dice «%s»` (8 y 1) |
+| R17 | `adm::R17: tabla simple con Sede y «En espera de triage»…`; `adm::R17: con %i sedes el pie dice «%s»…` (3 y 1) |
+| R18 | `med::R18: nombra la funcionalidad de F-06…`; `adm::R18: nombra la funcionalidad de F-07…` |
+| R19 | `rec::R19` (2); `enf::R19…`; `med::R19…`; `adm::R19: mientras cargan las sedes…` y `adm::R19: cada fila carga por separado…`; `css::R19: la cifra de una fila de la tabla de sedes tiene su propio esqueleto…` |
+| R20 | `rec::R20…`; `enf::R20…`; `med::R20…`; `adm::R20: sin sedes muestra el vacío…` |
+| R21 | `rec::R21: si falla la bandeja…`, `…el indicador de espera…`, `…si fallan las sedes…` y `…un refresco fallido…`; `enf::R21` (bandeja, sedes y refresco fallido); `med::R21` (indicador, lista y refresco fallido); `adm::R21` (indicador, sedes, fila y refresco fallido de una sede) |
+| R22 | `rec::R22` (403 de la bandeja, del indicador y los dos intervalos); `enf::R22` (403 y su intervalo); `med::R22` (indicador, lista y los dos intervalos); `adm::R22` (indicador, sedes, fila y el intervalo de una sede) |
+| R23 | `rec::R23: durante un refresco se conservan…`; `enf::R23…`; `med::R23…`; `adm::R23…` |
+| R24 | `rec::R24: cada 30 s…` (bandeja e indicador, «Actualizar» repite ambos); `enf::R24…` (una petición por ciclo y por «Actualizar»); `med::R24…` (cuatro); `adm::R24…` (3 + S; las sedes no) |
+| R25 | en los cuatro: `R25: ni el foco de la ventana ni la reconexión repiten…` y `R25: con la pestaña oculta no se repite ninguna petición` |
+| R26 | `rec::R26…`; `enf::R26…` (documento solo si existe); `med::R26…` (nunca el documento); `adm::R26…` (ningún dato de pacientes) |
+| R28 | `rec::R28…`; `enf::R28…`; `med::R28: %s ve el mismo dashboard…` (PHYSICIAN, NURSE y ADMIN); `adm::R28…` |
+| R31 | `ui::R31: DataCell acepta un id para que el control de la fila lo use en aria-describedby` (junto a `aria-describedby` de `enf::R14` y `med::R16`) |
+| R34 | `rec::R34`, `enf::R34`, `med::R34` y `adm::R34` (`--cells` = 2, 1, 3 y 3); `css::R34: el restablecimiento de listas no pisa el relleno…` |
+| R37 | `rec::R37` (2: nodos, casilla y motivo escrito con una llegada nueva; «Actualizar» conserva el foco); `enf::R37` (2: enlace de captura enfocado con una llegada que reordena, y «Siguiente»); `med::R37…`; `adm::R37…` |
+| R38 | `rec::R38`, `enf::R38`, `med::R38` y `adm::R38` |
+| R40 | `rec::R40: los textos de la pantalla usan «preregistro»…` |
+| R41 | `rec::R41…`; `enf::R41…`; `med::R41…` (la hora y la fecha de la llegada en Bogotá, con `04:30Z` que cruza la medianoche) |
+
+Sin prueba todavía (llegan en la etapa C): R1, R27, R33 (guías) y R39, y las transversales de R2, R28, R29 (claves retiradas), R36 y R40 (T10 a T14).
+
+## Pruebas existentes modificadas
+
+Solo las que lista `design.md` («Pruebas existentes que cambian») para estas cuatro pantallas, más una prueba añadida a cada uno de dos archivos de la etapa A:
+
+| Archivo | Cambio | Motivo |
+| --- | --- | --- |
+| `ReceptionPage.test.tsx` | handler de `GET /encounters` en `setup()`; `Preregistro` y `Expira` con `norm(formatDateTimeBogota(…))`; aviso sin punto añadido; textos de `R8`, `R12`, `R13` y `R16` y dos títulos de prueba en «preregistro» | D27, D28 y D29; el dashboard pide el indicador de espera |
+| `FeatureLocalization.test.tsx` | texto español del conflicto de `R14` | D27 |
+| `f02Transversal.test.tsx` | líneas 178 y 357; `R38`: la lista de `/atenciones` es la última petición de atenciones (y se comprueba que la primera es la del indicador) | D27, D28 y el indicador de recepción |
+| `f02Routes.test.tsx` y `routes.test.tsx` | título `Recepción` (`PAGES[0]`, `HOME.RECEPTION.title` y `R5`) | D3 |
+| `routes.test.tsx` | `R23: el marcador del inicio de %s…` se acota a ADMIN (T8) y se elimina (T9) | D13 |
+| `f03Routes.test.tsx` | `R3: paginates by 50…` (`norm(formatTimeBogota(…))`) y `R21` (sin el `h2` «Espacio de enfermería»; la celda del paciente en lugar del `h3`, con los `columnheader`) | D15, D28 y D30 |
+
+Sin cambio y en verde, las vigiladas por el sondeo de 30 s: `routes.test.tsx` `R14`, `privacy.test.tsx` `R24`, `ReceptionPage.test.tsx` `R9` y, en `f03Routes.test.tsx`, las dos `R3` del refresco y `R4`. Sin cambio también `featureMessages.test.ts`, `uiFoundation.test.tsx`, `AppShell.test.tsx`, `VoiceGuide.test.tsx` y las pruebas de las pantallas fuera de alcance.
+
+## Desviaciones y decisiones (ninguna contradice la spec)
+
+1. **T9, la prueba no se vio en rojo.** `ReportsPage.test.tsx` se escribió antes que el código, pero no se ejecutó antes de crear los archivos (el único fallo posible era el módulo ausente); se comprobó con 16 mutaciones. La prueba de la regla CSS de T9 sí se vio fallar antes de la regla.
+2. **`DataCell` recibe un `id` opcional** (`shared/ui/DataTable.tsx`): el `aria-describedby` del enlace «Capturar información clínica» y de «Ver atención» apunta a la celda del nombre (sección de accesibilidad del diseño) y el componente de la etapa A no podía darle `id`. Cambio compatible, con su prueba.
+3. **Corrección de la etapa A en `dashboard.css`:** `.dashboard ul` (clase y elemento) pisaba el relleno de `.prereg-grid` y las tarjetas de preregistro quedaban pegadas al borde del panel (distinto de la captura 01). El restablecimiento de listas pasa a `:where(.dashboard) ul`, con una prueba que falla con el selector anterior.
+4. **Una regla CSS nueva** (`.data-table td.num .skeleton`, 3 rem por 1.25 rem) porque la cifra de una fila de sedes carga sola y el esqueleto de panel no cabe en una fila. El error y el «sin permiso» de una fila reutilizan `StatusBadge` (tono `error`) y el botón pequeño existentes, sin clases nuevas.
+5. **Pie de la bandeja de enfermería siempre presente** (también cargando, vacía o con error), con «Anterior» y «Siguiente» deshabilitados solo por los datos: es lo que dice D19 («lista aún no cargada») y evita saltos de maquetación. En medicina y administración el pie solo existe con filas o sedes, como en la maqueta y en la matriz de estados.
+6. **403 de las sedes en `/reportes`:** se pinta como el de los demás paneles (`PanelState forbidden`, «No tienes permiso para ver esta página.»); la matriz solo nombra «Sin permiso» para celdas y filas, y `GET /public/tenants` es público, así que no debería darse.
+7. **R26 en `/cola` y `/reportes`:** la franja «pendiente» dice «…por nivel de triage y tiempo de espera…» como texto de lo que traerá, así que las pruebas no prohíben esas palabras: prohíben datos (cifras, niveles concretos como «Nivel 1» o «ESI 2», prioridades, controles, imágenes y gráficos).
+8. **`items = tray.data ?? []` en recepción** se conserva como antes para el error huérfano de acción.
+
+## Observaciones para quien revise (sin cambio de código)
+
+- **Un `offset` fuera de rango en `/triage`** (URL editada a mano, o una lista que se encoge mientras se está en una página alta) muestra en la celda el `offset` (D6: `offset` más las recibidas) mientras el panel dice que no hay atenciones. Es lo que fija la spec.
+- **Reintentar tras un primer fallo.** TanStack vuelve a `pending` una consulta que nunca tuvo datos, así que «Reintentar» de un panel, una celda o una fila cuyo primer pedido falló pasa por el estado de carga (el botón se sustituye y pierde el foco); con datos previos el error se mantiene mientras repite (comprobado con `QueryObserver`). Es coherente con R19 y R23 (que hablan de paneles «con datos»).
+- **Filas de sedes con error a 375 px:** la insignia y el botón no se parten y el nombre de la sede envuelve en dos líneas; no hay desbordamiento.
+- **Restos para la etapa C:** `PlaceholderPage` sigue importado como respaldo en `routes.tsx` (ya sin uso, T11); el campo `feature` de la constante `HOME` de `routes.test.tsx` quedó sin lector (T12); las claves `feature_reception_title`, `clinical_workspace`, `clinical_workflow_title`, `clinical_workflow_body` y `clinical_waiting_only` y las clases `.clinical-board`, `.clinical-tray`, `.pre-registration`, `.cards` y compañía siguen sin uso (T14); la cabecera del marco todavía repite la marca «Asclepio» en las capturas (T10); `guide_reception`, `clinical_guide_tray` y la guía de `/cola` y `/reportes` conservan su texto (T11).

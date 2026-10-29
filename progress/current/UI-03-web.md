@@ -19,3 +19,8 @@
 
 ## Aprobación
 - 2026-10-29: el usuario aprobó la spec por chat («pues implementalo»), con PA-1 a PA-4 resueltas. UI-03-web → in_progress.
+
+## 2026-10-29 — Implementación (implementer)
+
+- T1: build «antes» en `0bd94f7`: un único JS de 712,55 kB (207,87 kB gzip), CSS 47,69 kB (10,12 kB gzip), con aviso de >500 kB. `./init.sh` «antes»: ROJO (2 «Test timed out»). Capturas «antes»: **pendientes para el leader/usuario** (sin navegador ni credenciales en la sesión del implementer).
+- T2: causa de los timeouts = contención de CPU (15 workers en 16 núcleos). `maxWorkers: '50%'` + `delay: null` de user-event en R40 (x2) y R11 de captura. Tres `./init.sh` seguidos en verde.

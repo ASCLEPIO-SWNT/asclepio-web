@@ -186,7 +186,7 @@ it('R10: blocks a second submit and disables only the pending form', async () =>
 it('R11: adds and removes only draft findings, validates rows and limits the draft to twenty entries', async () => {
   const net = fakeApi({});
   mount();
-  const user = userEvent.setup();
+  const user = userEvent.setup({ delay: null });
   await user.click(screen.getByRole('button', { name: 'Añadir elemento' }));
   expect(screen.getAllByLabelText('Descripción')).toHaveLength(2);
   await user.click(screen.getByRole('button', { name: 'Quitar elemento 2' }));

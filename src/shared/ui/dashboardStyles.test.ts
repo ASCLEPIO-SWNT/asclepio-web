@@ -628,6 +628,12 @@ describe('UI-02-web hoja de estilos del dashboard', () => {
     expect(valueOf('.dashboard .prereg .check', 'text-wrap')).toBe('balance');
   });
 
+  it('R10: los datos de la tarjeta reparten sus líneas, de modo que «28/10/26, 2:05 p. m.» no parte la hora de «p. m.»', () => {
+    // Chromium escribe espacios normales (U+0020) en «2:05 p. m.»: sin esta regla, a 768 px la
+    // columna «Expira» partía «28/10/26, 2:05» y «p. m.».
+    expect(valueOf('.prereg__facts dd', 'text-wrap')).toBe('balance');
+  });
+
   it('R18: el texto de la franja «pendiente» reparte sus líneas, sin una segunda línea corta', () => {
     expect(valueOf('.pending__text p', 'text-wrap')).toBe('balance');
   });

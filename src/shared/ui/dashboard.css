@@ -450,6 +450,8 @@
 .prereg__facts dd {
   font-size: 0.875rem;
   font-weight: 500;
+  /* «28/10/26, 2:05 p. m.» se parte en dos líneas parejas, no entre la hora y «p. m.». */
+  text-wrap: balance;
 }
 .prereg__facts .fact--wide {
   grid-column: 1 / -1;

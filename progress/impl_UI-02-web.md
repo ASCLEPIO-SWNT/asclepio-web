@@ -344,3 +344,79 @@ Prueba primero, con una salvedad: las 24 pruebas nuevas describen comportamiento
   - *`Pre-registro` y `pre-registro`*: en `messages/*/es.json` solo quedan `landing_description`, `landing_step1_title`, `landing_capability_mobile`, `feature_arrival_conflict`, `feature_pr_reference`, `feature_origin_pr` (fuera de alcance según `design.md`) y `feature_reception_title` (sin lector; la retira T14); en los otros cuatro idiomas no hay ningún «preregistro» sin guion. En `src` quedan: `roleMatrix.ts` (`title` de la matriz, que `design.md` conserva), `ArrivalForm.tsx` y `featureMessages.ts` (conflicto de llegada, fuera de alcance), comentarios de código y el README de `features/reception`, pruebas de pantallas fuera de alcance (`DirectRegistrationPage`, `EncounterListPage`, `EncounterDetailPage`, `FeatureLocalization` en inglés), datos de muestra de `problem.test.ts` (que `design.md` deja sin cambio) y los selectores `.pre-registration` de `index.css` (nombres de clase, que retira T14). La única cita restante que no estaba en la lista era el texto de muestra de una prueba de `Notice` del propio slice (`R12: Notice sin icono conserva exactamente su marcado`, en `dashboard.test.tsx`): pasa de «Pre-registro rechazado.» a «Preregistro rechazado.» (no cambia ninguna aserción de comportamiento; es la única prueba tocada en T12).
   - *`grep -rn "R[0-9]\+:" src` y el informe JSON de Vitest* (`--reporter=json`, fuera del repo): en los 12 archivos de prueba que creó el slice, las 339 pruebas cuelgan de un `describe('UI-02-web …')` (20 `describe` distintos, y uno más en `datetime.test.ts`) y todas empiezan por `R<n>:`; en `datetime.test.ts`, las 6 pruebas del bloque `describe('UI-02-web horas de los dashboards …')` cuelgan de él y las 7 previas (la de F-01 y las seis `R39:` de F-02-web, otra feature) siguen fuera, como deben. Ninguna prueba de los archivos del slice queda fuera de un `describe('UI-02-web …')`.
 - **Observaciones para quien revise**: (1) el «`schema.d.ts` intacto» de R36 es una huella SHA-256 de los dos archivos generados; si un cambio de contrato los regenera a propósito, hay que actualizar las dos huellas junto con `CONSUMED_CONTRACT` en esa prueba. (2) La búsqueda de imports de R36 es textual (`from '…'`, `import('…')` e `import '…'`), así que también cuenta un import comentado; hoy no hay ninguno. (3) R27 prueba datos de la API simulada; el `data-testid`, el título del documento y el `state` del router no se miran.
+
+---
+
+# Etapa C1, nota de cierre (T10 a T12)
+
+Fecha: 2026-10-29, America/Bogota. Rol `implementer`. T10, T11 y T12 hechas y marcadas `[x]` en `specs/UI-02-web/tasks.md`, en orden y con la prueba `R<n>:` escrita primero (ver la salvedad de T12: sus pruebas no pudieron verse en rojo y se comprobaron con mutaciones). **T13 y T14 no se han tocado** y siguen en `[ ]`. Contrato 0.4.0 sin cambios, `package.json` y `package-lock.json` intactos, sin `console`, sin TODOs, sin archivos temporales dentro del repo, sin imports entre features y sin procesos míos en marcha (los de `vite preview` y `preview-api.mjs` que aparecen en `pgrep` son de sesiones anteriores). No se tocó `feature_list.json`, `docs/ui-dashboards.md`, `requirements.md`, `design.md`, `schema.d.ts`, `clinicalContract.generated.ts` ni nada de `../asclepio-api/`. La feature sigue `in_progress`: faltan T13 (verificación visual con evidencia), T14 (limpieza y cierre) y la revisión independiente.
+
+## Resultado
+
+| Comprobación | Resultado |
+| --- | --- |
+| `./init.sh` completo (sin `--quick`) | VERDE, FAIL 0, WARN 0 (entorno, harness, estado, configuración, lint, typecheck y pruebas) |
+| `npm test` | 42 archivos y **742 pruebas** en verde (etapa B: 42 y 654; +88 pruebas, todas en `dashboards.test.tsx`: T10 +8, T11 +56 y T12 +24). Tres ejecuciones completas seguidas sobre el árbol final sin fallos (informe JSON, `./init.sh` y `npm test`) y tres del archivo transversal |
+| `npm run lint` y `npm run typecheck` | Salida 0, sin errores ni avisos |
+| `npm run i18n:check` | Salida 0 (T11 cambia el texto de dos claves en los cinco idiomas y no añade ni retira claves) |
+| `npm run build` | Salida 0 con `--outDir /tmp/ui02-c1-dist` (fuera del repo; 1367 módulos: uno menos que en la etapa B por `PlaceholderPage`) |
+| Mutaciones | T10 4, T11 (guía) 3, T11 (rutas) 6 y T12 22 (R27 6, R36 7, R40 9): todas las detecta alguna prueba y el código se restauró idéntico (scripts fuera del repo, en `/tmp`) |
+| Comprobación visual | No hecha, por alcance (es T13). En esta etapa solo se probó el DOM; las reglas CSS de `.layout--private` (T4) siguen sin verse en un navegador |
+
+## Commits
+
+En `feat/ui-02-web-dashboards`, Conventional Commits en inglés con `Refs: UI-02-web` y la atribución, sin `push`, sin `amend` y sin `stash` (un commit por paso, con la tarea marcada en el commit que la cierra):
+
+| Commit | Contenido |
+| --- | --- |
+| `fa84ebd` `feat(ui): show the brand once in the private frame` | T10 |
+| `4c7e862` `feat(ui): narrate a static guide on the queue and reports dashboards` | T11, paso 1: guía de voz y textos de las guías |
+| `aa833fe` `refactor(router): retire PlaceholderPage now that every route has a screen` | T11, paso 2: rutas, `h1`, peticiones por rol y retiro de `PlaceholderPage` |
+| `830824a` `test(ui): cover privacy, architecture and Spanish writing across the dashboards` | T12 |
+
+Esta nota de cierre se confirma aparte (`docs(ui-02): record the stage C1 closing note`).
+
+## Archivos
+
+- **Eliminado**: `src/shared/ui/PlaceholderPage.tsx` (no tenía prueba propia).
+- **Tocados (código)**: `src/shared/ui/Layout.tsx` (`FrameHandle`, `useMatches`, omisión del enlace de marca, clase `layout--private` y las dos ramas de `guideKey`), `src/app/router/routes.tsx` (`handle: { privateFrame: true }`, sin `PlaceholderPage` y con `?? []`), `messages/common/{es,en,pt,fr,de}.json` (`guide_reception`) y `messages/features/{es,en,pt,fr,de}.json` (`clinical_guide_tray`).
+- **Tocados (pruebas)**: `src/app/router/dashboards.test.tsx` (de 304 a 1395 líneas y de 15 a 103 pruebas), `src/app/router/routes.test.tsx` (se quita el campo `feature` de `HOME`) y `src/shared/ui/dashboard.test.tsx` (el texto de muestra de una prueba de `Notice` pasa a «Preregistro rechazado.»). Ningún archivo creado.
+- **Seguimiento**: `specs/UI-02-web/tasks.md` (T10 a T12 en `[x]`) y esta nota.
+
+## Trazabilidad R → `archivo::prueba` (solo lo hecho en la etapa C1)
+
+`router` = `src/app/router/dashboards.test.tsx`. Todas viven bajo un `describe('UI-02-web …')` y empiezan por `R<n>:`; los nombres se citan por su inicio.
+
+| R | Pruebas |
+| --- | --- |
+| R1 | `router::R1: $role entra por $entry y aterriza en su dashboard…` (8); `router::R1: PHYSICIAN, NURSE y ADMIN abren /cola y ven exactamente el mismo dashboard`; `router::R1: la ruta $path de la matriz de roles tiene pantalla para $role…` (10); `router::R1: PlaceholderPage ya no existe…` |
+| R2 | `router::R2: $role ve un único h1 «$title»…` (4) |
+| R27 | `router::R27: $role en $path, tras cargar, refrescar a mano y por intervalo y operar, no deja nombres…` (4) |
+| R28 | `router::R28: $role en $path ve «Sin permiso» y el dashboard no pide ningún dato` (10); `router::R28: $role en $path solo pide las lecturas que su rol puede usar…` (6) |
+| R33 | `router::R33: las cuatro guías dicen que la pantalla se actualiza sola…` (5 idiomas); `router::R33: en español, la guía de recepción y la de enfermería llevan el texto de design.md`; `router::R33: $role oye $key en $path…` (6); `router::R33: la guía de /cola y la de /reportes se narran en el idioma elegido` (4) |
+| R36 | `router::R36: la web consume el contrato 0.4.0…`; `router::R36: fetch y axios solo existen en shared/api…`; `router::R36: ninguna feature importa de otra feature…` |
+| R39 | `router::R39: $role ve «Asclepio» una sola vez…` (4); `router::R39: el resto de pantallas del marco privado…`; `router::R39: %s conserva la cabecera con la marca…` (3) |
+| R40 | `router::R40: las nueve claves…`; `router::R40: en español, ningún texto de los dashboards escribe «pre-registro»…`; `router::R40: el guion solo queda en los textos que design.md deja fuera…`; `router::R40: ningún texto de los dashboards usa «·»…` (5); `router::R40: las etiquetas, los títulos de panel y los de franja empiezan con mayúscula inicial`; `router::R40: %s conserva su terminología del preregistro…` (4); `router::R40: $role no pinta «·» ni «pre-registro» en pantalla` (4) |
+
+Con esta etapa, R1, R2, R27, R28, R33, R36, R39 y R40 ya tienen su prueba transversal. T14 arma la tabla R1 a R41 completa.
+
+## Pruebas existentes modificadas
+
+Solo las de las etapas anteriores y estas dos, nuevas en C1: `routes.test.tsx` (quita el campo `feature` de `HOME`, que no tenía lector desde que T9 eliminó `R23`; no cambia ninguna aserción) y `dashboard.test.tsx` (texto de muestra de una prueba de `Notice` del propio slice; no cambia ninguna aserción de comportamiento). El resto de pruebas existentes (`uiFoundation`, `AppShell`, `privacy`, `VoiceGuide`, `featureMessages`, `f03Routes` R3 de refresco y R4, y las vigiladas por el sondeo `routes.test.tsx` R14, `privacy.test.tsx` R24 y `ReceptionPage.test.tsx` R9) siguen en verde sin tocarlas.
+
+## Desviaciones y decisiones (ninguna contradice la spec)
+
+1. **T11 en dos commits.** La guía de voz (R33) y el retiro de `PlaceholderPage` (R1, R2, R28) se hicieron y confirmaron por separado, cada uno con sus pruebas, para que ningún commit deje la suite en rojo; `tasks.md` marca T11 en el segundo.
+2. **T12, pruebas sin rojo previo.** R27, R36 y R40 describen comportamiento que ya se cumplía, así que no podían fallar antes de escribir código (T12 no lleva código); se compensó con 22 mutaciones. Misma salvedad, más pequeña, para 39 de las 40 pruebas del paso 2 de T11 (solo falló la del retiro de `PlaceholderPage`), compensadas con 6 mutaciones.
+3. **«`schema.d.ts` intacto» (R36)** es una huella SHA-256 de `schema.d.ts` y de `clinicalContract.generated.ts` (las de `main`: ninguno cambió en la rama), no una comparación con un `git diff`, que dependería del historial. Si un cambio de contrato los regenera a propósito, hay que actualizar las huellas en esa prueba junto con `CONSUMED_CONTRACT`.
+4. **Imports entre features (R36)**: la prueba resuelve cada import relativo y mira a qué carpeta cae; la regla `no-restricted-imports` de ESLint (`**/features/*/**`) solo mira la cadena del especificador, así que no ve `../../reception/…` entre features. Ningún código lo hace hoy.
+5. **R40 más amplia que la lista mínima**: además de las claves de las dos tablas pedidas, la prueba revisa las 45 que `design.md` reutiliza sin cambio (los dashboards las muestran) y los cinco idiomas para el «·».
+6. **Terminología de las guías** en portugués y francés: siguen con «pré-cadastro» y «pré-enregistrement», como antes, y no se alinean con la etiqueta de la pantalla («Pré-registros», «Préinscriptions»); R40 pide conservar la terminología de los otros idiomas. Diferencia anterior a este slice.
+7. **La cabecera del marco privado pierde la marca en todas las pantallas del `AppShell`** (también `/atenciones`, `/triage/:id` y `/recepcion/registro`), porque el `handle` está en la ruta del `AppShell`; es lo que dice UI-02.AC11 y lo cubre una prueba.
+
+## Observaciones para quien revise y para las tareas que siguen
+
+- **T13, a mirar en navegador**: la cabecera reducida (`.layout--private`: herramientas en una píldora a la derecha, sin hueco a la izquierda; a menos de 480 px el marco oculta el botón de tema, así que quedan el idioma y «Preferencias»), la marca única en la barra lateral y la marca conservada en `/`, `/login` y `/estado`. El caso aceptado de `design.md` (mientras `RequireSession` carga o falla el perfil la cabecera no tiene marca y tampoco hay barra lateral) es transitorio y no se prueba.
+- **T14, lo que ya no tiene lector**: `grep` en `src` (sin pruebas) no encuentra `feature_reception_title`, `clinical_workspace`, `clinical_workflow_title`, `clinical_workflow_body` ni `clinical_waiting_only`; ningún componente usa ya `.pending-badge` (solo lo usaba `PlaceholderPage`, borrada en T11) ni `.cards`, `.clinical-board`, `.clinical-tray`, `.clinical-patient*`, `.clinical-empty*`, `.clinical-pagination`, `.clinical-summary*` ni `.pre-registration` (quedan solo los nombres de clase de `index.css`; los `id` `pre-registration-…` de `PreRegistrationCard` no son clases). Al retirar `feature_reception_title` conviene quitar su entrada de `HYPHEN_OUT_OF_SCOPE` en `dashboards.test.tsx` (la prueba la tolera con una comprobación de subconjunto y pasa igual). Los campos `title` y `feature` de `RoleRoute` siguen sin lector, por decisión de `design.md`.
+- **`dashboards.test.tsx` es ya un archivo grande** (103 pruebas): lo que comparten las secciones (`DASHBOARDS`, `dashboardApi`, `settled`, `stubSpeech`, `appSources`, `merged` y `paramsOf`) está definido arriba de cada una; si T14 añade su sección R29 (claves retiradas), puede reutilizarlos.
+- **Búsqueda de `Pre-registro`**: ver la auditoría de T12 (solo quedan los textos fuera de alcance de `design.md`, `feature_reception_title` y comentarios o pruebas de pantallas fuera de alcance).

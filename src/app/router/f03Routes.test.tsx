@@ -12,7 +12,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { components } from '../../shared/api/schema';
 import type { StaffRole } from '../../shared/api/client';
 import { session } from '../../shared/api/session';
-import { formatBogota } from '../../shared/lib/datetime';
+import { formatBogota, formatTimeBogota } from '../../shared/lib/datetime';
 import {
   ENCOUNTER_ID,
   SITE_NORTE,
@@ -29,6 +29,7 @@ import {
   staffMe,
   type Handler,
 } from '../../test/fakeApi';
+import { norm } from '../../test/text';
 import { renderApp } from './testApp';
 
 const LIST = 'GET /api/v1/encounters';
@@ -157,7 +158,7 @@ describe('F-03 nurse routes', () => {
     });
     await screen.findAllByText('Laura Gómez Pérez');
     expect(
-      screen.getAllByText(formatBogota(encounter.arrivalAt)).length,
+      screen.getAllByText(norm(formatTimeBogota(encounter.arrivalAt))).length,
     ).toBeGreaterThan(0);
     expect(screen.getAllByText(/1032456789/).length).toBeGreaterThan(0);
     await user.click(screen.getByRole('button', { name: 'Siguiente' }));
@@ -563,14 +564,13 @@ describe('F-03 nurse routes', () => {
       }),
     ).toBeVisible();
     expect(
-      screen.getByRole('heading', { level: 2, name: 'Espacio de enfermería' }),
-    ).toBeVisible();
-    expect(
-      await within(tray).findByRole('heading', {
-        level: 3,
-        name: encounter.patient.fullName!,
+      await within(tray).findByRole('cell', {
+        name: new RegExp(encounter.patient.fullName!),
       }),
     ).toBeVisible();
+    for (const name of ['Paciente', 'Sede', 'Llegada']) {
+      expect(within(tray).getByRole('columnheader', { name })).toBeVisible();
+    }
     expect(screen.getAllByRole('button', { name: 'Actualizar' })).toHaveLength(
       1,
     );

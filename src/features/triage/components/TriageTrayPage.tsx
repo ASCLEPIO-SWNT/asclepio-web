@@ -1,20 +1,43 @@
 import {
-  ArrowPathIcon,
-  BeakerIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
   ClipboardDocumentListIcon,
 } from '@heroicons/react/24/outline';
+import type { ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router';
+import { PAGE_SIZE, useEncounters } from '../../../shared/hooks/useEncounters';
 import { useSites } from '../../../shared/hooks/useSites';
 import { useI18n } from '../../../shared/i18n';
-import { formatBogota } from '../../../shared/lib/datetime';
+import { countOf } from '../../../shared/lib/counts';
+import {
+  formatDateBogota,
+  formatTimeBogota,
+} from '../../../shared/lib/datetime';
+import { ENCOUNTER_STATUS_VIEW } from '../../../shared/lib/encounterStatus';
+import { indicatorOf } from '../../../shared/lib/indicator';
 import { patientDocument, patientName } from '../../../shared/lib/labels';
 import { problemOf, statusOf } from '../../../shared/lib/problem';
-import { LoadError } from '../../../shared/ui/LoadError';
-import { LoadingState } from '../../../shared/ui/LoadingState';
-import { ViewForbidden } from '../../../shared/ui/ViewForbidden';
-import { PAGE_SIZE, useEncounters } from '../../../shared/hooks/useEncounters';
+import { DASHBOARD_REFRESH_MS } from '../../../shared/lib/refresh';
+import { DashboardPage } from '../../../shared/ui/DashboardPage';
+import { DataCell, DataRow, DataTable } from '../../../shared/ui/DataTable';
+import { LiveNote } from '../../../shared/ui/LiveNote';
+import { PageHeader } from '../../../shared/ui/PageHeader';
+import { Panel } from '../../../shared/ui/Panel';
+import { PanelState } from '../../../shared/ui/PanelState';
+import { RefreshButton } from '../../../shared/ui/RefreshButton';
+import { SummaryBar } from '../../../shared/ui/SummaryBar';
+import { SummaryCell } from '../../../shared/ui/SummaryCell';
+import { SummaryFilter } from '../../../shared/ui/SummaryFilter';
 import { trayFilters, traySearch } from '../trayFilters';
 
+/**
+ * `/triage`: dashboard de enfermería (UI-02-web R13 y R14). Barra de resumen con el indicador «En
+ * espera de triage», que sale de la propia bandeja (`offset` más las atenciones recibidas, sin
+ * petición adicional) y el filtro «Sede»; panel con la tabla de atenciones pendientes, páginas
+ * de 50, `siteId` y `offset` en la URL y acceso a la captura clínica de cada una. La bandeja se
+ * repite cada 30 s con la pestaña visible y con «Actualizar»; un refresco conserva las filas, el
+ * foco y la paginación (R23, R37).
+ */
 export function TriageTrayPage() {
   const { t } = useI18n();
   const [params, setParams] = useSearchParams();
@@ -26,39 +49,118 @@ export function TriageTrayPage() {
   );
   const items = tray.data?.items ?? [];
   const search = traySearch(siteId, offset);
+  const waiting = tray.data
+    ? countOf(items.length, offset, PAGE_SIZE)
+    : undefined;
+  const waitingView = ENCOUNTER_STATUS_VIEW.WAITING_TRIAGE;
+
+  let content: ReactNode;
+  if (tray.isPending) {
+    content = (
+      <PanelState kind="loading" message={t('clinical_tray_loading')} />
+    );
+  } else if (tray.isError) {
+    content =
+      statusOf(problemOf(tray.error)) === 403 ? (
+        <PanelState kind="forbidden" message={t('common_forbidden')} />
+      ) : (
+        <PanelState
+          kind="error"
+          message={t('clinical_tray_error')}
+          retrying={tray.isFetching}
+          onRetry={() => void tray.refetch()}
+        />
+      );
+  } else if (items.length === 0) {
+    content = (
+      <PanelState
+        kind="empty"
+        icon={ClipboardDocumentListIcon}
+        message={t('clinical_tray_empty')}
+        hint={t('dash_triage_empty_hint')}
+      />
+    );
+  } else {
+    content = (
+      <DataTable
+        labelledBy="triage-pending"
+        columns={[
+          { id: 'patient', header: t('feature_patient') },
+          { id: 'site', header: t('feature_site') },
+          { id: 'arrival', header: t('feature_arrival') },
+          { id: 'action', header: t('dash_col_action'), hiddenHeader: true },
+        ]}
+      >
+        {items.map((encounter) => {
+          const nameId = `triage-patient-${encounter.id}`;
+          const documentText = patientDocument(encounter.patient);
+          return (
+            <DataRow key={encounter.id}>
+              <DataCell kind="main" id={nameId}>
+                <span className="cell-name">
+                  {patientName(encounter.patient)}
+                </span>
+                {documentText && (
+                  <span className="cell-sub">{documentText}</span>
+                )}
+              </DataCell>
+              <DataCell label={t('feature_site')}>
+                {encounter.siteName}
+              </DataCell>
+              <DataCell kind="time" label={t('feature_arrival')}>
+                <time dateTime={encounter.arrivalAt}>
+                  {formatTimeBogota(encounter.arrivalAt)}
+                </time>
+                <span className="cell-sub">
+                  {formatDateBogota(encounter.arrivalAt)}
+                </span>
+              </DataCell>
+              <DataCell kind="actions">
+                <Link
+                  className="button button--soft button--sm"
+                  to={`/triage/${encounter.id}?${search}`}
+                  aria-describedby={nameId}
+                >
+                  {t('clinical_open')}
+                </Link>
+              </DataCell>
+            </DataRow>
+          );
+        })}
+      </DataTable>
+    );
+  }
+
   return (
-    <section className="clinical-workspace" aria-labelledby="triage-title">
-      <header className="clinical-workspace__header">
-        <div>
-          <h1 id="triage-title">{t('common_nav_triage')}</h1>
-          <p className="muted">{t('clinical_tray_intro')}</p>
-        </div>
-        <button
-          type="button"
-          className="button button--secondary"
-          disabled={tray.isFetching}
-          onClick={() => void tray.refetch()}
-        >
-          <ArrowPathIcon aria-hidden="true" />
-          {t('feature_refresh')}
-        </button>
-      </header>
-      <div className="clinical-board">
-        <section className="card" aria-labelledby="triage-pending">
-          <h2 id="triage-pending" className="clinical-card-heading">
-            <BeakerIcon aria-hidden="true" />
-            {t('clinical_pending')}
-          </h2>
-          {sites.isError && (
-            <LoadError
-              message={t('feature_sites_error')}
-              retrying={sites.isFetching}
-              onRetry={() => void sites.refetch()}
+    <DashboardPage
+      header={
+        <PageHeader
+          title={t('common_nav_triage')}
+          description={t('clinical_tray_intro')}
+          actions={
+            <RefreshButton
+              onRefresh={() => void tray.refetch()}
+              busy={tray.isFetching}
             />
-          )}
-          <div className="toolbar">
-            <div className="field">
-              <label htmlFor="triage-site">{t('feature_site')}</label>
+          }
+        />
+      }
+      summary={
+        <SummaryBar
+          filter={
+            <SummaryFilter
+              id="triage-site"
+              label={t('feature_site')}
+              error={
+                sites.isError
+                  ? {
+                      message: t('feature_sites_error'),
+                      retrying: sites.isFetching,
+                      onRetry: () => void sites.refetch(),
+                    }
+                  : undefined
+              }
+            >
               <select
                 id="triage-site"
                 value={siteId ?? ''}
@@ -74,95 +176,64 @@ export function TriageTrayPage() {
                   </option>
                 ))}
               </select>
-            </div>
-          </div>
-          {tray.isPending && (
-            <LoadingState>{t('clinical_tray_loading')}</LoadingState>
-          )}
-          {tray.isError &&
-            (statusOf(problemOf(tray.error)) === 403 ? (
-              <ViewForbidden />
-            ) : (
-              <LoadError
-                message={t('clinical_tray_error')}
-                retrying={tray.isFetching}
-                onRetry={() => void tray.refetch()}
-              />
-            ))}
-          {tray.isSuccess &&
-            (items.length === 0 ? (
-              <div className="clinical-empty" role="status">
-                <ClipboardDocumentListIcon aria-hidden="true" />
-                <p className="muted">{t('clinical_tray_empty')}</p>
-              </div>
-            ) : (
-              <ul className="clinical-tray">
-                {items.map((encounter) => (
-                  <li key={encounter.id} className="clinical-patient">
-                    <div>
-                      <h3>{patientName(encounter.patient)}</h3>
-                      {patientDocument(encounter.patient) && (
-                        <p className="muted">
-                          {patientDocument(encounter.patient)}
-                        </p>
-                      )}
-                      <p className="muted">{encounter.siteName}</p>
-                      <p className="muted">
-                        {t('feature_arrival')}:{' '}
-                        <time dateTime={encounter.arrivalAt}>
-                          {formatBogota(encounter.arrivalAt)}
-                        </time>
-                      </p>
-                    </div>
-                    <Link
-                      className="button"
-                      to={`/triage/${encounter.id}?${search}`}
-                    >
-                      {t('clinical_open')}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            ))}
-          <div className="actions clinical-pagination">
-            <button
-              className="button button--secondary"
-              type="button"
-              disabled={offset === 0 || tray.isFetching}
-              onClick={() =>
-                setParams(traySearch(siteId, Math.max(0, offset - PAGE_SIZE)))
-              }
-            >
-              {t('feature_previous')}
-            </button>
-            <span className="muted">
-              {t('clinical_page', { page: Math.floor(offset / PAGE_SIZE) + 1 })}
-            </span>
-            <button
-              className="button button--secondary"
-              type="button"
-              disabled={
-                !tray.isSuccess || tray.isFetching || items.length < PAGE_SIZE
-              }
-              onClick={() => setParams(traySearch(siteId, offset + PAGE_SIZE))}
-            >
-              {t('feature_next')}
-            </button>
-          </div>
-        </section>
-        <aside
-          className="card clinical-summary"
-          aria-labelledby="clinical-workflow-title"
+            </SummaryFilter>
+          }
         >
-          <h2 id="clinical-workflow-title" className="clinical-card-heading">
-            <ClipboardDocumentListIcon aria-hidden="true" />
-            {t('clinical_workspace')}
-          </h2>
-          <p className="clinical-badge">{t('clinical_waiting_only')}</p>
-          <h3>{t('clinical_workflow_title')}</h3>
-          <p className="muted">{t('clinical_workflow_body')}</p>
-        </aside>
-      </div>
-    </section>
+          <SummaryCell
+            label={t('dash_stat_waiting')}
+            icon={waitingView.icon}
+            tone={waitingView.tone}
+            state={indicatorOf(tray)}
+            value={waiting?.count}
+            capped={waiting?.capped}
+            onRetry={() => void tray.refetch()}
+          />
+        </SummaryBar>
+      }
+      main={
+        <Panel
+          id="triage-pending"
+          title={t('clinical_pending')}
+          meta={<LiveNote seconds={DASHBOARD_REFRESH_MS / 1000} />}
+          footer={
+            <>
+              <span>
+                {t('clinical_page', {
+                  page: Math.floor(offset / PAGE_SIZE) + 1,
+                })}
+              </span>
+              <span className="pager">
+                <button
+                  className="button button--secondary button--sm"
+                  type="button"
+                  disabled={offset === 0}
+                  onClick={() =>
+                    setParams(
+                      traySearch(siteId, Math.max(0, offset - PAGE_SIZE)),
+                    )
+                  }
+                >
+                  <ChevronLeftIcon aria-hidden="true" />
+                  {t('feature_previous')}
+                </button>
+                <button
+                  className="button button--secondary button--sm"
+                  type="button"
+                  disabled={!tray.isSuccess || items.length < PAGE_SIZE}
+                  onClick={() =>
+                    setParams(traySearch(siteId, offset + PAGE_SIZE))
+                  }
+                >
+                  {t('feature_next')}
+                  <ChevronRightIcon aria-hidden="true" />
+                </button>
+              </span>
+            </>
+          }
+        >
+          {content}
+        </Panel>
+      }
+    />
   );
 }

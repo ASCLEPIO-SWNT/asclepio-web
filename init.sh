@@ -32,8 +32,13 @@ if [[ "$REPO" == "mobile" ]]; then
   [[ -x ./gradlew ]] && ok "Gradle wrapper presente" || warn "Gradle wrapper ausente (llega con F-00-mobile)"
 else
   if command -v node >/dev/null; then
-    NV=$(node -p 'process.versions.node.split(".")[0]')
-    [[ "$NV" -ge 20 ]] && ok "Node $(node -v)" || fail "Se requiere Node >= 20 (encontrado: $(node -v))"
+    # Mínimo: el de .nvmrc si existe (versión completa, no solo la mayor); si no, Node 20.
+    MIN_NODE=$( [[ -f .nvmrc ]] && tr -d ' v\r\n' < .nvmrc || echo 20.0.0 )
+    if node -e 'const a=process.versions.node.split(".").map(Number),b=process.argv[1].split(".").map(Number);for(let i=0;i<3;i++){if((a[i]||0)!==(b[i]||0))process.exit((a[i]||0)>(b[i]||0)?0:1)}' "$MIN_NODE"; then
+      ok "Node $(node -v)"
+    else
+      fail "Se requiere Node >= $MIN_NODE (encontrado: $(node -v))"
+    fi
   else
     fail "node no encontrado (se requiere Node >= 20)"
   fi

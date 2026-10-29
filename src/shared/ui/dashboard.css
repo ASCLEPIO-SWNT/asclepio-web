@@ -326,6 +326,16 @@
   width: 0.95rem;
   height: 0.95rem;
 }
+/*
+ * A 200 % de texto la insignia no siempre cabe en una línea (la de identidad en una tarjeta de
+ * 222 px, la de la fila de una sede): envuelve en lugar de empujar el documento fuera de la ventana
+ * (R32, R35). En una tabla con columnas sin apilar sigue sin partirse.
+ */
+.prereg__head .badge,
+.data-table--simple .badge {
+  max-width: 100%;
+  white-space: normal;
+}
 
 /* ---------- tablas (D24) ---------- */
 .data-table {
@@ -365,6 +375,10 @@
 .data-table--simple td,
 .data-table--simple th {
   padding-block: 0.875rem;
+}
+/* El encabezado «En espera de triage» envuelve cuando el panel es muy estrecho (200 % de texto). */
+.data-table--simple th {
+  white-space: normal;
 }
 .cell-name {
   display: block;
@@ -693,6 +707,24 @@
   }
   .data-table:not(.data-table--simple) .cell-actions .button {
     width: 100%;
+  }
+  /* La insignia de estado de una tarjeta apilada envuelve si no cabe (200 % de texto, R32). */
+  .data-table:not(.data-table--simple) .badge {
+    max-width: 100%;
+    white-space: normal;
+  }
+}
+/*
+ * Con texto al 200 % en un teléfono el panel mide menos de 15 rem (9.7 rem a 375 px; con el 100 %
+ * nunca baja de 21 rem): dos columnas partirían las palabras a mitad, así que los datos de la tarjeta
+ * y la tarjeta apilada de una tabla pasan a una columna.
+ */
+@container panel (max-width: 14.99rem) {
+  .prereg__facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .data-table:not(.data-table--simple) tr {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 

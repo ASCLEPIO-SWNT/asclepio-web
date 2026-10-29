@@ -387,6 +387,52 @@ describe('UI-02-web hoja de estilos del dashboard', () => {
     expect(valueOf('.panel-state', 'min-height')).toBe('10rem');
   });
 
+  it('R32: a 200 % de texto las insignias y el encabezado de la tabla de sedes envuelven en lugar de desbordar donde el espacio no alcanza', () => {
+    // Medido en T13 (200 % a 375 y a 1024 px): «Identidad sin verificar» (348 px sin partir) en una
+    // tarjeta de 222 px, «En espera de triage» (319 px) en una tarjeta apilada de 310 px y el
+    // encabezado «En espera de triage» de la tabla de sedes (309 px) empujaban el documento hasta
+    // 99 px más allá de la ventana. En la tabla sin apilar la insignia sigue sin partirse.
+    const stacked = '@container panel (max-width: 39.99rem)';
+    expect(valueOf('.badge', 'white-space')).toBe('nowrap');
+    expect(valueOf('.prereg__head .badge', 'white-space')).toBe('normal');
+    expect(valueOf('.prereg__head .badge', 'max-width')).toBe('100%');
+    expect(valueOf('.data-table--simple .badge', 'white-space')).toBe('normal');
+    expect(valueOf('.data-table--simple .badge', 'max-width')).toBe('100%');
+    expect(valueOf('.data-table--simple th', 'white-space')).toBe('normal');
+    expect(
+      valueOf(
+        '.data-table:not(.data-table--simple) .badge',
+        'white-space',
+        stacked,
+      ),
+    ).toBe('normal');
+    expect(
+      valueOf(
+        '.data-table:not(.data-table--simple) .badge',
+        'max-width',
+        stacked,
+      ),
+    ).toBe('100%');
+    // Fuera de la consulta apilada, el encabezado de una tabla con columnas no envuelve.
+    expect(valueOf('.data-table th', 'white-space')).toBe('nowrap');
+  });
+
+  it('R32: con un panel de menos de 15 rem (texto al 200 % en un teléfono) los datos de la tarjeta y la tarjeta apilada pasan a una columna', () => {
+    // Medido en T13 a 200 % y 375 px: el panel mide 9.7 rem y dos columnas partían las palabras a
+    // mitad («Docume / nto», «Sed / e Nort / e»). El 100 % nunca baja de 21 rem, así que no cambia lo aprobado.
+    const tiny = '@container panel (max-width: 14.99rem)';
+    expect(valueOf('.prereg__facts', 'grid-template-columns', tiny)).toBe(
+      'minmax(0, 1fr)',
+    );
+    expect(
+      valueOf(
+        '.data-table:not(.data-table--simple) tr',
+        'grid-template-columns',
+        tiny,
+      ),
+    ).toBe('minmax(0, 1fr)');
+  });
+
   it('R34: dos contenedores, dashboard (30 y 56 rem) y panel (40 rem), con sus cortes', () => {
     expect(valueOf('.dashboard', 'container')).toBe('dashboard / inline-size');
     expect(valueOf('.panel', 'container')).toBe('panel / inline-size');

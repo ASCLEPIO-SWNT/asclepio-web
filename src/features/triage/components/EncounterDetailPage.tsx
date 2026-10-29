@@ -76,6 +76,7 @@ function EncounterDetailPage({ id }: { id: string }) {
         <LoadError
           message={t('feature_encounter_error')}
           retrying={detail.isFetching}
+          error={detail.error}
           onRetry={() => void detail.refetch()}
         />
       );

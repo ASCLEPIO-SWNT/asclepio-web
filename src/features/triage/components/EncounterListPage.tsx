@@ -40,6 +40,7 @@ export function EncounterListPage() {
         <LoadError
           message={featureMessage(SITES_ERROR_MESSAGE)}
           retrying={sites.isFetching}
+          error={sites.error}
           onRetry={() => void sites.refetch()}
         />
       )}
@@ -94,6 +95,7 @@ export function EncounterListPage() {
           <LoadError
             message={t('feature_encounters_error')}
             retrying={list.isFetching}
+            error={list.error}
             onRetry={() => void list.refetch()}
           />
         ))}

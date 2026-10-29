@@ -68,6 +68,7 @@ export function TriageTrayPage() {
           kind="error"
           message={t('clinical_tray_error')}
           retrying={tray.isFetching}
+          error={tray.error}
           onRetry={() => void tray.refetch()}
         />
       );
@@ -156,6 +157,7 @@ export function TriageTrayPage() {
                   ? {
                       message: t('feature_sites_error'),
                       retrying: sites.isFetching,
+                      cause: sites.error,
                       onRetry: () => void sites.refetch(),
                     }
                   : undefined

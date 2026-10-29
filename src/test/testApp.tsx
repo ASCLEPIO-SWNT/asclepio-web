@@ -1,5 +1,5 @@
-import { QueryClient } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
+import { createQueryClient } from '../app/providers/queryClient';
 import { createMemoryRouter, RouterProvider } from 'react-router';
 import { SESSION_KEY, session } from '../shared/api/session';
 import { TOKEN, inMs } from './fakeApi';
@@ -26,8 +26,10 @@ export function renderApp({
   }
   // Como main.tsx (UI-03-web R26): una restauración al arrancar, fuera del render.
   session.restore();
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  // Los mismos valores por defecto que la app (UI-03-web D13), sin reintentos en las pruebas.
+  const queryClient = createQueryClient({
+    queries: { retry: false },
+    mutations: { retry: false },
   });
   const router = createMemoryRouter(routes, {
     initialEntries: entries,

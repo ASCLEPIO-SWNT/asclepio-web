@@ -109,5 +109,7 @@
   "dash_view_all_encounters": "View all encounters",
   "dash_col_action": "Action",
   "guide_queue": "This screen summarizes encounters by status: waiting for triage, triaged and in care. Below you will see the most recent encounters; open one to review its details. It updates on its own periodically; use Refresh to check right away. The queue by level and waiting time is not available yet. The guide does not read patient data.",
-  "guide_reports": "This screen summarizes encounters by status and those waiting for triage at each location. It updates on its own periodically; use Refresh to check right away. Time reports and the CSV download are not available yet. The screen does not show patient data."
+  "guide_reports": "This screen summarizes encounters by status and those waiting for triage at each location. It updates on its own periodically; use Refresh to check right away. Time reports and the CSV download are not available yet. The screen does not show patient data.",
+  "common_error_network": "There is no connection to the server.",
+  "common_error_server": "The server ran into a problem. Please try again."
 }

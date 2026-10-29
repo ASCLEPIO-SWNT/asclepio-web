@@ -1,9 +1,10 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider, type QueryClient } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { SessionProvider } from '../../features/auth/SessionProvider';
 import { I18nProvider } from '../../shared/i18n';
+import { createQueryClient } from './queryClient';
 
-const defaultQueryClient = new QueryClient();
+const defaultQueryClient = createQueryClient();
 
 export function AppProviders({
   children,

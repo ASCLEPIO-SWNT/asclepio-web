@@ -100,6 +100,7 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
             <LoadError
               message={t('feature_encounter_error')}
               retrying={detail.isFetching}
+              error={detail.error}
               onRetry={() => void refresh()}
             />
           )}
@@ -138,6 +139,7 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
             <LoadError
               message={t('clinical_state_error')}
               retrying={detail.isFetching || capture.isFetching}
+              error={detail.error ?? capture.error ?? undefined}
               onRetry={() => void refresh()}
             />
           )}

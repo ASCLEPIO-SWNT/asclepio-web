@@ -4,6 +4,7 @@ import {
 } from '@heroicons/react/24/outline';
 import type { ReactNode } from 'react';
 import { useI18n } from '../i18n';
+import { errorClassKey } from '../lib/errors';
 import type { IconComponent } from '../lib/encounterStatus';
 
 /**
@@ -21,6 +22,7 @@ export function PanelState({
   action,
   onRetry,
   retrying = false,
+  error,
 }: {
   kind: 'loading' | 'empty' | 'error' | 'forbidden';
   message: string;
@@ -29,8 +31,12 @@ export function PanelState({
   action?: ReactNode;
   onRetry?: () => void;
   retrying?: boolean;
+  /** El error de la petición, para añadir el texto de red o del servidor (UI-03-web R15, R18). */
+  error?: unknown;
 }) {
   const { t } = useI18n();
+  const classKey =
+    kind === 'error' && error !== undefined ? errorClassKey(error) : null;
   if (kind === 'loading') {
     return (
       <div className="panel-state" role="status">
@@ -51,6 +57,7 @@ export function PanelState({
           <Alert aria-hidden="true" />
         </span>
         <p className="panel-state__msg">{message}</p>
+        {classKey && <p className="muted">{t(classKey)}</p>}
         {kind === 'error' && (
           <button
             type="button"

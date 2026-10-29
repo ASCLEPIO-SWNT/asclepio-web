@@ -53,6 +53,7 @@ export function DirectRegistrationPage() {
         <LoadError
           message={featureMessage(SITES_ERROR_MESSAGE)}
           retrying={sites.isFetching}
+          error={sites.error}
           onRetry={() => void sites.refetch()}
         />
       )}

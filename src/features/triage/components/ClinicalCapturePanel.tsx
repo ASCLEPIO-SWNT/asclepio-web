@@ -27,6 +27,7 @@ export function ClinicalCaptureReadout({
       <LoadError
         message={t('clinical_history_error')}
         retrying={query.isFetching}
+        error={query.error}
         onRetry={() => void query.refetch()}
       />
     );

@@ -94,6 +94,7 @@ export function ReceptionPage() {
           kind="error"
           message={t('feature_tray_error')}
           retrying={tray.isFetching}
+          error={tray.error}
           onRetry={() => void tray.refetch()}
         />
       );
@@ -182,6 +183,7 @@ export function ReceptionPage() {
                   ? {
                       message: featureMessage(SITES_ERROR_MESSAGE),
                       retrying: sites.isFetching,
+                      cause: sites.error,
                       onRetry: () => void sites.refetch(),
                     }
                   : undefined

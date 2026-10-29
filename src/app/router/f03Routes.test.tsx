@@ -30,7 +30,7 @@ import {
   type Handler,
 } from '../../test/fakeApi';
 import { norm } from '../../test/text';
-import { renderApp } from './testApp';
+import { renderApp } from '../../test/testApp';
 
 const LIST = 'GET /api/v1/encounters';
 const DETAIL = `GET /api/v1/encounters/${ENCOUNTER_ID}`;

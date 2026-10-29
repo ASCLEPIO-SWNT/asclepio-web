@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StaffRole } from '../../shared/api/client';
 import { SESSION_KEY, session } from '../../shared/api/session';
 import { fakeApi, json, staffMe } from '../../test/fakeApi';
-import { renderApp } from './testApp';
+import { renderApp } from '../../test/testApp';
 
 const CASES: Array<{
   role: StaffRole;

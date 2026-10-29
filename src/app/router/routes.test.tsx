@@ -13,7 +13,7 @@ import {
   problem,
   staffMe,
 } from '../../test/fakeApi';
-import { renderApp } from './testApp';
+import { renderApp } from '../../test/testApp';
 
 const ROLES: StaffRole[] = ['RECEPTION', 'NURSE', 'PHYSICIAN', 'ADMIN'];
 const HOME: Record<StaffRole, { path: string; title: string }> = {

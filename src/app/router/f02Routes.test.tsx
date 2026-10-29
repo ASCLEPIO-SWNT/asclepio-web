@@ -15,7 +15,7 @@ import {
   publicTenants,
   staffMe,
 } from '../../test/fakeApi';
-import { renderApp } from './testApp';
+import { renderApp } from '../../test/testApp';
 
 const F02_ROUTES = {
   'GET /api/v1/public/tenants': json(200, publicTenants),

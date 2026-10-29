@@ -59,7 +59,6 @@ export type EncounterOrigin = Encounter['origin'];
 export type ComplaintSource = Encounter['complaintSource'];
 export type DocumentType = NonNullable<Patient['documentType']>;
 export type Sex = NonNullable<Patient['sex']>;
-export type EventActorType = Schemas['EventActorDto']['type'];
 
 // F-03-web: aliases of the published clinical capture contract (no handwritten DTOs).
 export type CreateVitalSigns = Schemas['CreateVitalSignsDto'];

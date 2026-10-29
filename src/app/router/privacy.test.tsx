@@ -24,7 +24,7 @@ import {
   problem,
   staffMe,
 } from '../../test/fakeApi';
-import { renderApp } from './testApp';
+import { renderApp } from '../../test/testApp';
 
 const nurse = staffMe.NURSE;
 const SECRETS = [

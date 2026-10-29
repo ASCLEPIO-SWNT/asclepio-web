@@ -1,10 +1,10 @@
 import { QueryClient } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router';
-import { SESSION_KEY } from '../../shared/api/session';
-import { TOKEN, inMs } from '../../test/fakeApi';
-import { AppProviders } from '../providers/AppProviders';
-import { routes } from './routes';
+import { SESSION_KEY } from '../shared/api/session';
+import { TOKEN, inMs } from './fakeApi';
+import { AppProviders } from '../app/providers/AppProviders';
+import { routes } from '../app/router/routes';
 
 /**
  * Monta la app real (providers + rutas) sobre un router en memoria (D14).

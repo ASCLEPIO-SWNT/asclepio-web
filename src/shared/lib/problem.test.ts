@@ -12,7 +12,7 @@ import {
 const res = (status: number, headers: Record<string, string> = {}) =>
   new Response(null, { status, headers });
 
-describe('problem', () => {
+describe('F-01-web problem', () => {
   it('R6: 401 se traduce a unauthorized sin conservar detail ni errores', () => {
     expect(
       toApiProblem(res(401), {
@@ -86,7 +86,7 @@ describe('problem', () => {
   });
 });
 
-describe('actionErrorMessage (D11)', () => {
+describe('F-02-web actionErrorMessage (D11)', () => {
   const other = (status: number): ApiProblem => ({
     kind: 'other',
     status,
@@ -139,7 +139,7 @@ describe('actionErrorMessage (D11)', () => {
   });
 });
 
-describe('applyFieldErrors (D11)', () => {
+describe('F-02-web applyFieldErrors (D11)', () => {
   it('R23: aplica solo los errors[] cuyo field es un campo del formulario', () => {
     const setError = vi.fn();
     const applied = applyFieldErrors<{ fullName: string; sex: string }>(

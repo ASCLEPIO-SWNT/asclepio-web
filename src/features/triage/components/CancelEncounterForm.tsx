@@ -3,7 +3,6 @@ import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { Encounter } from '../../../shared/api/client';
 import {
   actionErrorMessage,
   problemOf,
@@ -29,7 +28,7 @@ export function CancelEncounterForm({
 }: {
   encounterId: string;
   onStart: () => void;
-  onCancelled: (encounter: Encounter) => void;
+  onCancelled: () => void;
   onFailed: (message: string | null, status: number | null) => void;
 }) {
   const { t } = useI18n();
@@ -49,10 +48,10 @@ export function CancelEncounterForm({
     if (cancel.isPending) return;
     onStart();
     cancel.mutate(reason, {
-      onSuccess: (encounter) => {
+      onSuccess: () => {
         setOpen(false);
         reset();
-        onCancelled(encounter);
+        onCancelled();
       },
       onError: (cause) => {
         const problem = problemOf(cause);

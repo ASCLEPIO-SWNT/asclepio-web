@@ -6,7 +6,7 @@ import {
   DEFAULT_PREFERENCES,
   PREFERENCES_KEY,
 } from '../../shared/preferences/storage';
-import { renderApp } from './testApp';
+import { renderApp } from '../../test/testApp';
 import userEvent from '@testing-library/user-event';
 
 afterEach(() => {

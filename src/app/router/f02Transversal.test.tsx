@@ -28,7 +28,7 @@ import {
   staffMe,
   type RecordedRequest,
 } from '../../test/fakeApi';
-import { renderApp } from './testApp';
+import { renderApp } from '../../test/testApp';
 
 const PR = pendingPreRegistration;
 const REJECT_REASON = 'Paciente no se presentó a la ventanilla';

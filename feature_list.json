@@ -185,6 +185,22 @@
       ],
       "sdd": true,
       "status": "done"
+    },
+    {
+      "id": "UI-03-web",
+      "global_id": "UI-03",
+      "name": "robustness",
+      "title": "Robustez de la web",
+      "description": "Aviso y borrador ante cambios sin guardar, error boundary por ruta, título por pantalla, carga diferida por rol, errores de red/sesión diferenciados con vuelta a la ruta de origen, textos sin traducir y deuda de revisión de F-01/F-02 y UI-02 (tiempos de espera de la suite).",
+      "depends_on": [
+        "UI-02-web"
+      ],
+      "consumes_contract": "0.4.0",
+      "acceptance": [
+        "Ver specs/UI-03-web/requirements.md"
+      ],
+      "sdd": true,
+      "status": "pending"
     }
   ]
 }

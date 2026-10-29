@@ -16,3 +16,6 @@
 - PA-4: trazas a F-01/F-02/F-03 aceptadas, sin documento extra.
 
 **Spec lista para aprobación humana, sin preguntas abiertas.** Siguiente paso (leader): marcar `spec_ready` y pedir «aprobado».
+
+## Aprobación
+- 2026-10-29: el usuario aprobó la spec por chat («pues implementalo»), con PA-1 a PA-4 resueltas. UI-03-web → in_progress.

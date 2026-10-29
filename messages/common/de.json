@@ -84,7 +84,7 @@
   "landing_team": "Unser Team",
   "guide_home": "Dies ist die Asclepio-Startseite. Über Personalzugang können Sie sich anmelden. Darunter finden Sie Ablauf und Teamrollen.",
   "guide_login": "Geben Sie E-Mail und Passwort ein und wählen Sie Anmelden. In den Einstellungen können Sie Sprache, Design und Leseoptionen ändern.",
-  "guide_reception": "Wählen Sie einen Standort für Voranmeldungen. Prüfen Sie die Identität vor der Ankunftsbestätigung. Sie können mit Begründung ablehnen oder die direkte Registrierung öffnen.",
+  "guide_reception": "Die Kennzahlen zeigen, wie viele Voranmeldungen auf Bestätigung warten und wie viele Behandlungen auf die Triage warten. Die Seite aktualisiert sich regelmäßig von selbst; mit Aktualisieren rufen Sie sofort den aktuellen Stand ab. Wählen Sie einen Standort, um die Kennzahlen und die Voranmeldungen zu filtern. Prüfen Sie die Identität vor der Ankunftsbestätigung. Sie können mit Begründung ablehnen oder die direkte Registrierung öffnen.",
   "guide_registration": "Suchen Sie nach Dokument oder registrieren Sie einen neuen Patienten. Nutzen Sie bei Bedarf die Registrierung für Unbekannte. Prüfen Sie Standort und Angaben vor der Ankunftserfassung.",
   "guide_encounters": "Wählen Sie Standort und Listenfilter. Öffnen Sie eine Behandlung für Angaben und Verlauf. Mit den Seitenschaltern wechseln Sie die Seite.",
   "guide_detail": "Diese Seite zeigt Behandlungsangaben und Verlauf. Wenn Ihre Rolle es erlaubt, können Sie mit Begründung abbrechen. Die Anleitung liest keine Patientendaten.",
@@ -98,5 +98,16 @@
   "landing_capability_reception": "Vernetzter Empfang",
   "landing_capability_triage": "Triagebeurteilung",
   "landing_roles": "Rollen der Plattform",
-  "common_toggle_theme": "Design wechseln"
+  "common_toggle_theme": "Design wechseln",
+  "dash_indicators": "Kennzahlen",
+  "dash_stat_loading": "Kennzahl wird geladen…",
+  "dash_stat_error": "Laden fehlgeschlagen",
+  "dash_stat_forbidden": "Keine Berechtigung",
+  "dash_live": "Aktualisiert sich alle {seconds} s",
+  "dash_at_least": "Mindestens {count}",
+  "dash_retry_named": "Erneut versuchen: {name}",
+  "dash_view_all_encounters": "Alle Behandlungen ansehen",
+  "dash_col_action": "Aktion",
+  "guide_queue": "Diese Seite fasst die Behandlungen nach Status zusammen: wartend auf Triage, triagiert und in Behandlung. Darunter sehen Sie die neuesten Behandlungen; öffnen Sie eine, um die Angaben einzusehen. Die Seite aktualisiert sich regelmäßig von selbst; mit Aktualisieren rufen Sie sofort den aktuellen Stand ab. Die Warteschlange nach Stufe und Wartezeit ist noch nicht verfügbar. Die Anleitung liest keine Patientendaten vor.",
+  "guide_reports": "Diese Seite fasst die Behandlungen nach Status zusammen sowie jene, die an den einzelnen Standorten auf die Triage warten. Die Seite aktualisiert sich regelmäßig von selbst; mit Aktualisieren rufen Sie sofort den aktuellen Stand ab. Berichte zu Zeiten und der CSV-Download sind noch nicht verfügbar. Die Seite zeigt keine Patientendaten an."
 }

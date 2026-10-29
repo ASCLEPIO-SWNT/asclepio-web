@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { AppProviders } from './app/providers/AppProviders';
 import { AppRouter } from './app/router/AppRouter';
 import './index.css';
+import './shared/ui/dashboard.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

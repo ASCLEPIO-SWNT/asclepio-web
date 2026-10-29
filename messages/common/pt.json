@@ -84,7 +84,7 @@
   "landing_team": "Nossa equipe",
   "guide_home": "Esta é a apresentação do Asclepio. Use Acesso da equipe para entrar. Abaixo estão as etapas do processo e as funções da equipe.",
   "guide_login": "Insira seu e-mail e senha e selecione Entrar. Use Preferências para ajustar idioma, tema ou leitura.",
-  "guide_reception": "Selecione uma unidade para consultar os pré-cadastros. Verifique a identidade antes de confirmar a chegada. Você pode rejeitar com motivo ou abrir o cadastro direto.",
+  "guide_reception": "Os indicadores mostram quantos pré-cadastros aguardam confirmação e quantos atendimentos aguardam triagem. A tela se atualiza sozinha periodicamente; use Atualizar para consultar na hora. Selecione uma unidade para filtrar os indicadores e os pré-cadastros. Verifique a identidade antes de confirmar a chegada. Você pode rejeitar com motivo ou abrir o cadastro direto.",
   "guide_registration": "Busque pelo documento ou cadastre um novo paciente. Use o registro NN quando não identificado. Revise a unidade e os dados antes de registrar a chegada.",
   "guide_encounters": "Selecione uma unidade e os filtros da lista. Abra um atendimento para consultar detalhes e a linha do tempo. Use a paginação para mudar de página.",
   "guide_detail": "Esta tela mostra os detalhes e a linha do tempo do atendimento. Se sua função permitir, você pode cancelar informando um motivo. O guia não lê informações do paciente.",
@@ -98,5 +98,16 @@
   "landing_capability_reception": "Recepção conectada",
   "landing_capability_triage": "Avaliação de triagem",
   "landing_roles": "Funções da plataforma",
-  "common_toggle_theme": "Alternar tema"
+  "common_toggle_theme": "Alternar tema",
+  "dash_indicators": "Indicadores",
+  "dash_stat_loading": "Carregando indicador…",
+  "dash_stat_error": "Não foi possível carregar",
+  "dash_stat_forbidden": "Sem permissão",
+  "dash_live": "Atualiza a cada {seconds} s",
+  "dash_at_least": "Pelo menos {count}",
+  "dash_retry_named": "Tentar novamente: {name}",
+  "dash_view_all_encounters": "Ver todos os atendimentos",
+  "dash_col_action": "Ação",
+  "guide_queue": "Esta tela resume os atendimentos por estado: aguardando triagem, classificados e em atendimento. Abaixo você verá os atendimentos mais recentes; abra um para consultar os detalhes. Ela se atualiza sozinha periodicamente; use Atualizar para consultar na hora. A fila por nível e tempo de espera ainda não está disponível. O guia não lê dados de pacientes.",
+  "guide_reports": "Esta tela resume os atendimentos por estado e os que aguardam triagem em cada unidade. Ela se atualiza sozinha periodicamente; use Atualizar para consultar na hora. Os relatórios de tempos e o download do CSV ainda não estão disponíveis. A tela não mostra dados de pacientes."
 }

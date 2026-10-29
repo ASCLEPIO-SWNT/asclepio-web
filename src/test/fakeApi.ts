@@ -270,3 +270,113 @@ export function encounterSummary(
   const { events, ...summary } = encounter;
   return { ...summary, ...overrides };
 }
+
+// ------------------------------------------------------------------ Fixtures UI-02 (dashboards, contrato 0.4.0)
+
+export const SITE_ESTE = {
+  id: '7a1b2c3d-0000-4000-8000-000000000003',
+  name: 'Sede Este',
+};
+
+/** Como `publicTenants`, pero el tenant del personal con las sedes dadas (p. ej. las tres de administración). */
+export function publicTenantsWith(
+  sites: Schemas['PublicSiteDto'][],
+): Schemas['PublicTenantDto'][] {
+  return publicTenants.map((tenant) =>
+    tenant.id === TENANT_ID ? { ...tenant, sites } : tenant,
+  );
+}
+
+/**
+ * `n` atenciones con ids, pacientes y nombres únicos, en orden de llegada descendente (como
+ * `GET /encounters`): la primera llegó a las 9:30 a. m. de Bogotá y cada una, un minuto antes
+ * que la anterior. `overrides` pisa campos de todas (estado, sede…).
+ */
+export function encounterSummaries(
+  n: number,
+  overrides: Partial<Schemas['EncounterSummaryDto']> = {},
+): Schemas['EncounterSummaryDto'][] {
+  const first = Date.parse(encounter.arrivalAt);
+  return Array.from({ length: n }, (_, i) => {
+    const serial = String(i + 1).padStart(12, '0');
+    return encounterSummary({
+      id: `e1e1e1e1-0000-4000-8000-${serial}`,
+      arrivalAt: new Date(first - i * 60_000).toISOString(),
+      patient: {
+        ...patient,
+        id: `b1b1b1b1-0000-4000-8000-${serial}`,
+        fullName: `Paciente ficticio ${i + 1}`,
+        documentNumber: String(1_000_000_000 + i),
+      },
+      ...overrides,
+    });
+  });
+}
+
+/**
+ * Un `GET /encounters` que responde `{ items }` con las atenciones que `count` dice que existen
+ * para el `status` y el `siteId` de la petición: `min(cuenta, limit)` desde `offset`. Sirve para
+ * conteos de 0, 12, 99 y 100 por estado y por sede sin armar cada lista a mano.
+ */
+export function encountersFor(
+  count: (filters: {
+    status: Schemas['EncounterSummaryDto']['status'] | null;
+    siteId: string | null;
+  }) => number,
+): Handler {
+  return (request) => {
+    const query = new URL(request.url).searchParams;
+    const status = query.get('status') as
+      Schemas['EncounterSummaryDto']['status'] | null;
+    const siteId = query.get('siteId');
+    const limit = Number(query.get('limit') ?? 50);
+    const offset = Number(query.get('offset') ?? 0);
+    const site = [SITE_NORTE, SITE_SUR, SITE_ESTE].find((s) => s.id === siteId);
+    const all = encounterSummaries(count({ status, siteId }), {
+      ...(status ? { status } : {}),
+      ...(site ? { siteId: site.id, siteName: site.name } : {}),
+    });
+    return json(200, { items: all.slice(offset, offset + limit) })(request);
+  };
+}
+
+/**
+ * Una atención en cada uno de los seis estados: la `WAITING_TRIAGE` es de un paciente NN (sin
+ * documento) y la `CANCELLED` lleva su motivo. Orden de llegada descendente, tres sedes.
+ */
+export const encountersInEveryStatus: Schemas['EncounterSummaryDto'][] = (
+  [
+    ['REGISTERED', 'Ana María Ruiz', SITE_NORTE],
+    ['WAITING_TRIAGE', null, SITE_SUR],
+    ['TRIAGED', 'Camilo Torres Vega', SITE_ESTE],
+    ['IN_CARE', 'Elena Beltrán Gil', SITE_NORTE],
+    ['CLOSED', 'Felipe Quintero Salazar', SITE_SUR],
+    ['CANCELLED', 'Gloria Mora Díaz', SITE_ESTE],
+  ] as const
+).map(([status, fullName, site], i) =>
+  encounterSummary({
+    id: `e2e2e2e2-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
+    status,
+    siteId: site.id,
+    siteName: site.name,
+    arrivalAt: new Date(
+      Date.parse(encounter.arrivalAt) - i * 60_000,
+    ).toISOString(),
+    cancellationReason:
+      status === 'CANCELLED'
+        ? 'El paciente se retiró antes de la valoración.'
+        : null,
+    patient:
+      fullName === null
+        ? {
+            ...nnPatient,
+            id: `b2b2b2b2-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
+          }
+        : {
+            ...patient,
+            id: `b2b2b2b2-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
+            fullName,
+            documentNumber: String(80_000_000 + i),
+          },
+  }),
+);

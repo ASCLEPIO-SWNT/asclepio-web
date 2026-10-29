@@ -84,7 +84,7 @@
   "landing_team": "Our team",
   "guide_home": "This is the Asclepio introduction. Use Staff access to sign in. Below you will find the process steps and team roles.",
   "guide_login": "Enter your email and password, then select Sign in. Use Preferences to adjust language, theme or reading options.",
-  "guide_reception": "Select a site to review pre-registrations. Verify identity before confirming arrival. You can reject a pre-registration with a reason or open direct registration.",
+  "guide_reception": "The indicators show how many pre-registrations are waiting for confirmation and how many encounters are waiting for triage. The screen updates on its own periodically; use Refresh to check right away. Select a site to filter the indicators and the pre-registrations. Verify identity before confirming arrival. You can reject a pre-registration with a reason or open direct registration.",
   "guide_registration": "Search by document or register a new patient. Use the unidentified patient option when needed. Review the site and details before registering arrival.",
   "guide_encounters": "Select a site and list filters. Open an encounter to review its details and timeline. Use pagination controls to change pages.",
   "guide_detail": "This screen shows encounter details and timeline. If your role allows it, you can cancel it with a reason. The guide does not read patient information.",
@@ -98,5 +98,16 @@
   "landing_capability_reception": "Connected reception",
   "landing_capability_triage": "Triage assessment",
   "landing_roles": "Platform roles",
-  "common_toggle_theme": "Toggle theme"
+  "common_toggle_theme": "Toggle theme",
+  "dash_indicators": "Indicators",
+  "dash_stat_loading": "Loading indicator…",
+  "dash_stat_error": "Could not load",
+  "dash_stat_forbidden": "No permission",
+  "dash_live": "Updates every {seconds} s",
+  "dash_at_least": "At least {count}",
+  "dash_retry_named": "Retry: {name}",
+  "dash_view_all_encounters": "View all encounters",
+  "dash_col_action": "Action",
+  "guide_queue": "This screen summarizes encounters by status: waiting for triage, triaged and in care. Below you will see the most recent encounters; open one to review its details. It updates on its own periodically; use Refresh to check right away. The queue by level and waiting time is not available yet. The guide does not read patient data.",
+  "guide_reports": "This screen summarizes encounters by status and those waiting for triage at each location. It updates on its own periodically; use Refresh to check right away. Time reports and the CSV download are not available yet. The screen does not show patient data."
 }

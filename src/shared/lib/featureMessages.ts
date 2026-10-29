@@ -16,10 +16,10 @@ const MESSAGE_KEYS: Record<string, string> = {
   'Escribe tu contraseña.': 'feature_password_required',
   'La contraseña no puede tener más de 128 caracteres.': 'feature_password_max',
   'No se pudieron cargar las sedes.': 'feature_sites_error',
-  'Este pre-registro ya no está pendiente o el paciente ya tiene una atención activa.':
+  'Este preregistro ya no está pendiente o el paciente ya tiene una atención activa.':
     'feature_confirm_conflict',
-  'Este pre-registro ya no existe.': 'feature_pr_gone',
-  'Este pre-registro ya no está pendiente.': 'feature_reject_conflict',
+  'Este preregistro ya no existe.': 'feature_pr_gone',
+  'Este preregistro ya no está pendiente.': 'feature_reject_conflict',
   'Ya existe un paciente con ese documento.': 'feature_patient_conflict',
   'La fecha de nacimiento no puede ser posterior a hoy.':
     'feature_birth_future',

@@ -606,7 +606,6 @@ textarea:disabled {
   margin: 0 0 1rem;
 }
 .card h2,
-.pre-registration h2,
 .arrival h2 {
   margin: 0 0 1rem;
   letter-spacing: -0.02em;
@@ -806,19 +805,6 @@ textarea:disabled {
 .form--inline .field input {
   background-color: var(--card);
 }
-.cards {
-  display: grid;
-  gap: 1.15rem;
-  margin: 1.5rem 0 0;
-  padding: 0;
-  list-style: none;
-  grid-template-columns: minmax(0, 1fr);
-}
-.cards > li {
-  min-width: 0;
-  max-width: 100%;
-}
-.pre-registration,
 .arrival {
   border: 1px solid var(--border);
   border-radius: 0.85rem;
@@ -925,22 +911,6 @@ textarea:disabled {
   margin: 1.5rem 0 0;
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
-}
-.pending-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.35rem 0.65rem;
-  margin-bottom: 1.3rem;
-  border-radius: 0.4rem;
-  color: var(--muted);
-  background: var(--bg);
-  font-size: 0.7rem;
-  font-weight: 600;
-}
-.pending-badge svg {
-  width: 1rem;
-  height: 1rem;
 }
 .hero {
   display: grid;
@@ -1365,9 +1335,6 @@ textarea:disabled {
   }
   .shell__nav {
     margin-bottom: 3rem;
-  }
-  .cards {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (min-width: 1440px) {
@@ -1950,7 +1917,6 @@ textarea:disabled {
   letter-spacing: -0.025em;
 }
 .card h2,
-.pre-registration h2,
 .arrival h2 {
   font-size: 1rem;
   font-weight: 600;
@@ -2277,7 +2243,6 @@ textarea:disabled {
     width: 24px;
     height: 24px;
   }
-  .pre-registration,
   .arrival {
     padding: 16px;
   }
@@ -2319,15 +2284,6 @@ textarea:disabled {
   background: color-mix(in oklch, var(--card) 95%, transparent);
   border-radius: 1rem;
 }
-.clinical-board {
-  display: grid;
-  gap: 1.5rem;
-  align-items: start;
-  min-width: 0;
-}
-.clinical-board > * {
-  min-width: 0;
-}
 .clinical-card-heading {
   display: flex;
   align-items: center;
@@ -2353,62 +2309,6 @@ textarea:disabled {
   background: var(--accent-soft);
   font-size: 0.75rem;
   font-weight: 500;
-}
-.clinical-tray {
-  display: grid;
-  gap: 0.75rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.clinical-patient {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 0.75rem 1rem;
-  min-width: 0;
-  padding: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0.75rem;
-  background: var(--card);
-}
-.clinical-patient > div {
-  flex: 1 1 12rem;
-  min-width: 0;
-}
-.clinical-patient h3 {
-  margin: 0 0 0.25rem;
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-.clinical-patient p {
-  margin: 0.25rem 0 0;
-}
-.clinical-patient .button {
-  flex-shrink: 0;
-}
-.clinical-empty {
-  display: grid;
-  place-items: center;
-  gap: 0.75rem;
-  padding: 3rem 1rem;
-  text-align: center;
-}
-.clinical-empty > svg {
-  width: 3rem;
-  height: 3rem;
-  color: var(--muted);
-}
-.clinical-empty p {
-  margin: 0;
-}
-.clinical-pagination {
-  justify-content: space-between;
-  align-items: center;
-}
-.clinical-summary p:last-child {
-  margin-bottom: 0;
 }
 .clinical-context {
   border-color: color-mix(
@@ -2495,13 +2395,7 @@ textarea:disabled {
   padding-top: 1.5rem;
   border-top: 1px solid var(--border);
 }
-@media (min-width: 1280px) {
-  .clinical-board {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 18.75rem);
-  }
-}
 @media (max-width: 639px) {
-  .clinical-patient .button,
   .clinical-workspace__header > .button {
     width: 100%;
   }

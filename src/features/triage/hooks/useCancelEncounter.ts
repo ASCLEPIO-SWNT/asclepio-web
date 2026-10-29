@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '../../../shared/api/client';
 import { unwrap } from '../../../shared/lib/problem';
 import { encounterKey } from './useEncounter';
-import { ENCOUNTERS_KEY } from './useEncounters';
+import { ENCOUNTERS_KEY } from '../../../shared/hooks/useEncounters';
 
 /**
  * Cancelación de una atención (R36, D14): con 200 la respuesta reemplaza el detalle en la

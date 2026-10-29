@@ -175,7 +175,7 @@ describe('F-02 transversal', () => {
     await user.click(
       within(second).getByRole('button', { name: 'Confirmar rechazo' }),
     );
-    await screen.findByText('Pre-registro rechazado.');
+    await screen.findByText('Preregistro rechazado.');
 
     const first = await screen.findByRole('article', {
       name: patient.fullName!,
@@ -324,9 +324,14 @@ describe('F-02 transversal', () => {
     expect([
       ...net.calls('GET /api/v1/pre-registrations')[0].query.keys(),
     ]).toEqual([]);
-    expect(
-      [...net.calls('GET /api/v1/encounters')[0].query.keys()].sort(),
-    ).toEqual(['limit', 'offset']);
+    // `/recepcion` pide primero el indicador de espera (`limit` y `status`); la lista de
+    // `/atenciones` es la última petición de atenciones (`limit` y `offset`).
+    const encounters = net.calls('GET /api/v1/encounters');
+    expect([...encounters[0].query.keys()].sort()).toEqual(['limit', 'status']);
+    expect([...encounters.at(-1)!.query.keys()].sort()).toEqual([
+      'limit',
+      'offset',
+    ]);
   });
 
   it('R39: bandeja, lista y detalle muestran las horas en America/Bogota y las fechas de nacimiento sin desplazarse', async () => {
@@ -354,7 +359,7 @@ describe('F-02 transversal', () => {
     const card = await screen.findByRole('article', {
       name: patient.fullName!,
     });
-    expect(card).toHaveTextContent(/Pre-registro27\/10\/26, 11:30:00/);
+    expect(card).toHaveTextContent(/Preregistro27\/10\/26, 11:30/);
     expect(card).toHaveTextContent('01/01/2000');
     expect(card).not.toHaveTextContent('31/12/1999');
 

@@ -6,7 +6,10 @@ import { LoadingState } from '../../../shared/ui/LoadingState';
 import { TextAreaField } from '../../../shared/ui/TextAreaField';
 import { reasonSchema, type Reason, type ReasonForm } from '../schemas';
 
-/** Motivo del rechazo de un pre-registro (R14–R16). "Volver" no llama a la API. */
+/**
+ * Motivo del rechazo de un preregistro (R14–R16). "Volver" no llama a la API. Vive dentro de la
+ * tarjeta y sus dos botones son pequeños, como los de la tarjeta (R10, R12).
+ */
 export function RejectForm({
   id,
   busy,
@@ -32,7 +35,7 @@ export function RejectForm({
 
   return (
     <form
-      className="form"
+      className="form reject"
       aria-label={t('feature_reject_form')}
       noValidate
       onSubmit={(event) => {
@@ -49,13 +52,13 @@ export function RejectForm({
         error={fieldMessage(errors.reason?.message)}
         registration={register('reason')}
       />
-      <div className="actions">
-        <button type="submit" className="button" disabled={disabled}>
+      <div className="prereg__buttons">
+        <button type="submit" className="button button--sm" disabled={disabled}>
           {t('feature_reject_confirm')}
         </button>
         <button
           type="button"
-          className="button"
+          className="button button--secondary button--sm"
           disabled={busy}
           onClick={onCancel}
         >

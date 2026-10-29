@@ -16,18 +16,11 @@ import {
 import { renderApp } from './testApp';
 
 const ROLES: StaffRole[] = ['RECEPTION', 'NURSE', 'PHYSICIAN', 'ADMIN'];
-const HOME: Record<
-  StaffRole,
-  { path: string; title: string; feature: string }
-> = {
-  RECEPTION: {
-    path: '/recepcion',
-    title: 'Recepción — bandeja de pre-registros',
-    feature: 'F-02-web',
-  },
-  NURSE: { path: '/triage', title: 'Triage', feature: 'F-03 a F-05-web' },
-  PHYSICIAN: { path: '/cola', title: 'Cola priorizada', feature: 'F-06-web' },
-  ADMIN: { path: '/reportes', title: 'Reportes', feature: 'F-07-web' },
+const HOME: Record<StaffRole, { path: string; title: string }> = {
+  RECEPTION: { path: '/recepcion', title: 'Recepción' },
+  NURSE: { path: '/triage', title: 'Triage' },
+  PHYSICIAN: { path: '/cola', title: 'Cola priorizada' },
+  ADMIN: { path: '/reportes', title: 'Reportes' },
 };
 /** Rutas protegidas que la matriz de roles (D7) NO permite a cada rol. */
 const FORBIDDEN: Record<StaffRole, string[]> = {
@@ -111,22 +104,6 @@ describe('rutas y sesión', () => {
     );
   });
 
-  // F-03 supplies the nursing workspace; only medicine and reports remain placeholders.
-  it.each(['PHYSICIAN', 'ADMIN'] as const)(
-    'R23: el marcador del inicio de %s tiene h1 y la feature que lo trae, sin acciones',
-    async (role) => {
-      fakeApi({ 'GET /api/v1/me': json(200, staffMe[role]) });
-      renderApp({ entries: [HOME[role].path], stored: true });
-      const main = (
-        await screen.findByRole('heading', { level: 1, name: HOME[role].title })
-      ).closest('section');
-      expect(main).toHaveTextContent(
-        `Esta funcionalidad llega en ${HOME[role].feature}.`,
-      );
-      expect(main?.querySelectorAll('button, input, form, a')).toHaveLength(0);
-    },
-  );
-
   it('R5: vuelve a la ruta protegida que originó la redirección si el rol la permite', async () => {
     fakeApi({
       'POST /api/v1/auth/login': json(200, accessToken()),
@@ -154,7 +131,7 @@ describe('rutas y sesión', () => {
 
     await screen.findByRole('heading', {
       level: 1,
-      name: 'Recepción — bandeja de pre-registros',
+      name: 'Recepción',
     });
     expect(router.state.location.pathname).toBe('/recepcion');
   });

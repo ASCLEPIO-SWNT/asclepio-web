@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation } from 'react-router';
+import { Link, Outlet, useLocation, useMatches } from 'react-router';
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline';
 import { useI18n } from '../i18n';
 import { Brand } from './Brand';
@@ -6,9 +6,22 @@ import { LanguagePicker } from './LanguagePicker';
 import { PreferencesPanel } from './PreferencesPanel';
 import { ThemeToggle } from './ThemeToggle';
 
+/**
+ * Lo que una ruta declara en su `handle` para el marco (UI-02-web D26). La ruta del `AppShell`
+ * declara `privateFrame`: el marco privado ya muestra la marca en la barra lateral, así que la
+ * cabecera se reduce a las herramientas. Las pantallas públicas y `/estado` no lo declaran.
+ */
+export interface FrameHandle {
+  privateFrame?: boolean;
+}
+
 export function Layout() {
   const { t } = useI18n();
   const { pathname } = useLocation();
+  // `Layout` solo se monta con un router de datos (`createBrowserRouter`, `createMemoryRouter`).
+  const privateFrame = useMatches().some(
+    (match) => (match.handle as FrameHandle | undefined)?.privateFrame === true,
+  );
   const publicHome = pathname === '/';
   const login = pathname === '/login';
   const guideKey = publicHome
@@ -27,19 +40,25 @@ export function Layout() {
                 ? 'guide_encounters'
                 : pathname.startsWith('/atenciones/')
                   ? 'clinical_guide_detail'
-                  : 'guide_pending';
+                  : pathname === '/cola'
+                    ? 'guide_queue'
+                    : pathname === '/reportes'
+                      ? 'guide_reports'
+                      : 'guide_pending';
   return (
     <div
-      className={`layout ${publicHome ? 'layout--public' : login ? 'layout--login' : 'layout--workspace'}`}
+      className={`layout ${publicHome ? 'layout--public' : login ? 'layout--login' : 'layout--workspace'}${privateFrame ? ' layout--private' : ''}`}
     >
       <a className="skip-link" href="#main-content">
         {t('common_skip')}
       </a>
       <header className="layout__header">
         <div className="layout__header-inner">
-          <Link to="/" className="brand-link" aria-label="Asclepio">
-            <Brand compact />
-          </Link>
+          {!privateFrame && (
+            <Link to="/" className="brand-link" aria-label="Asclepio">
+              <Brand compact />
+            </Link>
+          )}
           {publicHome && (
             <nav className="public-nav" aria-label={t('common_navigation')}>
               <a href="#proceso">{t('landing_about')}</a>

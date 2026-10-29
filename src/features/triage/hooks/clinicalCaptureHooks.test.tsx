@@ -13,7 +13,7 @@ import { clinicalCaptureKey, useClinicalCapture } from './useClinicalCapture';
 import { useRecordVitalSigns } from './useRecordVitalSigns';
 import { useRecordSymptomFindings } from './useRecordSymptomFindings';
 import { encounterKey } from './useEncounter';
-import { ENCOUNTERS_KEY } from './useEncounters';
+import { ENCOUNTERS_KEY } from '../../../shared/hooks/useEncounters';
 import {
   captureFixture,
   recordedFinding,

@@ -1,1 +1,1 @@
-Hooks genéricos compartidos: `useCurrentStaff` (perfil de la sesión, D2 de F-02-web) y `useSites` (sedes del tenant, D3).
+Hooks genéricos compartidos: `useCurrentStaff` (perfil de la sesión, D2 de F-02-web), `useSites` (sedes del tenant, D3) y, para los dashboards de UI-02-web, `useEncounters` (lista de atenciones, con `ENCOUNTERS_KEY`, `PAGE_SIZE`, `COUNT_LIMIT` y `RECENT_LIMIT`) y `useEncounterCount` (conteo `{ count, capped }` de un indicador). Los usan varias features, que no pueden importarse entre sí.

@@ -25,7 +25,7 @@ const F02_ROUTES = {
 };
 
 const PAGES: Array<{ path: string; title: string }> = [
-  { path: '/recepcion', title: 'Recepción — bandeja de pre-registros' },
+  { path: '/recepcion', title: 'Recepción' },
   { path: '/recepcion/registro', title: 'Registro directo' },
   { path: '/atenciones', title: 'Atenciones' },
   { path: `/atenciones/${ENCOUNTER_ID}`, title: 'Atención' },

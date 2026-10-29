@@ -168,6 +168,23 @@
       ],
       "sdd": true,
       "status": "done"
+    },
+    {
+      "id": "UI-02-web",
+      "global_id": "UI-02",
+      "name": "role_dashboards",
+      "title": "Dashboards por rol",
+      "description": "Rediseño de las pantallas de inicio de RECEPTION, NURSE, PHYSICIAN y ADMIN como dashboards ordenados (encabezado, indicadores, panel de trabajo y paneles secundarios) con datos reales del contrato 0.4.0; los huecos de F-06 y F-07 se muestran como pendientes, sin simular datos.",
+      "depends_on": [
+        "UI-01-web",
+        "F-03-web"
+      ],
+      "consumes_contract": "0.4.0",
+      "acceptance": [
+        "Criterios UI-02.AC1–AC12 en docs/ui-dashboards.md; alcance aprobado por el usuario el 2026-10-28 con la maqueta v2."
+      ],
+      "sdd": true,
+      "status": "done"
     }
   ]
 }

@@ -417,6 +417,19 @@ describe('UI-02-web hoja de estilos del dashboard', () => {
     expect(valueOf('.data-table th', 'white-space')).toBe('nowrap');
   });
 
+  it('R34: en la tarjeta apilada el estado ocupa la fila entera: en media columna «En espera de triage» («Wartet auf Triage») se partía en dos líneas', () => {
+    // Visto en T13 con el alemán a 375 px al dejar que la insignia envuelva: la celda del estado era
+    // media columna de la rejilla de dos y la insignia, que antes desbordaba hacia la columna vacía,
+    // pasó a partirse. Con la fila entera solo envuelve si ni ella cabe (texto al 200 %).
+    expect(
+      valueOf(
+        '.data-table:not(.data-table--simple) td:has(> .badge)',
+        'grid-column',
+        '@container panel (max-width: 39.99rem)',
+      ),
+    ).toBe('1 / -1');
+  });
+
   it('R32: con un panel de menos de 15 rem (texto al 200 % en un teléfono) los datos de la tarjeta y la tarjeta apilada pasan a una columna', () => {
     // Medido en T13 a 200 % y 375 px: el panel mide 9.7 rem y dos columnas partían las palabras a
     // mitad («Docume / nto», «Sed / e Nort / e»). El 100 % nunca baja de 21 rem, así que no cambia lo aprobado.

@@ -713,6 +713,10 @@
     max-width: 100%;
     white-space: normal;
   }
+  /* El estado ocupa la fila entera: en media columna la insignia se partiría sin necesidad. */
+  .data-table:not(.data-table--simple) td:has(> .badge) {
+    grid-column: 1 / -1;
+  }
 }
 /*
  * Con texto al 200 % en un teléfono el panel mide menos de 15 rem (9.7 rem a 375 px; con el 100 %

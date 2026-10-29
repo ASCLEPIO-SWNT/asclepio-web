@@ -4,6 +4,7 @@ import { receptionRoutes } from '../../features/reception/routes';
 import { reportRoutes } from '../../features/reports/routes';
 import { StatusPage } from '../../features/status/StatusPage';
 import { encounterRoutes, triageRoutes } from '../../features/triage/routes';
+import type { TitleHandle } from '../../shared/hooks/useDocumentTitle';
 import { Layout, type FrameHandle } from '../../shared/ui/Layout';
 import { AppShell } from './AppShell';
 import { HomeRedirect } from './HomeRedirect';
@@ -31,8 +32,16 @@ export const routes: RouteObject[] = [
   {
     element: <Layout />,
     children: [
-      { path: '/login', element: <LoginRoute /> },
-      { path: '/estado', element: <StatusPage /> },
+      {
+        path: '/login',
+        element: <LoginRoute />,
+        handle: { titleKey: 'feature_login_title' } satisfies TitleHandle,
+      },
+      {
+        path: '/estado',
+        element: <StatusPage />,
+        handle: { titleKey: 'feature_system_status' } satisfies TitleHandle,
+      },
       { index: true, element: <PublicHome /> },
       {
         element: <RequireSession />,

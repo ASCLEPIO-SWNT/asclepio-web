@@ -1,4 +1,5 @@
 import type { RouteObject } from 'react-router';
+import type { TitleHandle } from '../../shared/hooks/useDocumentTitle';
 import { QueuePage } from './components/QueuePage';
 
 /**
@@ -7,5 +8,9 @@ import { QueuePage } from './components/QueuePage';
  * «pendiente» de F-06.
  */
 export const queueRoutes: RouteObject[] = [
-  { path: '/cola', element: <QueuePage /> },
+  {
+    path: '/cola',
+    element: <QueuePage />,
+    handle: { titleKey: 'common_nav_cola' } satisfies TitleHandle,
+  },
 ];

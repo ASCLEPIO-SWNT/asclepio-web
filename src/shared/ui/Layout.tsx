@@ -1,9 +1,11 @@
 import { Link, Outlet, useLocation, useMatches } from 'react-router';
 import { ArrowUpRightIcon } from '@heroicons/react/24/outline';
+import { useDocumentTitle } from '../hooks/useDocumentTitle';
 import { useI18n } from '../i18n';
 import { Brand } from './Brand';
 import { LanguagePicker } from './LanguagePicker';
 import { PreferencesPanel } from './PreferencesPanel';
+import { RouteAnnouncer } from './RouteAnnouncer';
 import { ThemeToggle } from './ThemeToggle';
 
 /**
@@ -18,6 +20,8 @@ export interface FrameHandle {
 export function Layout() {
   const { t } = useI18n();
   const { pathname } = useLocation();
+  // UI-03-web R10, R11 (D9): título de la pestaña y su anuncio, en un solo punto para todas las rutas.
+  const title = useDocumentTitle();
   // `Layout` solo se monta con un router de datos (`createBrowserRouter`, `createMemoryRouter`).
   const privateFrame = useMatches().some(
     (match) => (match.handle as FrameHandle | undefined)?.privateFrame === true,
@@ -81,6 +85,7 @@ export function Layout() {
       <main className="layout__main" id="main-content" tabIndex={-1}>
         <Outlet />
       </main>
+      <RouteAnnouncer title={title} />
     </div>
   );
 }

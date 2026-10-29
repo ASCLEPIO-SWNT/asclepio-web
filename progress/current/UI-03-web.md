@@ -24,3 +24,5 @@
 
 - T1: build «antes» en `0bd94f7`: un único JS de 712,55 kB (207,87 kB gzip), CSS 47,69 kB (10,12 kB gzip), con aviso de >500 kB. `./init.sh` «antes»: ROJO (2 «Test timed out»). Capturas «antes»: **pendientes para el leader/usuario** (sin navegador ni credenciales en la sesión del implementer).
 - T2: causa de los timeouts = contención de CPU (15 workers en 16 núcleos). `maxWorkers: '50%'` + `delay: null` de user-event en R40 (x2) y R11 de captura. Tres `./init.sh` seguidos en verde.
+- T3–T5 hechas sin desviaciones. T4: `session.restore()` en `main.tsx` antes de `createRoot`; `renderApp` y el helper de `SessionProvider.test.tsx` lo llaman igual que `main.tsx` (mecánica del arnés, mismas aserciones).
+- T6 / D17, interpretación: «mensaje genérico de datos no válidos» = los genéricos existentes: con `errors[]` del campo, «Revisa este campo.» junto al campo (`feature_field_review`, el mismo que el 400); sin `errors[]`, «No se pudo completar la acción…» (`feature_action_error`). El 422 con fecha de nacimiento visible mantiene su mensaje de fecha futura. R25: el comportamiento ya existía; se añade la prueba con sede elegida (incluido el refresco de 30 s).

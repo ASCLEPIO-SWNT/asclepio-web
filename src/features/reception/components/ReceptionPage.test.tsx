@@ -514,3 +514,43 @@ describe('ReceptionPage — rechazo', () => {
     await screen.findByText('Preregistro rechazado.');
   });
 });
+
+describe('UI-03-web bandeja con sede elegida', () => {
+  it('R25: con una sede elegida la bandeja pide y muestra solo esa sede, también al repetirse cada 30 s', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const net = fakeApi({
+      [TENANTS]: json(200, publicTenants),
+      [TRAY]: (request) =>
+        new URL(request.url).searchParams.get('siteId') === SITE_SUR.id
+          ? json(200, [second])(request)
+          : json(200, [pendingPreRegistration, second])(request),
+      [LIST]: json(200, { items: [] }),
+    });
+    const user = userEvent.setup({
+      advanceTimers: (ms) => vi.advanceTimersByTime(ms),
+    });
+    renderFeature(receptionRoutes, { entries: ['/recepcion'] });
+    await card();
+    await waitFor(() => expect(screen.getByLabelText('Sede')).toBeEnabled());
+    await user.selectOptions(screen.getByLabelText('Sede'), 'Sede Sur');
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('article', { name: patient.fullName! }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole('article', { name: 'Andrés Ruiz' })).toBeVisible();
+    expect(net.calls(TRAY).at(-1)!.query.get('siteId')).toBe(SITE_SUR.id);
+
+    const before = net.calls(TRAY).length;
+    await act(() => vi.advanceTimersByTimeAsync(30_000));
+    await waitFor(() => expect(net.calls(TRAY)).toHaveLength(before + 1));
+    expect([...net.calls(TRAY).at(-1)!.query.entries()]).toEqual([
+      ['siteId', SITE_SUR.id],
+    ]);
+    expect(screen.getByRole('article', { name: 'Andrés Ruiz' })).toBeVisible();
+    expect(
+      screen.queryByRole('article', { name: patient.fullName! }),
+    ).not.toBeInTheDocument();
+  });
+});

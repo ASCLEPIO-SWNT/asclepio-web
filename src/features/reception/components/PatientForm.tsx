@@ -132,19 +132,16 @@ export function PatientForm({
           });
           return;
         }
+        // UI-03-web R24 (D17): un 422 sin fecha de nacimiento (NN con edad estimada) no es de
+        // fecha futura: se marca el campo con el texto genérico o se muestra el error genérico.
         if (
-          status === 400 &&
+          (status === 400 || status === 422) &&
           problem.kind === 'other' &&
           applyFieldErrors(setError, problem.fieldErrors, SERVER_FIELDS) > 0
         ) {
           return;
         }
-        setActionError(
-          actionErrorMessage(problem, {
-            409: CONFLICT_MESSAGE,
-            422: FUTURE_BIRTH_DATE_MESSAGE,
-          }),
-        );
+        setActionError(actionErrorMessage(problem, { 409: CONFLICT_MESSAGE }));
       },
     });
   };

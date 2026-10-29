@@ -760,3 +760,53 @@ describe('Registro directo — llegada', () => {
     expect(within(arrivalForm()).getByLabelText('Sede')).toBeDisabled();
   });
 });
+
+describe('UI-03-web 422 del alta NN con edad estimada', () => {
+  async function fillNnWithAge(user: User) {
+    const form = await openNn(user);
+    await user.selectOptions(
+      within(form).getByLabelText('Dato de edad'),
+      'Edad estimada (años)',
+    );
+    await user.type(within(form).getByLabelText('Edad estimada (años)'), '45');
+    await user.selectOptions(within(form).getByLabelText('Sexo'), 'Masculino');
+    await user.click(
+      within(form).getByRole('button', { name: 'Guardar paciente' }),
+    );
+    return form;
+  }
+
+  it('R24: un 422 sin errores de campo muestra el error genérico, no el de fecha de nacimiento futura', async () => {
+    const { net, user } = setup({ [CREATE_PATIENT]: problem(422) });
+    const form = await fillNnWithAge(user);
+    expect(await within(form).findByRole('alert')).toHaveTextContent(
+      'No se pudo completar la acción. Inténtalo de nuevo.',
+    );
+    expect(
+      screen.queryByText(
+        'La fecha de nacimiento no puede ser posterior a hoy.',
+      ),
+    ).not.toBeInTheDocument();
+    expect(within(form).getByLabelText('Edad estimada (años)')).toHaveValue(45);
+    expect(net.calls(CREATE_PATIENT)).toHaveLength(1);
+  });
+
+  it('R24: un 422 con error en la edad estimada lo marca junto a su campo con el texto genérico', async () => {
+    const { user } = setup({
+      [CREATE_PATIENT]: problem(422, {
+        errors: [{ field: 'estimatedAgeYears', message: 'out of range' }],
+      }),
+    });
+    const form = await fillNnWithAge(user);
+    await screen.findByText('Revisa este campo.');
+    expectAccessibleError(
+      within(form).getByLabelText('Edad estimada (años)'),
+      'Revisa este campo.',
+    );
+    expect(
+      screen.queryByText(
+        'La fecha de nacimiento no puede ser posterior a hoy.',
+      ),
+    ).not.toBeInTheDocument();
+  });
+});

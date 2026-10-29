@@ -16,7 +16,7 @@ import { problemOf, statusOf } from '../../../shared/lib/problem';
 import { LoadError } from '../../../shared/ui/LoadError';
 import { LoadingState } from '../../../shared/ui/LoadingState';
 import { ViewForbidden } from '../../../shared/ui/ViewForbidden';
-import { PAGE_SIZE, useEncounters } from '../hooks/useEncounters';
+import { PAGE_SIZE, useEncounters } from '../../../shared/hooks/useEncounters';
 
 /** `/atenciones`: lista filtrable por estado y sede, paginada por `offset` (R28–R30, D7, D13). */
 export function EncounterListPage() {

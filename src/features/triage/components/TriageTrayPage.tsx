@@ -12,7 +12,7 @@ import { problemOf, statusOf } from '../../../shared/lib/problem';
 import { LoadError } from '../../../shared/ui/LoadError';
 import { LoadingState } from '../../../shared/ui/LoadingState';
 import { ViewForbidden } from '../../../shared/ui/ViewForbidden';
-import { PAGE_SIZE, useEncounters } from '../hooks/useEncounters';
+import { PAGE_SIZE, useEncounters } from '../../../shared/hooks/useEncounters';
 import { trayFilters, traySearch } from '../trayFilters';
 
 export function TriageTrayPage() {
@@ -22,7 +22,7 @@ export function TriageTrayPage() {
   const sites = useSites();
   const tray = useEncounters(
     { status: 'WAITING_TRIAGE', siteId, offset },
-    { manualRefresh: true },
+    { refresh: true },
   );
   const items = tray.data?.items ?? [];
   const search = traySearch(siteId, offset);

@@ -5,7 +5,6 @@ import { reportRoutes } from '../../features/reports/routes';
 import { StatusPage } from '../../features/status/StatusPage';
 import { encounterRoutes, triageRoutes } from '../../features/triage/routes';
 import { Layout, type FrameHandle } from '../../shared/ui/Layout';
-import { PlaceholderPage } from '../../shared/ui/PlaceholderPage';
 import { AppShell } from './AppShell';
 import { HomeRedirect } from './HomeRedirect';
 import { LoginRoute } from './LoginRoute';
@@ -14,7 +13,11 @@ import { RequireSession } from './RequireSession';
 import { ROLE_ROUTES } from './roleMatrix';
 import { PublicHome } from '../PublicHome';
 
-/** Pantallas reales por ruta de la matriz (D4 de F-02-web); el resto siguen como marcadores. */
+/**
+ * La pantalla de cada ruta de la matriz de roles (D4 de F-02-web, D13 de UI-02-web). Todas la
+ * tienen: no queda ningún marcador, y `?? []` es solo por tipos (lo cubre una prueba que recorre
+ * `ROLE_ROUTES`).
+ */
 const FEATURE_ROUTES: Partial<Record<string, RouteObject[]>> = {
   '/recepcion': receptionRoutes,
   '/atenciones': encounterRoutes,
@@ -42,18 +45,7 @@ export const routes: RouteObject[] = [
             handle: { privateFrame: true } satisfies FrameHandle,
             children: ROLE_ROUTES.map((route) => ({
               element: <RequireRole roles={route.roles} />,
-              children: FEATURE_ROUTES[route.path] ?? [
-                {
-                  path: route.path,
-                  element: (
-                    <PlaceholderPage
-                      title={route.title}
-                      feature={route.feature}
-                      titleKey={`common_nav_${route.path.slice(1)}`}
-                    />
-                  ),
-                },
-              ],
+              children: FEATURE_ROUTES[route.path] ?? [],
             })),
           },
         ],

@@ -16,18 +16,11 @@ import {
 import { renderApp } from './testApp';
 
 const ROLES: StaffRole[] = ['RECEPTION', 'NURSE', 'PHYSICIAN', 'ADMIN'];
-const HOME: Record<
-  StaffRole,
-  { path: string; title: string; feature: string }
-> = {
-  RECEPTION: {
-    path: '/recepcion',
-    title: 'Recepción',
-    feature: 'F-02-web',
-  },
-  NURSE: { path: '/triage', title: 'Triage', feature: 'F-03 a F-05-web' },
-  PHYSICIAN: { path: '/cola', title: 'Cola priorizada', feature: 'F-06-web' },
-  ADMIN: { path: '/reportes', title: 'Reportes', feature: 'F-07-web' },
+const HOME: Record<StaffRole, { path: string; title: string }> = {
+  RECEPTION: { path: '/recepcion', title: 'Recepción' },
+  NURSE: { path: '/triage', title: 'Triage' },
+  PHYSICIAN: { path: '/cola', title: 'Cola priorizada' },
+  ADMIN: { path: '/reportes', title: 'Reportes' },
 };
 /** Rutas protegidas que la matriz de roles (D7) NO permite a cada rol. */
 const FORBIDDEN: Record<StaffRole, string[]> = {

@@ -1,5 +1,5 @@
-import { readFileSync } from 'node:fs';
-import { screen, waitFor, within } from '@testing-library/react';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { StaffRole } from '../../shared/api/client';
@@ -23,6 +23,7 @@ import {
   staffMe,
   type Handler,
 } from '../../test/fakeApi';
+import { ROLE_ROUTES } from './roleMatrix';
 import { renderApp } from './testApp';
 
 type Group = 'common' | 'features';
@@ -333,16 +334,40 @@ const TENANTS = 'GET /api/v1/public/tenants';
 const PRE_REGISTRATIONS = 'GET /api/v1/pre-registrations';
 const ENCOUNTERS = 'GET /api/v1/encounters';
 
-/** Los cuatro dashboards, uno por rol (`HOME_BY_ROLE`), con el `h1` de su entrada de navegación. */
+/**
+ * Los cuatro dashboards, uno por rol (`HOME_BY_ROLE`): el `h1` de su entrada de navegación y el
+ * nombre de su panel de trabajo.
+ */
 const DASHBOARDS = [
-  { role: 'RECEPTION', path: '/recepcion', title: 'Recepción' },
-  { role: 'NURSE', path: '/triage', title: 'Triage' },
-  { role: 'PHYSICIAN', path: '/cola', title: 'Cola priorizada' },
-  { role: 'ADMIN', path: '/reportes', title: 'Reportes' },
+  {
+    role: 'RECEPTION',
+    path: '/recepcion',
+    title: 'Recepción',
+    panel: 'Preregistros pendientes',
+  },
+  {
+    role: 'NURSE',
+    path: '/triage',
+    title: 'Triage',
+    panel: 'Atenciones pendientes',
+  },
+  {
+    role: 'PHYSICIAN',
+    path: '/cola',
+    title: 'Cola priorizada',
+    panel: 'Atenciones recientes',
+  },
+  {
+    role: 'ADMIN',
+    path: '/reportes',
+    title: 'Reportes',
+    panel: 'Atenciones por sede',
+  },
 ] as const satisfies ReadonlyArray<{
   role: StaffRole;
   path: string;
   title: string;
+  panel: string;
 }>;
 
 /** La red simulada que sirve a los cuatro dashboards: perfil, sedes, preregistros y atenciones. */
@@ -619,6 +644,203 @@ describe('UI-02-web guía de voz de los dashboards', () => {
         expect(utterance.text).toBe(translate(locale, key));
         expect(utterance.text).not.toBe(translate(locale, 'guide_pending'));
       }
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------------------------
+// Rutas y permisos (T11, R1, R2 y R28)
+// ---------------------------------------------------------------------------------------------
+
+/** Rutas protegidas que la matriz de roles NO permite a cada rol (UI-02.AC1: la matriz no cambia). */
+const FORBIDDEN: Record<StaffRole, string[]> = {
+  RECEPTION: ['/triage', '/cola', '/reportes'],
+  NURSE: ['/recepcion', '/reportes'],
+  PHYSICIAN: ['/recepcion', '/triage', '/reportes'],
+  ADMIN: ['/recepcion', '/triage'],
+};
+
+/** Por cada rol y dashboard, las únicas lecturas que puede pedir (R28). */
+const ALLOWED_REQUESTS = [
+  {
+    role: 'RECEPTION',
+    path: '/recepcion',
+    requests: [ME, TENANTS, PRE_REGISTRATIONS, ENCOUNTERS],
+  },
+  { role: 'NURSE', path: '/triage', requests: [ME, TENANTS, ENCOUNTERS] },
+  { role: 'PHYSICIAN', path: '/cola', requests: [ME, ENCOUNTERS] },
+  { role: 'NURSE', path: '/cola', requests: [ME, ENCOUNTERS] },
+  { role: 'ADMIN', path: '/cola', requests: [ME, ENCOUNTERS] },
+  { role: 'ADMIN', path: '/reportes', requests: [ME, TENANTS, ENCOUNTERS] },
+] as const;
+
+const FORBIDDEN_CASES = Object.entries(FORBIDDEN).flatMap(([role, paths]) =>
+  paths.map((path) => ({ role: role as StaffRole, path })),
+);
+const LANDINGS = DASHBOARDS.flatMap((dashboard) =>
+  ['/app', dashboard.path].map((entry) => ({ ...dashboard, entry })),
+);
+const ROUTE_CASES = ROLE_ROUTES.flatMap((route) =>
+  route.roles.map((role) => ({ role, path: route.path })),
+);
+
+const keyOf = (request: { method: string; path: string }) =>
+  `${request.method} ${request.path}`;
+
+/** Archivos de código de la aplicación: sin pruebas, sin ayudantes de prueba y sin lo generado. */
+function appSources(): string[] {
+  return readdirSync('src', { encoding: 'utf8', recursive: true })
+    .map((file) => `src/${file}`.replaceAll('\\', '/'))
+    .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+    .filter(
+      (file) =>
+        !file.startsWith('src/test/') && !file.startsWith('src/paraglide/'),
+    );
+}
+
+describe('UI-02-web rutas y permisos de los dashboards', () => {
+  it.each(LANDINGS)(
+    'R1: $role entra por $entry y aterriza en su dashboard ($path), con sus indicadores y su panel de trabajo',
+    async ({ role, entry, path, title, panel }) => {
+      dashboardApi(role);
+      const { router } = renderApp({ entries: [entry], stored: true });
+      await screen.findByRole('heading', { level: 1, name: title });
+      expect(router.state.location.pathname).toBe(path);
+      expect(
+        screen.getByRole('region', { name: 'Indicadores' }),
+      ).toBeInTheDocument();
+      expect(screen.getByRole('region', { name: panel })).toBeInTheDocument();
+    },
+  );
+
+  it('R1: PHYSICIAN, NURSE y ADMIN abren /cola y ven exactamente el mismo dashboard', async () => {
+    const dashboards: string[] = [];
+    for (const role of ['PHYSICIAN', 'NURSE', 'ADMIN'] as const) {
+      dashboardApi(role);
+      const view = renderApp({ entries: ['/cola'], stored: true });
+      await screen.findByRole('heading', { level: 1, name: 'Cola priorizada' });
+      await settled();
+      expect(view.router.state.location.pathname).toBe('/cola');
+      expect(
+        within(
+          screen.getByRole('region', { name: 'Indicadores' }),
+        ).getAllByRole('listitem'),
+      ).toHaveLength(3);
+      dashboards.push(view.container.querySelector('.dashboard')!.textContent);
+      view.unmount();
+      sessionStorage.clear();
+      session.clear();
+    }
+    expect(dashboards[0]).toContain('Atenciones recientes');
+    expect(dashboards[1]).toBe(dashboards[0]);
+    expect(dashboards[2]).toBe(dashboards[0]);
+  });
+
+  it.each(DASHBOARDS)(
+    'R2: $role ve un único h1 «$title», el de su entrada de navegación, con un párrafo de descripción y las acciones de la pantalla',
+    async ({ role, path, title }) => {
+      dashboardApi(role);
+      renderApp({ entries: [path], stored: true });
+      const heading = await screen.findByRole('heading', {
+        level: 1,
+        name: title,
+      });
+      expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+      // Es el texto de su enlace en la navegación lateral.
+      const nav = screen.getByRole('navigation', { name: 'Principal' });
+      expect(within(nav).getByRole('link', { name: title })).toHaveAttribute(
+        'href',
+        path,
+      );
+      // La descripción va justo debajo del h1 y las acciones, en el mismo encabezado.
+      const description = heading.nextElementSibling;
+      expect(description?.tagName).toBe('P');
+      expect(description?.textContent?.trim()).not.toBe('');
+      const header = heading.closest('header')!;
+      expect(
+        within(header).getByRole('button', { name: 'Actualizar' }),
+      ).toBeInTheDocument();
+      if (role === 'RECEPTION')
+        expect(
+          within(header).getByRole('link', { name: 'Registro directo' }),
+        ).toHaveAttribute('href', '/recepcion/registro');
+      else expect(within(header).queryByRole('link')).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(ROUTE_CASES)(
+    'R1: la ruta $path de la matriz de roles tiene pantalla para $role: su h1 es el de su entrada de navegación y la ruta no se redirige',
+    async ({ role, path }) => {
+      dashboardApi(role);
+      const { router } = renderApp({ entries: [path], stored: true });
+      const nav = await screen.findByRole('navigation', { name: 'Principal' });
+      const entry = within(nav)
+        .getAllByRole('link')
+        .find((link) => link.getAttribute('href') === path);
+      expect(entry, `${role} no tiene ${path} en su navegación`).toBeDefined();
+      await screen.findByRole('heading', {
+        level: 1,
+        name: entry!.textContent,
+      });
+      expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+      expect(router.state.location.pathname).toBe(path);
+    },
+  );
+
+  it('R1: PlaceholderPage ya no existe: ni el archivo ni ninguna referencia en el código', () => {
+    expect(existsSync('src/shared/ui/PlaceholderPage.tsx')).toBe(false);
+    expect(
+      appSources().filter((file) =>
+        readFileSync(file, 'utf8').includes('PlaceholderPage'),
+      ),
+    ).toEqual([]);
+  });
+
+  it.each(FORBIDDEN_CASES)(
+    'R28: $role en $path ve «Sin permiso» y el dashboard no pide ningún dato',
+    async ({ role, path }) => {
+      const net = dashboardApi(role);
+      renderApp({ entries: [path], stored: true });
+      await screen.findByRole('heading', {
+        level: 1,
+        name: 'No tienes permiso para ver esta página.',
+      });
+      await settled();
+      // Solo el perfil: ni sedes, ni atenciones, ni preregistros.
+      expect(net.requests.map(keyOf)).toEqual([ME]);
+      expect(
+        screen.queryByRole('region', { name: 'Indicadores' }),
+      ).not.toBeInTheDocument();
+    },
+  );
+
+  it.each(ALLOWED_REQUESTS)(
+    'R28: $role en $path solo pide las lecturas que su rol puede usar, tampoco en un ciclo de 30 s, y ninguna de detalle ni de captura clínica',
+    async ({ role, path, requests }) => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const net = dashboardApi(role);
+      renderApp({ entries: [path], stored: true });
+      await screen.findByRole('heading', { level: 1 });
+      await settled();
+      // Un ciclo del refresco automático repite lo mismo y no pide nada más.
+      await act(() => vi.advanceTimersByTimeAsync(30_000));
+      await settled();
+
+      expect([...new Set(net.requests.map(keyOf))].sort()).toEqual(
+        [...requests].sort(),
+      );
+      expect(net.requests.every((request) => request.method === 'GET')).toBe(
+        true,
+      );
+      expect(
+        net.requests.filter((request) =>
+          /\/encounters\/|clinical-capture/.test(request.path),
+        ),
+      ).toEqual([]);
+      // Los preregistros son solo de RECEPTION.
+      expect(net.calls(PRE_REGISTRATIONS).length > 0).toBe(
+        role === 'RECEPTION',
+      );
     },
   );
 });

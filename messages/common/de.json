@@ -111,5 +111,9 @@
   "guide_queue": "Diese Seite fasst die Behandlungen nach Status zusammen: wartend auf Triage, triagiert und in Behandlung. Darunter sehen Sie die neuesten Behandlungen; öffnen Sie eine, um die Angaben einzusehen. Die Seite aktualisiert sich regelmäßig von selbst; mit Aktualisieren rufen Sie sofort den aktuellen Stand ab. Die Warteschlange nach Stufe und Wartezeit ist noch nicht verfügbar. Die Anleitung liest keine Patientendaten vor.",
   "guide_reports": "Diese Seite fasst die Behandlungen nach Status zusammen sowie jene, die an den einzelnen Standorten auf die Triage warten. Die Seite aktualisiert sich regelmäßig von selbst; mit Aktualisieren rufen Sie sofort den aktuellen Stand ab. Berichte zu Zeiten und der CSV-Download sind noch nicht verfügbar. Die Seite zeigt keine Patientendaten an.",
   "common_error_network": "Keine Verbindung zum Server.",
-  "common_error_server": "Beim Server ist ein Problem aufgetreten. Bitte versuche es erneut."
+  "common_error_server": "Beim Server ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",
+  "common_route_error_title": "Auf diesem Bildschirm ist ein Fehler aufgetreten",
+  "common_route_error_body": "Der Bildschirm konnte nicht angezeigt werden. Sie können es erneut versuchen oder zum Start zurückkehren.",
+  "common_route_chunk_error_body": "Der Bildschirm konnte nicht geladen werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
+  "common_route_home": "Zurück zum Start"
 }

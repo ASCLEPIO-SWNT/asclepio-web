@@ -1,10 +1,15 @@
 import { render } from '@testing-library/react';
 import { createQueryClient } from '../app/providers/queryClient';
-import { createMemoryRouter, RouterProvider } from 'react-router';
+import {
+  createMemoryRouter,
+  RouterProvider,
+  type RouteObject,
+} from 'react-router';
 import { SESSION_KEY, session } from '../shared/api/session';
 import { TOKEN, inMs } from './fakeApi';
 import { AppProviders } from '../app/providers/AppProviders';
-import { routes } from '../app/router/routes';
+import { routes as appRoutes } from '../app/router/routes';
+import { reportCaughtError } from '../shared/lib/routeErrors';
 
 /**
  * Monta la app real (providers + rutas) sobre un router en memoria (D14).
@@ -13,8 +18,11 @@ import { routes } from '../app/router/routes';
 export function renderApp({
   entries = ['/'],
   stored,
+  routes = appRoutes,
 }: {
   entries?: string[];
+  /** Rutas a montar; por defecto las de la app (UI-03-web R8 inyecta una pantalla que lanza). */
+  routes?: RouteObject[];
   stored?: boolean | { accessToken: string; expiresAt: string };
 } = {}) {
   if (stored) {
@@ -37,8 +45,10 @@ export function renderApp({
   });
   const utils = render(
     <AppProviders queryClient={queryClient}>
-      <RouterProvider router={router} />
+      <RouterProvider router={router} onError={reportCaughtError} />
     </AppProviders>,
+    // Como main.tsx (UI-03-web R9).
+    { onCaughtError: reportCaughtError, onRecoverableError: reportCaughtError },
   );
   return { router, queryClient, ...utils };
 }

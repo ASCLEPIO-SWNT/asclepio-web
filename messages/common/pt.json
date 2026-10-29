@@ -111,5 +111,9 @@
   "guide_queue": "Esta tela resume os atendimentos por estado: aguardando triagem, classificados e em atendimento. Abaixo você verá os atendimentos mais recentes; abra um para consultar os detalhes. Ela se atualiza sozinha periodicamente; use Atualizar para consultar na hora. A fila por nível e tempo de espera ainda não está disponível. O guia não lê dados de pacientes.",
   "guide_reports": "Esta tela resume os atendimentos por estado e os que aguardam triagem em cada unidade. Ela se atualiza sozinha periodicamente; use Atualizar para consultar na hora. Os relatórios de tempos e o download do CSV ainda não estão disponíveis. A tela não mostra dados de pacientes.",
   "common_error_network": "Não há conexão com o servidor.",
-  "common_error_server": "O servidor teve um problema. Tente novamente."
+  "common_error_server": "O servidor teve um problema. Tente novamente.",
+  "common_route_error_title": "Algo deu errado nesta tela",
+  "common_route_error_body": "Não foi possível mostrar a tela. Você pode tentar novamente ou voltar ao início.",
+  "common_route_chunk_error_body": "Não foi possível carregar a tela. Verifique sua conexão e tente novamente.",
+  "common_route_home": "Voltar ao início"
 }

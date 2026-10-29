@@ -111,5 +111,9 @@
   "guide_queue": "Cette page résume les prises en charge par état : en attente de triage, triées et en cours de soins. En dessous, vous verrez les prises en charge les plus récentes ; ouvrez-en une pour consulter son détail. La page s’actualise automatiquement à intervalles réguliers ; utilisez Actualiser pour consulter immédiatement. La file par niveau et temps d’attente n’est pas encore disponible. Le guide ne lit aucune donnée de patient.",
   "guide_reports": "Cette page résume les prises en charge par état et celles qui attendent le triage dans chaque établissement. La page s’actualise automatiquement à intervalles réguliers ; utilisez Actualiser pour consulter immédiatement. Les rapports de délais et le téléchargement du CSV ne sont pas encore disponibles. La page n’affiche aucune donnée de patient.",
   "common_error_network": "Pas de connexion au serveur.",
-  "common_error_server": "Le serveur a rencontré un problème. Réessayez."
+  "common_error_server": "Le serveur a rencontré un problème. Réessayez.",
+  "common_route_error_title": "Un problème est survenu sur cet écran",
+  "common_route_error_body": "Impossible d’afficher l’écran. Vous pouvez réessayer ou revenir à l’accueil.",
+  "common_route_chunk_error_body": "Impossible de charger l’écran. Vérifiez votre connexion et réessayez.",
+  "common_route_home": "Retour à l’accueil"
 }

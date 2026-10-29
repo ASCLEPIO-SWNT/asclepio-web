@@ -623,3 +623,96 @@ Las **ocho deliberadas de `design.md`** (todas medidas en las capturas de T13): 
 - **Una captura parpadea** (`/recepcion/registro` a 1440 px, 61 píxeles en el borde de la píldora de la cabecera); no tiene que ver con el CSS retirado.
 - **Pantallas fuera de los dashboards** (`/atenciones`, `/atenciones/:id`, `/triage/:id`, `/recepcion/registro`): solo se comprobó con capturas que no cambian; no se auditaron en accesibilidad.
 - **Texto de las traducciones**: en, pt, fr y de de las claves nuevas las escribe el `implementer` (T3); conviene una lectura por una persona hablante antes de publicar.
+
+# Etapa C3, espacio duro en las horas (T15)
+
+Fecha: 2026-10-29, America/Bogota. Rol `implementer`. Parte de `feat/ui-02-web-dashboards` en `c630c76` (etapas A, B, C1 y C2 verificadas por el `leader`: 42 archivos y 758 pruebas, `./init.sh` en verde). Una sola tarea, T15, que el `spec_author` añadió por una decisión del `leader` (D28 enmendado y R41): `formatTimeBogota` y `formatDateTimeBogota` escriben U+00A0 entre la hora y «a. m.» o «p. m.» y dentro del indicador, para que nunca se parta («2:05» y «p. m.», o «p.» y «m.») en un ancho estrecho. La feature **no** se marca `done` y `feature_list.json` no se toca. Si la sesión se corta, el `leader` retoma leyendo esta nota y `git log`.
+
+## Resultado
+
+| Comprobación | Resultado |
+| --- | --- |
+| `./init.sh` | VERDE: FAIL 0, WARN 0 (entorno, archivos del harness, estado de `feature_list.json`, configuración, lint, typecheck y tests) |
+| `npm run lint` | salida 0, sin avisos |
+| `npm run typecheck` | salida 0 |
+| `npm test` | salida 0: 42 archivos y **765 pruebas** en verde (758 al empezar y 7 nuevas de R41) |
+| `npm run build` | salida 0 con `--outDir` fuera del repo (JS 712.55 kB, CSS 47.69 kB); el árbol queda limpio |
+| `npm run i18n:check` | salida 0 |
+| `npm run api:types` | salida 0, sin diff en `src/shared/api/schema.d.ts` ni en `src/features/triage/clinicalContract.generated.ts` |
+| Navegador (Chromium 153 y Firefox 153) | hecha, ver «Comprobación en navegador» |
+| `git status --short` | vacío |
+
+## Commits
+
+- `4a741ad` `feat(shared): keep the hour joined to a. m. and p. m. with no-break spaces`: la prueba, el código y T15 marcada `[x]` en `tasks.md`.
+- El commit de esta nota y de `docs/ui-dashboards-verification.md` (`docs(ui-02): record the T15 hour spacing check`).
+
+## Archivos
+
+- **Tocados**: `src/shared/lib/datetime.ts`, `src/shared/lib/datetime.test.ts`, `specs/UI-02-web/tasks.md` (T15 `[x]`), `docs/ui-dashboards-verification.md` (apartado «T15, espacio duro en las horas» y la fila de R41), `progress/current/UI-02-web.md` (una línea) y esta nota. Ningún componente, catálogo ni hoja de estilos.
+- **Fuera del repo** (`../../local-analysis/ui02-verification/`; pueden quedarse): `c3-hour-spacing.mjs` (recorre con `Range.getClientRects()` cada carácter de los textos con hora y barre de 320 a 900 px) y `c3-firefox.mjs` (los espacios de cada hora en Firefox). Se reutilizaron `ui02-preview-api.mjs`, `c2-lib.mjs`, `c2-overflow-matrix.mjs` y `dist-c2/` (el build de cierre de C2, sin la normalización, como «antes»).
+
+## Prueba primero y código
+
+- **Prueba en rojo**: 7 pruebas nuevas `R41:` bajo `describe('UI-02-web horas de los dashboards …')` (tabla de abajo) y el comentario del bloque reescrito: T2 anotó que `Intl` escribe U+0020 sin que los formateadores lo toquen; ahora los formateadores escriben U+00A0, y solo las pruebas de T15 que lo nombran fijan ese carácter (las demás siguen usando `\s`). Antes de tocar el código fallaron **5 de las 7**, por la razón correcta: `formatTimeBogota` y `formatDateTimeBogota` devolvían U+0020 (medido en el Node del proyecto, 22.23.1, ICU 78.2, CLDR 48.0: «8:05 a. m.» con U+0020 en los dos huecos y «27/10/26, 8:05 a. m.» con U+0020 en los tres) o dejaban pasar el U+0020 y el U+202F del motor simulado. Las dos que ya pasaban (el motor que escribe U+00A0 y «formatBogota y formatDateBogota devuelven lo que escribe Intl») fijan lo que **no** debe cambiar y siguen pasando.
+- **Código** (`datetime.ts`): una función `joinMeridiem`, no exportada, con `text.replace(/\s+([ap])\.\s+m\./g, …)` que pasa a U+00A0 el espacio que precede a «a. m.» o «p. m.» y el de dentro del indicador, sea U+0020, U+00A0 o U+202F el que escribió el motor. `formatTimeBogota` y `formatDateTimeBogota` pasan por ella; el espacio entre la fecha y la hora no se toca; `formatDateBogota`, `formatBogota` y `formatCivilDate` no cambian. El comentario nuevo (cinco líneas, encima de `joinMeridiem`) explica por qué (el espacio depende del motor y de la versión de ICU; U+0020 medido en Chromium 153, Firefox 153 y Node 22.23.1) y sustituye al que decía que se devolvía la salida de `Intl` tal cual. Sin dependencias nuevas.
+
+## R41 → `archivo::prueba` (las nuevas de T15)
+
+| R | Archivo | Prueba |
+| --- | --- | --- |
+| R41 | `src/shared/lib/datetime.test.ts` | `R41: formatTimeBogota une la hora a «a. m.» o «p. m.» con U+00A0 y el indicador no se parte` |
+| R41 | `src/shared/lib/datetime.test.ts` | `R41: formatDateTimeBogota une la hora con U+00A0 y deja un espacio normal tras la coma` |
+| R41 | `src/shared/lib/datetime.test.ts` | `R41: entre la hora y el indicador, y dentro de él, no queda U+0020 ni U+202F` |
+| R41 | `src/shared/lib/datetime.test.ts` | `R41: si el motor escribe %s en la hora, los dos formateadores devuelven U+00A0` (tres pruebas, con U+0020, U+00A0 y U+202F; `Intl.DateTimeFormat#format` simulado) |
+| R41 | `src/shared/lib/datetime.test.ts` | `R41: formatBogota y formatDateBogota devuelven lo que escribe Intl, sin reescribir espacios, y formatCivilDate no cambia` |
+
+R41 pasa de 8 a 15 pruebas (`datetime.test.ts` de 5 a 12). Siguen las otras ocho: las cinco de `datetime.test.ts` (con `\s`) y una por pantalla con tabla o tarjeta (`QueuePage.test.tsx`, `TriageDashboard.test.tsx` y `ReceptionDashboard.test.tsx`, que comparan con `norm`). Comprobado con `c2-rtable.py` sobre el informe JSON de Vitest: 765 pruebas en 42 archivos, ninguna R sin prueba y ninguna fallida; la única fila de la tabla R → prueba que cambia respecto de C2 es la de R41 (ya actualizada en `docs/ui-dashboards-verification.md`).
+
+## Pruebas existentes modificadas
+
+**Ninguna.** Las de pantalla comparan con `norm(formatX(…))` (el normalizador colapsa `\s`, incluido U+00A0) y las unitarias de hora usan `\s`: pasaron sin tocarlas. Al bloque solo se añadieron el `afterEach(vi.restoreAllMocks)` y el ayudante `engineWrites`, que simula el motor.
+
+## Usos de los dos formateadores en producción
+
+`grep -rn "formatTimeBogota\|formatDateTimeBogota" src` da cinco usos y ninguno depende del carácter (todos pintan el texto; ninguno hace `split`, `indexOf` ni `replace` sobre un espacio):
+
+| Archivo | Uso |
+| --- | --- |
+| `features/queue/components/QueuePage.tsx:121` | columna «Llegada» de medicina, dentro de `<time>` y de `.cell-time` (`white-space: nowrap`) |
+| `features/triage/components/TriageTrayPage.tsx:112` | columna «Llegada» de enfermería, igual |
+| `features/reception/components/ReceptionPage.tsx:234` | aviso «Llegada confirmada» |
+| `features/reception/components/PreRegistrationCard.tsx:173 y 176` | «Preregistro» y «Expira» de la tarjeta (`Fact time`) |
+
+## Comprobación en navegador
+
+Build de la rama (`4a741ad`) en `/tmp/ui02-c3-dist` con `VITE_API_URL=http://127.0.0.1:3012`, servido con `vite preview` en el puerto 5186 y la API sintética en el 3012 (`POST /__reset` antes de cada serie); Chromium («Google Chrome for Testing» 153.0.8010.12) sin interfaz y con `--no-sandbox`, sesión iniciada por la interfaz. Como «antes», el build de cierre de C2 (`dist-c2`, `index-CiSVRG1R.js`, sin `joinMeridiem`) con la misma API y el mismo script. A 375 px se confirmó la llegada de la primera tarjeta de recepción y se midió el aviso; además se barrieron los anchos de 320 a 900 px de 1 en 1 (581), porque a 375 px la hora ya cabía en una línea y no basta un solo ancho para ver el corte.
+
+| Medida | Antes (C2) | Después (T15) |
+| --- | --- | --- |
+| Espacios dentro de la hora del aviso «Llegada confirmada» | U+0020 y U+0020 | U+00A0 y U+00A0 |
+| Aviso con la hora partida entre líneas (581 anchos) | 57 anchos (324 a 343 y 511 a 547) | **0** |
+| Aviso con «a.» o «p.» al final de línea o «m.» al inicio | 25 anchos (340 a 343 y 527 a 547) | **0** |
+| Aviso con un espacio que no es U+00A0 dentro de la hora | 581 anchos | **0** |
+| Aviso a 375 px, líneas | «Llegada confirmada. Hora de» / «llegada: 29/10/26, 12:38 p. m. Ver» / «atención» | igual, con la hora de ese momento («12:40 p. m.») |
+| Tarjetas de preregistro (6 fechas antes de confirmar y 4 después) con la hora partida, mismo barrido | 0 (C2 lo atajaba con CSS) | 0, y todas con U+00A0 y U+00A0 |
+| Tablas de `/triage` y `/cola` (8 horas cada una, 375 px) | U+0020 y U+0020, una línea | U+00A0 y U+00A0, una línea |
+| `scrollWidth` frente a `clientWidth` (recepción con el aviso, de 320 a 900 px; `/triage` y `/cola` a 320, 375, 768, 1024 y 1440 px) | iguales en todos | iguales en todos |
+| Matriz de desbordamiento de T13 (23 estados, 4 anchos, texto al 100 % y al 200 %, con el aviso de llegada) | 0 de 184 | **0 de 184** |
+| 320 px, 23 estados | 0 al 100 % y 17 al 200 % | 0 al 100 % y 17 al 200 %, los mismos elementos y anchos (aviso 337 px, «Siguiente» 366, «Próximamente» 334) |
+| Mensajes de consola o errores de página | 0 | 0 |
+
+**Firefox 153.0** (`firefox-1538` de Playwright, mismo build): su `Intl` crudo escribe U+0020 y U+0020 en «3:40 p. m.», como Chromium y Node, y la aplicación escribe U+00A0 y U+00A0 en las 6 fechas de las tarjetas, el aviso y las 8 y 8 horas de `/triage` y `/cola`; `scrollWidth` es igual a `clientWidth` (375 px) en los tres dashboards y no hay mensajes de consola. Una captura del aviso a 375 px (fuera del repo, ya borrada) se miró una vez con la herramienta de imágenes: la hora completa en la segunda línea y las dos fechas de la tarjeta («28/10/26, 8:40 a. m.» y «28/10/26,» y «2:40 p. m.») sin cortes dentro de la hora.
+
+## Observaciones para quien revise
+
+- **`fact__time` se queda.** La regla `.prereg__facts .fact__time { text-wrap: balance }` de C2 (D28, R10) nació para que «p. m.» no se separara de la hora; ahora lo garantiza U+00A0, pero la regla sigue repartiendo «28/10/26,» y «2:05 p. m.» en dos líneas parejas y `design.md` la conserva, así que no se tocó.
+- **Herramientas del agente y U+00A0.** Las herramientas del agente (edición, escritura y shell) convierten las secuencias de escape Unicode que se escriben en sus parámetros (barra invertida, «u» y el código de cuatro cifras, por ejemplo el de U+00A0) en el carácter literal, invisible en la fuente y marcado por `no-irregular-whitespace`. El código y las pruebas de T15 se retocaron con un script de Python que construye la barra invertida con `chr(92)` y se comprobó con `grep -nP '[\x{00A0}\x{202F}]'` que `datetime.ts` y `datetime.test.ts` no tienen ningún carácter literal, solo secuencias de escape.
+- **Hallazgo de C2 resuelto.** El arreglo de raíz que el `implementer` de T13 dejó para el `leader` («que los formateadores sustituyan el espacio que precede a “a. m.” o “p. m.” por U+00A0») es este cambio; el aviso de llegada confirmada y el resto de textos con hora ya no pueden partir el indicador.
+
+## Limitaciones
+
+- **U+00A0 y U+202F en un motor real**: los tres motores medidos (Node 22.23.1, Chromium 153 y Firefox 153) escriben U+0020; los casos en que el motor escribe otro espacio se **simulan** en la prueba (`Intl.DateTimeFormat.prototype.format` sustituido), no se midieron. Safari y WebKit no se probaron.
+- **Otra forma del indicador**: la normalización solo reconoce «a. m.» y «p. m.» con su espacio interior; si una versión de ICU escribiera «a.m.» o «AM», la hora volvería a poder partirse y las pruebas de cadena exacta lo detectarían al actualizar el motor (`design.md`, Riesgos).
+- **Lector de pantalla**: no se probó cómo anuncia U+00A0 en «8:05 a. m.» (se espera lo mismo que con un espacio normal).
+- Como en C2: API sintética y no NestJS ni PostgreSQL, y un Chromium sin interfaz. El aviso a 320 px con el texto al 200 % sigue desbordando 17 px (337 frente a 320), igual que antes: fuera de R35.

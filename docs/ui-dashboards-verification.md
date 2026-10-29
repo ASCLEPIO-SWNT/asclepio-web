@@ -1,6 +1,6 @@
 # UI-02-web — Verificación de los dashboards por rol
 
-Fecha: 2026-10-28, America/Bogota. Brief: `docs/ui-dashboards.md` (UI-02.AC1 a AC12). Spec: `specs/UI-02-web/`. Referencia visual aprobada: la maqueta v2 (`../../local-analysis/ui02-maqueta/maqueta-dashboards.html` y sus capturas). Este documento lo abre la tarea T1 (capturas «antes» y línea base) y lo completa la tarea T13 (capturas «después», mediciones, accesibilidad, refresco automático y tabla R → prueba).
+Fecha: 2026-10-28, America/Bogota. Brief: `docs/ui-dashboards.md` (UI-02.AC1 a AC12). Spec: `specs/UI-02-web/`. Referencia visual aprobada: la maqueta v2 (`../../local-analysis/ui02-maqueta/maqueta-dashboards.html` y sus capturas). Este documento lo abre la tarea T1 (capturas «antes» y línea base), lo completa la tarea T13 (capturas «después», mediciones, accesibilidad, refresco automático y tabla R → prueba) y la tarea T15 añade al final lo medido sobre el espacio duro de las horas.
 
 ## Estado del documento
 
@@ -8,6 +8,7 @@ Fecha: 2026-10-28, America/Bogota. Brief: `docs/ui-dashboards.md` (UI-02.AC1 a A
 | --- | --- | --- |
 | Commit de partida, procedimiento, datos, 16 capturas «antes» y línea base de R35 | T1 | Hecho |
 | Capturas «después» y adicionales, comparación con la maqueta, mediciones, idiomas, modos de color y contraste, teclado, movimiento, refresco automático con temporizadores reales y pestaña oculta, y tabla R → prueba | T13 | Hecho (2026-10-29) |
+| Espacio duro en las horas: qué se midió y qué no, y fila de R41 de la tabla R → prueba | T15 | Hecho (2026-10-29) |
 
 ## Commit de partida
 
@@ -332,7 +333,7 @@ La de `/recepcion/registro` a 1440 px difiere en 61 píxeles de una franja de 3 
 
 ### Tabla R → prueba
 
-Generada con `c2-rtable.py` (fuera del repo) sobre el informe JSON de `npx vitest run --reporter=json` del árbol final (cierre de T14): 758 pruebas en 42 archivos, todas en verde. El script comprueba de forma mecánica que cada R1 a R41 tiene al menos una prueba cuyo nombre empieza por «R<n>:» bajo un `describe('UI-02-web …')`, y sale con error si falta alguna. Resultado: **ninguna R sin prueba**. Los archivos van sin el prefijo `src/`; el nombre completo de cada prueba es `archivo::R<n>: …` (la nota `progress/impl_UI-02-web.md` da, además, el nombre de una prueba por R).
+Generada con `c2-rtable.py` (fuera del repo) sobre el informe JSON de `npx vitest run --reporter=json` del árbol final (cierre de T14): 758 pruebas en 42 archivos, todas en verde. El script comprueba de forma mecánica que cada R1 a R41 tiene al menos una prueba cuyo nombre empieza por «R<n>:» bajo un `describe('UI-02-web …')`, y sale con error si falta alguna. Resultado: **ninguna R sin prueba**. Tras T15 (765 pruebas en 42 archivos) la única fila que cambia es la de R41, que pasa de 8 a 15 pruebas y ya está actualizada abajo. Los archivos van sin el prefijo `src/`; el nombre completo de cada prueba es `archivo::R<n>: …` (la nota `progress/impl_UI-02-web.md` da, además, el nombre de una prueba por R).
 
 | R | Pruebas | Archivos (número de pruebas) |
 | --- | --- | --- |
@@ -376,7 +377,7 @@ Generada con `c2-rtable.py` (fuera del repo) sobre el informe JSON de `npx vites
 | R38 | 7 | `app/router/dashboards.test.tsx` (1); `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/ui/dashboard.test.tsx` (1); `shared/ui/dashboardStyles.test.ts` (1) |
 | R39 | 10 | `app/router/dashboards.test.tsx` (8); `shared/ui/dashboard.test.tsx` (1); `shared/ui/dashboardStyles.test.ts` (1) |
 | R40 | 18 | `app/router/dashboards.test.tsx` (17); `features/reception/components/ReceptionDashboard.test.tsx` (1) |
-| R41 | 8 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/lib/datetime.test.ts` (5) |
+| R41 | 15 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1); `shared/lib/datetime.test.ts` (12) |
 
 ### Limitaciones y comprobaciones de plataforma
 
@@ -385,4 +386,35 @@ Generada con `c2-rtable.py` (fuera del repo) sobre el informe JSON de `npx vites
 - **Zoom nativo del navegador**: equivale a reducir el ancho de la ventana en píxeles CSS (1280 px a 400 % son 320 px), y eso se midió (375 y 320 px al 100 %); el atajo del navegador en una ventana con interfaz no se probó.
 - **320 px con el texto al 200 %**: ver «Reflow a 320 px»; fuera de R35.
 - El Chromium sin interfaz oculta las barras de desplazamiento; con barra vertical el contenido mide 15 px menos y las reglas por contenedor no cambian de rango en ningún ancho medido.
-- Safari y Firefox no se probaron (el proyecto ya exige navegadores con `oklch()`, `color-mix()` y `:has()`).
+- Safari y Firefox no se probaron (el proyecto ya exige navegadores con `oklch()`, `color-mix()` y `:has()`); en T15 solo se midió en Firefox 153 el espacio de las horas (apartado siguiente).
+
+## T15, espacio duro en las horas
+
+Fecha: 2026-10-29, America/Bogota. `formatTimeBogota` y `formatDateTimeBogota` (los dos formateadores que escriben «a. m.» o «p. m.») escriben U+00A0 entre la hora y el indicador y dentro de él, sea cual sea el espacio que escriba `Intl` (D28, R41); el espacio entre la fecha y la hora sigue siendo normal, para que la línea pueda cortar ahí. El cambio está solo en `src/shared/lib/datetime.ts` y en sus pruebas: ningún componente, catálogo ni hoja de estilos. Antes de T15 el aviso «Llegada confirmada» y cualquier texto con hora podían partir «p. m.» de la hora, e incluso «p.» de «m.», en un ancho estrecho; las tarjetas de preregistro solo lo evitaban con `text-wrap: balance` (C2).
+
+**Qué se midió.** Chromium («Google Chrome for Testing» 153.0.8010.12, sin interfaz y con `--no-sandbox`) contra el build de la rama (`4a741ad`, `VITE_API_URL=http://127.0.0.1:3012`, `vite preview` en 5186) y la API sintética de siempre, con `POST /__reset` antes de cada serie. Como «antes», el build de cierre de C2 (`dist-c2`, sin la normalización) con el mismo script (`c3-hour-spacing.mjs`, fuera del repo), que recorre con `Range.getClientRects()` cada carácter de cada texto con hora, agrupa los caracteres por línea y anota qué espacios escribe la hora, si sus letras caen en una sola línea y si alguna línea acaba en «a.» o «p.» (o empieza por «m.»).
+
+| Medida | Antes (C2) | Después (T15) |
+| --- | --- | --- |
+| Espacios dentro de la hora del aviso «Llegada confirmada» | U+0020 y U+0020 | U+00A0 y U+00A0 |
+| Aviso con la hora partida entre líneas, barrido de 320 a 900 px de 1 en 1 (581 anchos) | 57 anchos (324 a 343 y 511 a 547) | **0** |
+| Aviso con «a.» o «p.» al final de línea o «m.» al inicio | 25 anchos (340 a 343 y 527 a 547) | **0** |
+| Aviso con un espacio que no es U+00A0 dentro de la hora | 581 anchos | **0** |
+| Aviso a 375 px | «Llegada confirmada. Hora de» / «llegada: 29/10/26, 12:38 p. m. Ver» / «atención» | igual, con la hora de ese momento («12:40 p. m.»): a 375 px la hora ya cabía entera, el corte caía en otro sitio |
+| Tarjetas de preregistro («Preregistro» y «Expira»: 6 fechas antes de confirmar y 4 después) con la hora partida, mismo barrido | 0 (C2 lo atajaba con CSS) | 0, y todas con U+00A0 y U+00A0 |
+| Tablas de `/triage` y `/cola` (8 horas cada una a 375 px) | U+0020 y U+0020, una línea | U+00A0 y U+00A0, una línea |
+| `scrollWidth` frente a `clientWidth`: recepción con el aviso, de 320 a 900 px; `/triage` y `/cola` a 320, 375, 768, 1024 y 1440 px | iguales en todos | iguales en todos |
+| Matriz de desbordamiento de T13 (23 estados, 4 anchos, texto al 100 % y al 200 %, incluido el aviso de llegada confirmada) | 0 de 184 | **0 de 184** |
+| 320 px (reflow), 23 estados | 0 al 100 % y 17 al 200 % | 0 al 100 % y 17 al 200 %: los mismos elementos y anchos (aviso 337 px, «Siguiente» 366, «Próximamente» 334); fuera de R35 |
+| Mensajes de consola o errores de página | 0 | 0 |
+
+**Un segundo motor.** Firefox 153.0 (el de Playwright, `firefox-1538`) con el mismo build (`c3-firefox.mjs`): su `Intl` crudo escribe U+0020 y U+0020 en «3:40 p. m.», como Chromium y Node, y la aplicación escribe U+00A0 y U+00A0 en las 6 fechas de las tarjetas, el aviso de llegada confirmada y las 8 y 8 horas de `/triage` y `/cola`; `scrollWidth` es igual a `clientWidth` (375 px) en los tres dashboards y no hay mensajes de consola.
+
+**En Node** (pruebas de Vitest, 765 en 42 archivos): las cadenas exactas `8:05 a. m.`, `11:30 p. m.`, `27/10/26, 8:05 a. m.` y `27/10/26, 11:30 p. m.` con U+00A0 en la hora y U+0020 tras la coma; ni U+0020 ni U+202F dentro de la hora; el mismo resultado si el motor escribiera U+0020, U+00A0 o U+202F (simulado); y `formatBogota`, `formatDateBogota` y `formatCivilDate` sin reescribir nada.
+
+**Qué no se midió.**
+
+- **U+00A0 y U+202F en un motor real**: los tres motores medidos (Node 22.23.1 con ICU 78.2, Chromium 153 y Firefox 153) escriben U+0020; los casos en que el motor escribe otro espacio se simulan en la prueba (`Intl.DateTimeFormat.prototype.format` sustituido), no se midieron. Safari y WebKit no se probaron.
+- **Otra forma del indicador**: la normalización solo reconoce «a. m.» y «p. m.» con su espacio interior; si una versión de ICU escribiera «a.m.» o «AM», la hora volvería a poder partirse, y las pruebas de cadena exacta lo detectarían al actualizar el motor (`design.md`, Riesgos).
+- **Lector de pantalla**: no se probó cómo anuncia U+00A0 en «8:05 a. m.» (se espera lo mismo que con un espacio normal).
+- Como en T13: API sintética y no NestJS ni PostgreSQL, y un Chromium sin interfaz.

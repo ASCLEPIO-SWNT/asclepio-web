@@ -131,6 +131,7 @@ const NEW_CLASSES = [
   'prereg__foot',
   'prereg__buttons',
   'fact--wide',
+  'fact__time',
   'reject',
   'panel-state',
   'panel-state__icon',
@@ -628,10 +629,12 @@ describe('UI-02-web hoja de estilos del dashboard', () => {
     expect(valueOf('.dashboard .prereg .check', 'text-wrap')).toBe('balance');
   });
 
-  it('R10: los datos de la tarjeta reparten sus líneas, de modo que «28/10/26, 2:05 p. m.» no parte la hora de «p. m.»', () => {
+  it('R10: la fecha y la hora de la tarjeta reparten sus líneas, de modo que «28/10/26, 2:05 p. m.» no parte la hora de «p. m.»', () => {
     // Chromium escribe espacios normales (U+0020) en «2:05 p. m.»: sin esta regla, a 768 px la
-    // columna «Expira» partía «28/10/26, 2:05» y «p. m.».
-    expect(valueOf('.prereg__facts dd', 'text-wrap')).toBe('balance');
+    // columna «Expira» partía «28/10/26, 2:05» y «p. m.». Solo esos dos valores: repartir
+    // «Cédula de ciudadanía 1032456789» lo partía en «Cédula de / ciudadanía 1032456789».
+    expect(valueOf('.prereg__facts .fact__time', 'text-wrap')).toBe('balance');
+    expect(valueOf('.prereg__facts dd', 'text-wrap')).toBeUndefined();
   });
 
   it('R8: el «+» de «100+» no agranda la línea: la fila de una sede con «100+» mide lo mismo que las demás', () => {

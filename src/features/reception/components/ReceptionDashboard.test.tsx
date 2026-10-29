@@ -340,6 +340,16 @@ describe('UI-02-web dashboard de recepción', () => {
       expect(follows(confirm, reject)).toBe(true);
     });
 
+    it('R10: solo los valores de «Preregistro» y «Expira» llevan fact__time, la clase que reparte la fecha y la hora en dos líneas parejas', async () => {
+      setup();
+      const item = await card();
+      const timed = [...item.querySelectorAll('dl.prereg__facts dd')]
+        .filter((dd) => dd.classList.contains('fact__time'))
+        .map((dd) => dd.previousElementSibling?.textContent);
+      // «Documento» no la lleva: «Cédula de ciudadanía / 1032456789» se parte mejor sin repartir.
+      expect(timed).toEqual(['Preregistro', 'Expira']);
+    });
+
     it('R10: un paciente sin documento omite «Documento» y uno sin fecha de nacimiento muestra «Edad estimada»', async () => {
       setup({ [TRAY]: json(200, [NN]) });
       const item = await card('Paciente NN');

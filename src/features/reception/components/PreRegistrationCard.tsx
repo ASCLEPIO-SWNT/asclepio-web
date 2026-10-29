@@ -48,20 +48,25 @@ const IDENTITY_VIEW = {
   unverified: { icon: ExclamationTriangleIcon, tone: 'warn' },
 } as const;
 
-/** Un dato del paciente: `dt` y `dd` contiguos dentro de un `div` de la rejilla de dos columnas. */
+/**
+ * Un dato del paciente: `dt` y `dd` contiguos dentro de un `div` de la rejilla de dos columnas.
+ * `time` marca una fecha con hora: el CSS la parte en dos líneas parejas, nunca entre la hora y «p. m.».
+ */
 function Fact({
   label,
   wide = false,
+  time = false,
   children,
 }: {
   label: string;
   wide?: boolean;
+  time?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className={wide ? 'fact--wide' : undefined}>
       <dt>{label}</dt>
-      <dd>{children}</dd>
+      <dd className={time ? 'fact__time' : undefined}>{children}</dd>
     </div>
   );
 }
@@ -164,10 +169,10 @@ export function PreRegistrationCard({
         <Fact label={t('feature_complaint')} wide>
           {preRegistration.chiefComplaintText}
         </Fact>
-        <Fact label={t('feature_pr_label')}>
+        <Fact label={t('feature_pr_label')} time>
           {formatDateTimeBogota(preRegistration.preRegisteredAt)}
         </Fact>
-        <Fact label={t('feature_expires')}>
+        <Fact label={t('feature_expires')} time>
           {formatDateTimeBogota(preRegistration.expiresAt)}
         </Fact>
       </dl>

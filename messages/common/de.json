@@ -98,5 +98,16 @@
   "landing_capability_reception": "Vernetzter Empfang",
   "landing_capability_triage": "Triagebeurteilung",
   "landing_roles": "Rollen der Plattform",
-  "common_toggle_theme": "Design wechseln"
+  "common_toggle_theme": "Design wechseln",
+  "dash_indicators": "Kennzahlen",
+  "dash_stat_loading": "Kennzahl wird geladen…",
+  "dash_stat_error": "Laden fehlgeschlagen",
+  "dash_stat_forbidden": "Keine Berechtigung",
+  "dash_live": "Aktualisiert sich alle {seconds} s",
+  "dash_at_least": "Mindestens {count}",
+  "dash_retry_named": "Erneut versuchen: {name}",
+  "dash_view_all_encounters": "Alle Behandlungen ansehen",
+  "dash_col_action": "Aktion",
+  "guide_queue": "Diese Seite fasst die Behandlungen nach Status zusammen: wartend auf Triage, triagiert und in Behandlung. Darunter sehen Sie die neuesten Behandlungen; öffnen Sie eine, um die Angaben einzusehen. Die Seite aktualisiert sich regelmäßig von selbst; mit Aktualisieren rufen Sie sofort den aktuellen Stand ab. Die Warteschlange nach Stufe und Wartezeit ist noch nicht verfügbar. Die Anleitung liest keine Patientendaten vor.",
+  "guide_reports": "Diese Seite fasst die Behandlungen nach Status zusammen sowie jene, die an den einzelnen Standorten auf die Triage warten. Die Seite aktualisiert sich regelmäßig von selbst; mit Aktualisieren rufen Sie sofort den aktuellen Stand ab. Berichte zu Zeiten und der CSV-Download sind noch nicht verfügbar. Die Seite zeigt keine Patientendaten an."
 }

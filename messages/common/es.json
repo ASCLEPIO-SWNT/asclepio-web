@@ -98,5 +98,16 @@
   "landing_capability_reception": "Recepción conectada",
   "landing_capability_triage": "Valoración de triage",
   "landing_roles": "Roles de la plataforma",
-  "common_toggle_theme": "Cambiar tema"
+  "common_toggle_theme": "Cambiar tema",
+  "dash_indicators": "Indicadores",
+  "dash_stat_loading": "Cargando indicador…",
+  "dash_stat_error": "No se pudo cargar",
+  "dash_stat_forbidden": "Sin permiso",
+  "dash_live": "Se actualiza cada {seconds} s",
+  "dash_at_least": "Al menos {count}",
+  "dash_retry_named": "Reintentar: {name}",
+  "dash_view_all_encounters": "Ver todas las atenciones",
+  "dash_col_action": "Acción",
+  "guide_queue": "Esta pantalla resume las atenciones por estado: en espera de triage, clasificadas y en atención. Debajo verás las atenciones más recientes; abre una para consultar su detalle. Se actualiza sola de forma periódica; usa Actualizar para consultar al instante. La cola por nivel y tiempo de espera todavía no está disponible. La guía no lee datos de pacientes.",
+  "guide_reports": "Esta pantalla resume las atenciones por estado y las que esperan triage en cada sede. Se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Los reportes de tiempos y la descarga del CSV todavía no están disponibles. La pantalla no muestra datos de pacientes."
 }

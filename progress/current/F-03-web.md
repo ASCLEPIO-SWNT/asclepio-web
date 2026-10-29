@@ -25,3 +25,7 @@ El usuario aprobó expresamente por chat el plan completo «F-03-web: dashboard 
 Specs/F-03-web con R1–R24 y T1–T6 revisadas por leader: 0 preguntas abiertas; coinciden con el plan completo aprobado expresamente por el usuario en el mensaje actual. Estado spec_ready registrado antes del código. La aprobación por chat ya está recibida mediante PLEASE IMPLEMENT THIS PLAN; se mantiene esa autorización sin pedirla de nuevo.
 
 Estado: in_progress. T1 foundation; T2 y T3 independientes tras T1; T4 UI; T5 integración; T6 QA/reviewer.
+
+## Verificación final previa al cierre
+
+T1–T5 completas; QA visual y funcional final registrada en docs/f03-verification.md. ./init.sh final VERDE, FAIL0/WARN0. Reporte JSON:399/399 pruebas,0fallidas/pendientes. Sin avances nuevos en origin/main tras fetch previo a entrega; sigue en c94aae5. Revisión independiente pendiente de firma del informe C1–C8; T6 se cierra con ese resultado. API real/zoom nativo/emulación de movimiento pendientes documentados expresamente.

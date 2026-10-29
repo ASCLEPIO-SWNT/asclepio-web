@@ -25,6 +25,7 @@ import { ViewForbidden } from '../../../shared/ui/ViewForbidden';
 import { encounterKey, useEncounter } from '../hooks/useEncounter';
 import { CancelEncounterForm } from './CancelEncounterForm';
 import { EncounterTimeline } from './EncounterTimeline';
+import { ClinicalCapturePanel } from './ClinicalCapturePanel';
 
 /** Roles de cancelación (PA-F02-3). */
 const CANCEL_ROLES: readonly StaffRole[] = ['RECEPTION', 'NURSE'];
@@ -124,6 +125,19 @@ function EncounterDetailPage({ id }: { id: string }) {
           <h2 id="patient-title">{t('feature_patient')}</h2>
           <PatientDetails patient={encounter.patient} />
         </section>
+
+        {(me.role === 'NURSE' || me.role === 'PHYSICIAN') && (
+          <>
+            {me.role === 'NURSE' && encounter.status === 'WAITING_TRIAGE' && (
+              <p>
+                <Link className="button" to={`/triage/${encounter.id}`}>
+                  {t('clinical_open')}
+                </Link>
+              </p>
+            )}
+            <ClinicalCapturePanel encounterId={encounter.id} />
+          </>
+        )}
 
         {canCancel && (
           <CancelEncounterForm

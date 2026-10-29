@@ -111,8 +111,8 @@ describe('rutas y sesión', () => {
     );
   });
 
-  // D4 de F-02-web: /recepcion ya no es un marcador; R23 cubre los otros tres roles.
-  it.each(['NURSE', 'PHYSICIAN', 'ADMIN'] as const)(
+  // F-03 supplies the nursing workspace; only medicine and reports remain placeholders.
+  it.each(['PHYSICIAN', 'ADMIN'] as const)(
     'R23: el marcador del inicio de %s tiene h1 y la feature que lo trae, sin acciones',
     async (role) => {
       fakeApi({ 'GET /api/v1/me': json(200, staffMe[role]) });

@@ -14,7 +14,10 @@ export interface EncounterFilters {
 }
 
 /** Lista de atenciones (R28): `limit=50`, `offset` y solo los filtros elegidos. */
-export function useEncounters({ status, siteId, offset }: EncounterFilters) {
+export function useEncounters(
+  { status, siteId, offset }: EncounterFilters,
+  { manualRefresh = false }: { manualRefresh?: boolean } = {},
+) {
   return useQuery({
     queryKey: [...ENCOUNTERS_KEY, { status, siteId, offset }],
     queryFn: () =>
@@ -31,5 +34,8 @@ export function useEncounters({ status, siteId, offset }: EncounterFilters) {
         }),
       ),
     retry: false,
+    ...(manualRefresh
+      ? { refetchOnWindowFocus: false, refetchOnReconnect: false }
+      : {}),
   });
 }

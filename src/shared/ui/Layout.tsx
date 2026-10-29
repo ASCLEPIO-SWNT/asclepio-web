@@ -19,11 +19,15 @@ export function Layout() {
         ? 'guide_registration'
         : pathname === '/recepcion'
           ? 'guide_reception'
-          : pathname === '/atenciones'
-            ? 'guide_encounters'
-            : pathname.startsWith('/atenciones/')
-              ? 'guide_detail'
-              : 'guide_pending';
+          : pathname === '/triage'
+            ? 'clinical_guide_tray'
+            : pathname.startsWith('/triage/')
+              ? 'clinical_guide_capture'
+              : pathname === '/atenciones'
+                ? 'guide_encounters'
+                : pathname.startsWith('/atenciones/')
+                  ? 'clinical_guide_detail'
+                  : 'guide_pending';
   return (
     <div
       className={`layout ${publicHome ? 'layout--public' : login ? 'layout--login' : 'layout--workspace'}`}

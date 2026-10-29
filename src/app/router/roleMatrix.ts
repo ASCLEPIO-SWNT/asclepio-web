@@ -29,6 +29,7 @@ export const ROLE_ROUTES: readonly RoleRoute[] = [
     navLabel: 'Triage',
     feature: 'F-03 a F-05-web',
     roles: ['NURSE'],
+    subpaths: ['/triage/:id'],
   },
   {
     path: '/cola',

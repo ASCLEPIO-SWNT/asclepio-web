@@ -51,7 +51,18 @@ function setup(
   routes: Record<string, Handler> = {},
   { role = 'NURSE', state }: { role?: StaffRole; state?: unknown } = {},
 ) {
-  const net = fakeApi({ [DETAIL]: json(200, encounter), ...routes });
+  const net = fakeApi({
+    [DETAIL]: json(200, encounter),
+    [`${DETAIL}/clinical-capture`]: json(200, {
+      encounterId: encounter.id,
+      status: encounter.status,
+      chiefComplaintText: encounter.chiefComplaintText,
+      complaintSource: encounter.complaintSource,
+      vitalSigns: [],
+      symptomFindings: [],
+    }),
+    ...routes,
+  });
   const user = userEvent.setup();
   const view = renderFeature(encounterRoutes, {
     entries: [{ pathname: `/atenciones/${ENCOUNTER_ID}`, state }],
@@ -277,9 +288,11 @@ describe('EncounterDetailPage — cancelación', () => {
     await user.click(
       within(form).getByRole('button', { name: 'Confirmar cancelación' }),
     );
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      'Atención cancelada.',
-    );
+    expect(
+      (await screen.findByText('Atención cancelada.')).closest(
+        '[role="status"]',
+      ),
+    ).toBeInTheDocument();
     expect(net.calls(CANCEL)[0].body).toEqual({
       reason: 'Se retiró antes del triage',
     });

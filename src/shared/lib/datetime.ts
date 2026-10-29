@@ -9,9 +9,8 @@ export function formatBogota(iso: string): string {
   return bogota.format(new Date(iso));
 }
 
-// Formateadores de los dashboards (D28): en America/Bogota y sin segundos. Devuelven la salida de
-// `Intl` tal cual, con el espacio que escriba cada versión de ICU en «8:05 a. m.»; las pruebas
-// comparan con `\s` o con `norm`. `formatBogota` conserva los segundos para las demás pantallas.
+// Formateadores de los dashboards (D28): en America/Bogota y sin segundos. `formatBogota` conserva
+// los segundos para las demás pantallas y no cambia.
 const bogotaTime = new Intl.DateTimeFormat('es-CO', {
   timeZone: 'America/Bogota',
   hour: 'numeric',
@@ -27,9 +26,18 @@ const bogotaDateTime = new Intl.DateTimeFormat('es-CO', {
   timeStyle: 'short',
 });
 
-/** Hora de una marca ISO-8601 (UTC, del servidor) en America/Bogota, sin segundos: «8:05 a. m.». */
+// El espacio que `Intl` escribe en «8:05 a. m.» depende del motor y de la versión de ICU (U+0020 medido
+// en Chromium 153, Firefox 153 y Node 22.23.1; otras versiones, U+00A0 o U+202F). Con espacios normales,
+// en un ancho estrecho «p. m.» se parte de la hora, o «p.» de «m.»: se pasan a U+00A0 el espacio que
+// precede al indicador y el de dentro, escriba lo que escriba el motor. El de la fecha y la hora no se
+// toca, para que la línea pueda cortar ahí.
+function joinMeridiem(text: string): string {
+  return text.replace(/\s+([ap])\.\s+m\./g, '\u00A0$1.\u00A0m.');
+}
+
+/** Hora de una marca ISO-8601 (UTC, del servidor) en America/Bogota, sin segundos: «8:05 a. m.» (U+00A0). */
 export function formatTimeBogota(iso: string): string {
-  return bogotaTime.format(new Date(iso));
+  return joinMeridiem(bogotaTime.format(new Date(iso)));
 }
 
 /** Fecha de una marca ISO-8601 en America/Bogota (puede ser el día anterior al UTC): «27/10/26». */
@@ -37,9 +45,9 @@ export function formatDateBogota(iso: string): string {
   return bogotaDate.format(new Date(iso));
 }
 
-/** Fecha y hora en America/Bogota, sin segundos: «27/10/26, 8:05 a. m.». */
+/** Fecha y hora en America/Bogota, sin segundos: «27/10/26, 8:05 a. m.» (U+00A0 en la hora). */
 export function formatDateTimeBogota(iso: string): string {
-  return bogotaDateTime.format(new Date(iso));
+  return joinMeridiem(bogotaDateTime.format(new Date(iso)));
 }
 
 /**

@@ -12,6 +12,8 @@ export interface ClinicalFormProps {
   disabled?: boolean;
   onConflict: () => void;
   onUnavailable?: (status: 403 | 404) => void;
+  /** Avisa a la página de si el formulario tiene cambios sin guardar (UI-03-web R1–R3). */
+  onDirtyChange?: (dirty: boolean) => void;
 }
 export function clinicalFieldMessage(message: string | undefined) {
   if (!message) return undefined;

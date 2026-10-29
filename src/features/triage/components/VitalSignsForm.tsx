@@ -29,6 +29,7 @@ export function VitalSignsForm({
   disabled = false,
   onConflict,
   onUnavailable,
+  onDirtyChange,
 }: ClinicalFormProps) {
   const { t } = useI18n();
   const mutation = useRecordVitalSigns(encounterId);
@@ -46,12 +47,17 @@ export function VitalSignsForm({
     reset,
     setError,
     setFocus,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<VitalSignsInput, unknown, VitalSignsOutput>({
     resolver: zodResolver(vitalSignsSchema),
     defaultValues: clinicalCaptureInput,
     shouldFocusError: true,
   });
+  // UI-03-web R1–R3: la página decide el aviso de cambios sin guardar con este estado.
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
   useEffect(() => {
     if (!disabled && !mutation.isPending && pendingFocus.current) {
       setFocus(pendingFocus.current);

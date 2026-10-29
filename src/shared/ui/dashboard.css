@@ -759,3 +759,20 @@
     }
   }
 }
+
+/* UI-03-web: diálogo de cambios sin guardar y estado de error de ruta (solo tokens, R29). */
+.confirm-dialog {
+  max-width: 32rem;
+  border: 1px solid var(--border);
+  color: var(--fg);
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.confirm-dialog::backdrop {
+  background: color-mix(in oklch, var(--fg) 40%, transparent);
+}
+
+.route-error {
+  text-align: center;
+}

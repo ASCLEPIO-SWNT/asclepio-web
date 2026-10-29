@@ -333,6 +333,10 @@ describe('F-03 nurse routes', () => {
     await screen.findByRole('button', { name: 'Guardar toma' });
     await user.type(screen.getByLabelText(/Frecuencia cardiaca/), '87');
     await act(() => router.navigate(`/triage/${otherId}`));
+    // UI-03-web R1: con cambios sin guardar, cambiar de atención pide confirmación.
+    await user.click(
+      await screen.findByRole('button', { name: 'Salir sin guardar' }),
+    );
     await screen.findByText('Paciente NN');
     expect(await screen.findByLabelText(/Frecuencia cardiaca/)).toHaveValue(
       null,

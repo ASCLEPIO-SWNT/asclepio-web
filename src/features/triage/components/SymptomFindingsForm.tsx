@@ -25,6 +25,7 @@ export function SymptomFindingsForm({
   disabled = false,
   onConflict,
   onUnavailable,
+  onDirtyChange,
 }: ClinicalFormProps) {
   const { t } = useI18n();
   const mutation = useRecordSymptomFindings(encounterId);
@@ -43,13 +44,18 @@ export function SymptomFindingsForm({
     reset,
     setError,
     setFocus,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<SymptomFindingsInput, unknown, SymptomFindingsOutput>({
     resolver: zodResolver(symptomFindingsSchema),
     defaultValues: emptyDraft(),
     shouldFocusError: true,
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+  // UI-03-web R1–R3: la página decide el aviso de cambios sin guardar con este estado.
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
   useEffect(() => {
     if (!disabled && !mutation.isPending && pendingFocus.current) {
       setFocus(pendingFocus.current);

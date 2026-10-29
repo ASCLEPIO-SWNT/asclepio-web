@@ -116,5 +116,9 @@
   "common_route_error_body": "Der Bildschirm konnte nicht angezeigt werden. Sie können es erneut versuchen oder zum Start zurückkehren.",
   "common_route_chunk_error_body": "Der Bildschirm konnte nicht geladen werden. Prüfen Sie Ihre Verbindung und versuchen Sie es erneut.",
   "common_route_home": "Zurück zum Start",
-  "common_route_loading": "Bildschirm wird geladen…"
+  "common_route_loading": "Bildschirm wird geladen…",
+  "common_unsaved_title": "Es gibt ungespeicherte Änderungen",
+  "common_unsaved_body": "Wenn Sie jetzt gehen, gehen die eingegebenen Daten verloren.",
+  "common_unsaved_leave": "Ohne Speichern verlassen",
+  "common_unsaved_stay": "Weiter bearbeiten"
 }

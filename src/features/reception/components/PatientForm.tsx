@@ -4,7 +4,7 @@ import {
 } from '../../../shared/lib/featureMessages';
 import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm, useWatch, type Path, type Resolver } from 'react-hook-form';
 import type { DocumentType, Patient } from '../../../shared/api/client';
 import {
@@ -80,9 +80,12 @@ function FieldMessage({
 export function PatientForm({
   mode,
   onCreated,
+  onDirtyChange,
 }: {
   mode: PatientFormMode;
   onCreated: (patient: Patient) => void;
+  /** Avisa a la página de si el alta tiene cambios sin guardar (UI-03-web R1–R3). */
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { t } = useI18n();
   const create = useCreatePatient();
@@ -93,7 +96,7 @@ export function PatientForm({
     handleSubmit,
     control,
     setError,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<FormValues>({
     // El esquema depende del modo; los dos trabajan sobre los mismos nombres de campo.
     resolver: (isDocument
@@ -110,6 +113,11 @@ export function PatientForm({
     },
     shouldFocusError: true,
   });
+  // UI-03-web R1–R3: la página decide el aviso de cambios sin guardar con este estado.
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
   const ageMode = useWatch({ control, name: 'ageMode' });
   const showBirthDate = isDocument || ageMode === 'birthDate';
   const showAge = !isDocument && ageMode === 'estimatedAge';

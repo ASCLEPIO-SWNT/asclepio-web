@@ -116,5 +116,9 @@
   "common_route_error_body": "The screen could not be displayed. You can try again or go back to the start.",
   "common_route_chunk_error_body": "The screen could not be loaded. Check your connection and try again.",
   "common_route_home": "Back to start",
-  "common_route_loading": "Loading the screen…"
+  "common_route_loading": "Loading the screen…",
+  "common_unsaved_title": "There are unsaved changes",
+  "common_unsaved_body": "If you leave now, the data you entered will be lost.",
+  "common_unsaved_leave": "Leave without saving",
+  "common_unsaved_stay": "Keep editing"
 }

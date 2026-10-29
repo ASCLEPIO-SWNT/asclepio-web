@@ -81,9 +81,9 @@ Se comparó la implementación con `develop` del frontend anterior: `nurse-dashb
 
 La diferencia15px es la barra vertical. Capturas estables de bandeja/captura en los cuatro anchos en `docs/ui-evidence/f03-*`. Se descartó una captura fullPage defectuosa de la herramienta y se sustituyó por captura del viewport real; no se reprodujo un fallo de distribución en la página.
 
-- Claro/oscuro, alto contraste y fuente OpenDyslexic aplicados sin perder FC91. Axiforma/OpenDyslexic presentes en los estilos computados; la carga local de fuentes ya está verificada en UI-01.
+- Claro y oscuro revisados en bandeja/captura a los cuatro anchos, sin desbordamiento. Alto contraste y fuente OpenDyslexic aplicados sin perder FC91. Axiforma/OpenDyslexic presentes en los estilos computados; la carga local de fuentes ya está verificada en UI-01. Evidencia adicional `f03-capture-dark-1440.jpg` y `f03-tray-dark-1440.jpg`.
 - Texto200%: raíz32px;375 y1440 conservan clientWidth=scrollWidth y el borrador. Captura `f03-capture-200-contrast.jpg`.
-- Teclado: foco de validaciones y selección explícita de controles; botones/enlaces nativos, navegación plegable y etiquetas accesibles. Regresiones ARIA y foco en las pruebas de ambos forms.
+- Teclado: foco de validaciones y selección explícita de controles; Tab real recorre frecuencia respiratoria→saturación→oxígeno en el orden visible. Botones/enlaces nativos, navegación plegable y etiquetas accesibles. Regresiones ARIA y foco en las pruebas de ambos forms.
 - El atajo de zoom del navegador fue intentado sin cambio efectivo de escala en IAB; **zoom nativo200% queda como comprobación manual pendiente de plataforma**. La ampliación200% del texto y el reflujo sí se ejecutaron.
 - La regla existente `prefers-reduced-motion: reduce` elimina animaciones/transiciones y scroll suave, también en estas pantallas. **La emulación nativa de esa preferencia queda pendiente**, al no exponerla el navegador automatizable.
 
@@ -97,4 +97,4 @@ Falta `.env` del backend local y la preparación de su esquema/cuentas de prueba
 
 Tras esta entrega, F-04-web requiere el contrato de sugerencia publicado y F-05-web el de decisión. Cola y reportes continúan pendientes; los accesos actuales mantienen esa indicación.
 
-Revisión independiente C1–C8 y cierre administrativo: en curso al crear este registro; el veredicto final se añade en `progress/history.md` antes de marcar F-03-web done.
+Revisión independiente **APROBADA**, C1–C8 completos y R1–R24 cubiertos, sin defectos bloqueantes. El veredicto y el cierre de F-03-web se registran en `progress/history.md`; los informes completos se archivan localmente fuera del repositorio conforme al harness.

@@ -318,9 +318,21 @@ Con la mirada de quien diseña (alineaciones, espacios, cortes de línea, cajas 
 - Con una tabla de ancho automático, las columnas se reparten según el contenido: un estado o un nombre más largo mueve las columnas unos píxeles al refrescar («Sede» a 657 px con los seis estados y a 665 px con dos); sin desbordamiento ni salto vertical. Fijarlas (`table-layout: fixed`) cambiaría el aspecto aprobado.
 - Los tres huecos entre bloques son iguales (24 px) y los bordes izquierdos del título, la barra de resumen, el panel y la franja coinciden (x = 368 a 1440 px); no hay cajas que sobren.
 
+### Retirada de CSS y claves sin uso (T14)
+
+Antes de retirar nada se guardaron 24 capturas PNG de página completa con el build de `d6f302e` (las 16 de los dashboards, claro y oscuro, a 375 y 1440 px, y 8 de las pantallas que comparten `index.css` y no son dashboards: `/triage/:id`, `/atenciones`, `/atenciones/:id` y `/recepcion/registro`, a 375 y 1440 px); una segunda pasada del mismo build dio 24 de 24 idénticas con `cmp`. Después se retiraron cinco claves de `messages/features/*.json` (`feature_reception_title`, `clinical_workspace`, `clinical_workflow_title`, `clinical_workflow_body` y `clinical_waiting_only`, sin lector en `src`) y 106 líneas de `src/index.css` (`.cards`, `.pending-badge`, `.pre-registration`, `.clinical-board`, `.clinical-tray`, `.clinical-patient*`, `.clinical-empty*`, `.clinical-pagination` y `.clinical-summary*`, sin ninguna aparición fuera de `index.css`), y se volvió a fotografiar con el build nuevo (CSS de 49.22 a 47.69 kB):
+
+| Conjunto | Capturas | Idénticas byte a byte (`cmp`) |
+| --- | --- | --- |
+| Cuatro dashboards, claro y oscuro, 375 y 1440 px | 16 | 16 |
+| `/triage/:id`, `/atenciones` y `/atenciones/:id`, 375 y 1440 px | 6 | 6 |
+| `/recepcion/registro`, 375 y 1440 px | 2 | 1 en la primera pasada; la de 1440 px parpadea entre dos renderizados |
+
+La de `/recepcion/registro` a 1440 px difiere en 61 píxeles de una franja de 3 px del borde superior de la píldora de herramientas de la cabecera, con 1 a 5 niveles de diferencia por canal (suavizado del borde). No es efecto de lo retirado: el mismo build nuevo, capturado 4 veces, dio los bytes de la referencia en 2 y la otra versión en 2.
+
 ### Tabla R → prueba
 
-Generada con `c2-rtable.py` (fuera del repo) sobre el informe JSON de `npx vitest run --reporter=json`: 752 pruebas en 42 archivos, todas en verde. El script comprueba de forma mecánica que cada R1 a R41 tiene al menos una prueba cuyo nombre empieza por «R<n>:» bajo un `describe('UI-02-web …')`, y sale con error si falta alguna. Resultado: **ninguna R sin prueba**. Los archivos van sin el prefijo `src/`; el nombre completo de cada prueba es `archivo::R<n>: …`.
+Generada con `c2-rtable.py` (fuera del repo) sobre el informe JSON de `npx vitest run --reporter=json` del árbol final (cierre de T14): 758 pruebas en 42 archivos, todas en verde. El script comprueba de forma mecánica que cada R1 a R41 tiene al menos una prueba cuyo nombre empieza por «R<n>:» bajo un `describe('UI-02-web …')`, y sale con error si falta alguna. Resultado: **ninguna R sin prueba**. Los archivos van sin el prefijo `src/`; el nombre completo de cada prueba es `archivo::R<n>: …` (la nota `progress/impl_UI-02-web.md` da, además, el nombre de una prueba por R).
 
 | R | Pruebas | Archivos (número de pruebas) |
 | --- | --- | --- |
@@ -352,7 +364,7 @@ Generada con `c2-rtable.py` (fuera del repo) sobre el informe JSON de `npx vites
 | R26 | 4 | `features/queue/components/QueuePage.test.tsx` (1); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1) |
 | R27 | 4 | `app/router/dashboards.test.tsx` (4) |
 | R28 | 22 | `app/router/dashboards.test.tsx` (16); `features/queue/components/QueuePage.test.tsx` (3); `features/reception/components/ReceptionDashboard.test.tsx` (1); `features/reports/components/ReportsPage.test.tsx` (1); `features/triage/components/TriageDashboard.test.tsx` (1) |
-| R29 | 13 | `app/router/dashboards.test.tsx` (13) |
+| R29 | 19 | `app/router/dashboards.test.tsx` (19) |
 | R30 | 11 | `shared/lib/encounterStatus.test.ts` (2); `shared/ui/dashboard.test.tsx` (7); `shared/ui/dashboardStyles.test.ts` (2) |
 | R31 | 7 | `shared/ui/dashboard.test.tsx` (4); `shared/ui/dashboardStyles.test.ts` (3) |
 | R32 | 4 | `shared/ui/dashboardStyles.test.ts` (4) |

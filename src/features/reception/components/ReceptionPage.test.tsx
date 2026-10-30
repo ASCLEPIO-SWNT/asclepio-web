@@ -322,11 +322,8 @@ describe('ReceptionPage — confirmación de llegada', () => {
 
   it.each([
     [problem(403), 'No tienes permiso para realizar esta acción.'],
-    [
-      networkError(),
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
-    ],
-    [problem(500), 'No se pudo completar la acción. Inténtalo de nuevo.'],
+    [networkError(), 'No hay conexión con el servidor.'],
+    [problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
     [problem(422), 'No se pudo completar la acción. Inténtalo de nuevo.'],
   ])(
     'R13: ante otro error muestra el error de acción (%#)',
@@ -457,7 +454,7 @@ describe('ReceptionPage — rechazo', () => {
   it.each([
     [409, 'Este preregistro ya no está pendiente.', true],
     [404, 'Este preregistro ya no existe.', true],
-    [500, 'No se pudo completar la acción. Inténtalo de nuevo.', false],
+    [500, 'El servidor tuvo un problema. Inténtalo de nuevo.', false],
     [403, 'No tienes permiso para realizar esta acción.', false],
   ])(
     'R16: con %i muestra "%s" (refresca la bandeja: %s)',

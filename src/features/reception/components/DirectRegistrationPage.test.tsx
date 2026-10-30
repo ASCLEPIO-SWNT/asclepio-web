@@ -181,12 +181,9 @@ describe('Registro directo — búsqueda', () => {
   });
 
   it.each([
-    [problem(500), 'No se pudo completar la acción. Inténtalo de nuevo.'],
+    [problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
     [problem(403), 'No tienes permiso para realizar esta acción.'],
-    [
-      networkError(),
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
-    ],
+    [networkError(), 'No hay conexión con el servidor.'],
   ])(
     'R19: si la búsqueda falla muestra un error de acción (%#)',
     async (handler, message) => {
@@ -525,11 +522,8 @@ describe('Registro directo — alta de paciente', () => {
   });
 
   it.each([
-    [problem(500), 'No se pudo completar la acción. Inténtalo de nuevo.'],
-    [
-      networkError(),
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
-    ],
+    [problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
+    [networkError(), 'No hay conexión con el servidor.'],
   ])(
     'R23: ante otro error muestra un error de acción y conserva lo escrito (%#)',
     async (handler, message) => {
@@ -714,7 +708,7 @@ describe('Registro directo — llegada', () => {
 
   it.each([
     [problem(422), 'La sede o el paciente ya no son válidos.'],
-    [problem(500), 'No se pudo completar la acción. Inténtalo de nuevo.'],
+    [problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
     [problem(403), 'No tienes permiso para realizar esta acción.'],
   ])(
     'R27: ante %# muestra el error de acción sin enlace y conserva lo escrito',
@@ -827,8 +821,8 @@ describe('UI-03-web textos traducidos', () => {
     );
     await user.click(within(form).getByRole('button', { name: 'Search' }));
     expect(await screen.findByRole('alert')).toHaveTextContent(
-      'Could not connect to the server. Check your connection and try again.',
+      'There is no connection to the server.',
     );
-    expect(screen.queryByText(/No se pudo conectar/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/No hay conexión/)).not.toBeInTheDocument();
   });
 });

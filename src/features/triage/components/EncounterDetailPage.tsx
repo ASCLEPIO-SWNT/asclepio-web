@@ -15,7 +15,11 @@ import {
   ARRIVAL_REGISTERED_NOTICE,
   noticeOf,
 } from '../../../shared/lib/notices';
-import { problemOf, statusOf } from '../../../shared/lib/problem';
+import {
+  isRetryableActionMessage,
+  problemOf,
+  statusOf,
+} from '../../../shared/lib/problem';
 import { ActionError } from '../../../shared/ui/ActionError';
 import { LoadError } from '../../../shared/ui/LoadError';
 import { LoadingState } from '../../../shared/ui/LoadingState';
@@ -58,6 +62,7 @@ function EncounterDetailPage({ id }: { id: string }) {
   const detail = useEncounter(id);
   const [cancelled, setCancelled] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [cancelRetry, setCancelRetry] = useState<(() => void) | undefined>();
   const [gone, setGone] = useState(false);
   const arrivalNotice = noticeOf(location.state) === ARRIVAL_REGISTERED_NOTICE;
 
@@ -148,12 +153,13 @@ function EncounterDetailPage({ id }: { id: string }) {
               setCancelError(null);
             }}
             onCancelled={() => setCancelled(true)}
-            onFailed={(message, status) => {
+            onFailed={(message, status, retry) => {
               if (status === 404) {
                 setGone(true);
                 return;
               }
               setCancelError(message);
+              setCancelRetry(() => retry);
               if (status === 409) {
                 void queryClient.invalidateQueries({
                   queryKey: encounterKey(id),
@@ -163,7 +169,13 @@ function EncounterDetailPage({ id }: { id: string }) {
           />
         )}
         {cancelError && (
-          <ActionError>{featureMessage(cancelError)}</ActionError>
+          <ActionError
+            onRetry={
+              isRetryableActionMessage(cancelError) ? cancelRetry : undefined
+            }
+          >
+            {featureMessage(cancelError)}
+          </ActionError>
         )}
 
         <EncounterTimeline events={encounter.events} />

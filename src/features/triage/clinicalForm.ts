@@ -63,5 +63,8 @@ export function clinicalFailure<T extends FieldValues>(
     }
     return 'clinical_review_fields';
   }
-  return status === null ? 'feature_network_error' : 'clinical_save_error';
+  // UI-03-web B1: red y 5xx usan los textos de R15 y R18.
+  if (status === null) return 'common_error_network';
+  if (status >= 500) return 'common_error_server';
+  return 'clinical_save_error';
 }

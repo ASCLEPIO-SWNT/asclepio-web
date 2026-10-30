@@ -4,13 +4,14 @@ import {
 } from '../../../shared/lib/featureMessages';
 import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Link, useNavigate } from 'react-router';
 import type { Patient, PublicSite } from '../../../shared/api/client';
 import { ARRIVAL_REGISTERED_NOTICE } from '../../../shared/lib/notices';
 import {
   actionErrorMessage,
+  isRetryableActionMessage,
   problemOf,
   statusOf,
 } from '../../../shared/lib/problem';
@@ -39,6 +40,8 @@ export function ArrivalForm({
   sites: PublicSite[] | null;
 }) {
   const { t } = useI18n();
+  // UI-03-web R15/R18: «Reintentar» vuelve a enviar el formulario con lo escrito.
+  const formRef = useRef<HTMLFormElement>(null);
   const navigate = useNavigate();
   const create = useCreateEncounter();
   const [actionError, setActionError] = useState<{
@@ -97,6 +100,7 @@ export function ArrivalForm({
       <h2 id="arrival-title">{t('feature_patient_selected')}</h2>
       <PatientDetails patient={patient} />
       <form
+        ref={formRef}
         className="form"
         aria-label={t('feature_arrival_register')}
         noValidate
@@ -144,7 +148,13 @@ export function ArrivalForm({
           <LoadingState>{t('feature_arrival_registering')}</LoadingState>
         )}
         {actionError && (
-          <ActionError>
+          <ActionError
+            onRetry={
+              isRetryableActionMessage(actionError.message)
+                ? () => formRef.current?.requestSubmit()
+                : undefined
+            }
+          >
             {featureMessage(actionError.message)}
             {actionError.conflict && (
               <>

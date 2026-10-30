@@ -90,7 +90,13 @@ Sin impacto en datos (sin migraciones; la web no tiene base de datos). Único ca
 - `f03Routes.test.tsx` R5 (ya adaptada): solo se añade el clic en «Salir sin guardar» antes de las mismas aserciones, como exige R1.
 - Helper de `SessionProvider.test.tsx`: llama a `session.restore()` antes de montar (D18).
 - `src/test/renderFeature.tsx` y `src/test/testApp.tsx`: `createQueryClient` (valores de D13) y `preloadFeatures` (mecánica del arnés para R28; la carga diferida real se prueba en `lazyRoutes.test.tsx`).
-- Pruebas de F-02 (y de F-03, si las hay) que afirman el texto de red de acción («No se pudo conectar con el servidor…») o el genérico de acción con un 5xx: pasan a `common_error_network` y `common_error_server` por B1. La lista exacta (`archivo::prueba`) la añade el `implementer` aquí y en `progress/impl_UI-03-web.md` al hacer el cambio; solo cambia el texto esperado, no el resto de aserciones.
+- Pruebas de F-02 (y de F-03) que afirmaban el texto de red de acción («No se pudo conectar con el servidor…») o el genérico de acción con un 5xx: pasan a `common_error_network` y `common_error_server` por B1. Solo cambia el texto esperado; el resto de aserciones no cambia:
+  - `src/shared/lib/problem.test.ts`::`R27: sin respuesta HTTP da el mensaje de conexión` (espera la clave `common_error_network`); `R36: cualquier otro error da el mensaje genérico` (el caso 500 sale de la tabla y pasa a la prueba nueva `R36: un 5xx da la clave del texto del servidor (UI-03-web B1)`; 400 y 429 siguen con el genérico).
+  - `src/features/reception/components/DirectRegistrationPage.test.tsx`::`R19: si la búsqueda falla muestra un error de acción` (casos 500 y red); `R23: ante otro error muestra un error de acción y conserva lo escrito` (casos 500 y red); `R27: ante %s muestra el error de acción sin enlace y conserva lo escrito` (caso 500).
+  - `src/features/reception/components/ReceptionPage.test.tsx`::`R13: ante otro error muestra el error de acción` (casos red y 500; el 422 sigue con el genérico); `R16: con %i muestra …` (caso 500).
+  - `src/features/triage/components/EncounterDetailPage.test.tsx`::`R36: ante otro error muestra un error de acción` (casos 500 y red).
+  - `src/features/triage/components/ClinicalCaptureForms.test.tsx`::`R18: keeps drafts after network failure and permits only a manual new attempt` (texto de red).
+  - Del propio slice: `DirectRegistrationPage.test.tsx`::`R20` (texto de red en inglés) y `networkErrors.test.tsx`::`R17` (texto de red y «Reintentar»).
 
 ## Riesgos y pruebas
 

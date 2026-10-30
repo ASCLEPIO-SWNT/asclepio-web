@@ -12,6 +12,7 @@ import {
   fakeApi,
   json,
   networkError,
+  pendingPreRegistration,
   problem,
   publicTenants,
   staffMe,
@@ -181,9 +182,10 @@ describe('UI-03-web errores de red y del servidor', () => {
     act(() => onlineManager.setOnline(false));
     await user.click(screen.getByRole('button', { name: 'Guardar toma' }));
     const form = screen.getByRole('form', { name: 'Signos vitales' });
-    expect(await within(form).findByRole('alert')).toHaveTextContent(
-      'No se pudo conectar con el servidor.',
-    );
+    const alert = await within(form).findByRole('alert');
+    // B1: el texto de red de R15, no el texto de acción anterior.
+    expect(alert).toHaveTextContent(NETWORK);
+    expect(alert).not.toHaveTextContent('No se pudo conectar con el servidor');
     expect(net.calls(VITALS)).toHaveLength(1);
 
     act(() => onlineManager.setOnline(true));
@@ -192,5 +194,107 @@ describe('UI-03-web errores de red y del servidor', () => {
     expect(screen.getByLabelText(/Frecuencia respiratoria/)).toHaveValue(18);
     expect(screen.getByLabelText(/Temperatura/)).toHaveValue(36.5);
     expect(screen.getByRole('button', { name: 'Guardar toma' })).toBeEnabled();
+
+    // «Reintentar» repite el envío con los valores escritos, solo al pulsarlo.
+    net.set(VITALS, problem(503));
+    await user.click(within(alert).getByRole('button', { name: 'Reintentar' }));
+    await waitFor(() => expect(net.calls(VITALS)).toHaveLength(2));
+    expect(net.calls(VITALS)[1].body).toEqual(net.calls(VITALS)[0].body);
+    expect(net.calls(VITALS)[1].body).toMatchObject({ respiratoryRate: 18 });
+  });
+
+  it('R18: una acción que recibe 5xx muestra el texto del servidor con «Reintentar», conserva lo escrito y no muestra detalles técnicos', async () => {
+    const { net, user } = setup(
+      '/recepcion/registro',
+      {
+        'GET /api/v1/pre-registrations': json(200, []),
+        'POST /api/v1/patients': problem(500, {
+          title: TITLE_SECRET,
+          detail: DETAIL_SECRET,
+        }),
+      },
+      'RECEPTION',
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Registrar paciente NN' }),
+    );
+    const form = screen.getByRole('form', { name: 'Registrar paciente NN' });
+    await user.type(
+      within(form).getByLabelText('Nombre completo'),
+      'Hombre NN',
+    );
+    await user.selectOptions(
+      within(form).getByLabelText('Dato de edad'),
+      'Edad estimada (años)',
+    );
+    await user.type(within(form).getByLabelText('Edad estimada (años)'), '45');
+    await user.selectOptions(within(form).getByLabelText('Sexo'), 'Masculino');
+    await user.click(
+      within(form).getByRole('button', { name: 'Guardar paciente' }),
+    );
+    const alert = await within(form).findByRole('alert');
+    expect(alert).toHaveTextContent(SERVER);
+    expect(alert).not.toHaveTextContent('No se pudo completar la acción');
+    expect(document.body).not.toHaveTextContent(DETAIL_SECRET);
+    expect(document.body).not.toHaveTextContent(TITLE_SECRET);
+    expect(within(form).getByLabelText('Nombre completo')).toHaveValue(
+      'Hombre NN',
+    );
+    expect(net.calls('POST /api/v1/patients')).toHaveLength(1);
+    await user.click(within(alert).getByRole('button', { name: 'Reintentar' }));
+    await waitFor(() =>
+      expect(net.calls('POST /api/v1/patients')).toHaveLength(2),
+    );
+  });
+
+  it('R15: confirmar una llegada sin red muestra el texto de red con «Reintentar», que repite la confirmación solo al pulsarlo', async () => {
+    const confirm = `POST /api/v1/pre-registrations/${pendingPreRegistration.id}/confirm`;
+    const { net, user } = setup(
+      '/recepcion',
+      {
+        'GET /api/v1/pre-registrations': json(200, [pendingPreRegistration]),
+        [confirm]: networkError(),
+      },
+      'RECEPTION',
+    );
+    const card = await screen.findByRole('article', {
+      name: pendingPreRegistration.patient.fullName!,
+    });
+    await user.click(within(card).getByRole('checkbox'));
+    await user.click(
+      within(card).getByRole('button', { name: 'Confirmar llegada' }),
+    );
+    const alert = await within(card).findByRole('alert');
+    expect(alert).toHaveTextContent(NETWORK);
+    expect(net.calls(confirm)).toHaveLength(1);
+    reconnect();
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(net.calls(confirm)).toHaveLength(1);
+    await user.click(within(alert).getByRole('button', { name: 'Reintentar' }));
+    await waitFor(() => expect(net.calls(confirm)).toHaveLength(2));
+  });
+
+  it('R15: cancelar una atención sin red muestra el texto de red con «Reintentar», que repite la cancelación con el mismo motivo', async () => {
+    const cancel = `POST /api/v1/encounters/${ENCOUNTER_ID}/cancel`;
+    const { net, user } = setup(
+      `/atenciones/${ENCOUNTER_ID}`,
+      { [cancel]: networkError() },
+      'RECEPTION',
+    );
+    await user.click(
+      await screen.findByRole('button', { name: 'Cancelar atención' }),
+    );
+    await user.type(
+      screen.getByLabelText('Motivo de la cancelación'),
+      'Se retiró',
+    );
+    await user.click(
+      screen.getByRole('button', { name: 'Confirmar cancelación' }),
+    );
+    const alert = await screen.findByText(NETWORK);
+    const box = alert.closest('[role="alert"]') as HTMLElement;
+    await user.click(within(box).getByRole('button', { name: 'Reintentar' }));
+    await waitFor(() => expect(net.calls(cancel)).toHaveLength(2));
+    expect(net.calls(cancel)[1].body).toEqual(net.calls(cancel)[0].body);
   });
 });

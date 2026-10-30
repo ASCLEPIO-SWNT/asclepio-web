@@ -109,13 +109,20 @@ describe('F-02-web actionErrorMessage (D11)', () => {
   });
 
   it('R27: sin respuesta HTTP da el mensaje de conexión', () => {
+    // UI-03-web B1: la clave del texto de red de R15.
     expect(actionErrorMessage({ kind: 'network' }, { 409: 'x' })).toBe(
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+      'common_error_network',
+    );
+  });
+
+  // UI-03-web B1: un 5xx ya no da el genérico, sino el texto del servidor de R18.
+  it('R36: un 5xx da la clave del texto del servidor (UI-03-web B1)', () => {
+    expect(actionErrorMessage(other(500), { 409: 'x', 404: 'y' })).toBe(
+      'common_error_server',
     );
   });
 
   it.each([
-    [other(500)],
     [other(400)],
     [{ kind: 'rateLimited', retryAfterSeconds: 5 }],
   ] as ApiProblem[][])(

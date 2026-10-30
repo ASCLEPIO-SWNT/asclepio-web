@@ -3,7 +3,11 @@ import { useI18n } from '../../../shared/i18n';
 import { useState } from 'react';
 import type { Patient } from '../../../shared/api/client';
 import { SITES_ERROR_MESSAGE, useSites } from '../../../shared/hooks/useSites';
-import { actionErrorMessage, problemOf } from '../../../shared/lib/problem';
+import {
+  actionErrorMessage,
+  isRetryableActionMessage,
+  problemOf,
+} from '../../../shared/lib/problem';
 import { ActionError } from '../../../shared/ui/ActionError';
 import { LoadError } from '../../../shared/ui/LoadError';
 import { UnsavedChangesGuard } from '../../../shared/ui/UnsavedChangesGuard';
@@ -63,7 +67,15 @@ export function DirectRegistrationPage() {
 
       <PatientSearch busy={search.isFetching} onSearch={onSearch} />
       {params && search.isError && (
-        <ActionError>
+        <ActionError
+          onRetry={
+            isRetryableActionMessage(
+              actionErrorMessage(problemOf(search.error)),
+            )
+              ? () => void search.refetch()
+              : undefined
+          }
+        >
           {featureMessage(actionErrorMessage(problemOf(search.error)))}
         </ActionError>
       )}

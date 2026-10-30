@@ -4,7 +4,7 @@ import {
 } from '../../../shared/lib/featureMessages';
 import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch, type Path, type Resolver } from 'react-hook-form';
 import type { DocumentType, Patient } from '../../../shared/api/client';
 import {
@@ -15,6 +15,7 @@ import {
 import {
   actionErrorMessage,
   applyFieldErrors,
+  isRetryableActionMessage,
   problemOf,
   statusOf,
 } from '../../../shared/lib/problem';
@@ -89,6 +90,8 @@ export function PatientForm({
 }) {
   const { t } = useI18n();
   const create = useCreatePatient();
+  // UI-03-web R15/R18: «Reintentar» vuelve a enviar el formulario con lo escrito.
+  const formRef = useRef<HTMLFormElement>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const isDocument = mode.kind === 'document';
   const {
@@ -160,6 +163,7 @@ export function PatientForm({
 
   return (
     <form
+      ref={formRef}
       className="form"
       aria-label={title}
       noValidate
@@ -309,7 +313,17 @@ export function PatientForm({
       {create.isPending && (
         <LoadingState>{t('feature_patient_saving')}</LoadingState>
       )}
-      {actionError && <ActionError>{featureMessage(actionError)}</ActionError>}
+      {actionError && (
+        <ActionError
+          onRetry={
+            isRetryableActionMessage(actionError)
+              ? () => formRef.current?.requestSubmit()
+              : undefined
+          }
+        >
+          {featureMessage(actionError)}
+        </ActionError>
+      )}
     </form>
   );
 }

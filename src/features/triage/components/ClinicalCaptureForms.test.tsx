@@ -293,9 +293,7 @@ it('R18: keeps drafts after network failure and permits only a manual new attemp
     screen.getByRole('button', { name: 'Guardar hallazgos' }),
   );
   expect(
-    await screen.findByText(
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
-    ),
+    await screen.findByText('No hay conexión con el servidor.'),
   ).toBeInTheDocument();
   expect(net.calls(FINDINGS)).toHaveLength(1);
   expect(screen.getByLabelText('Descripción')).toHaveValue(

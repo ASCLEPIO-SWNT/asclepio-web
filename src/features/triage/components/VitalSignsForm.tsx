@@ -5,6 +5,7 @@ import { useCurrentStaffId } from '../../../shared/hooks/useCurrentStaff';
 import { useDraft } from '../../../shared/hooks/useDraft';
 import { useI18n } from '../../../shared/i18n';
 import { DraftNotice } from '../../../shared/ui/DraftNotice';
+import { isRetryableActionMessage } from '../../../shared/lib/problem';
 import { ActionError } from '../../../shared/ui/ActionError';
 import { Notice } from '../../../shared/ui/Notice';
 import { LoadingState } from '../../../shared/ui/LoadingState';
@@ -65,6 +66,8 @@ export function VitalSignsForm({
   const { t } = useI18n();
   const mutation = useRecordVitalSigns(encounterId);
   const inFlight = useRef(false);
+  // UI-03-web R15/R17/R18: «Reintentar» vuelve a enviar el formulario con lo escrito.
+  const formRef = useRef<HTMLFormElement>(null);
   const [focusVersion, requestFocus] = useReducer(
     (version: number) => version + 1,
     0,
@@ -140,6 +143,7 @@ export function VitalSignsForm({
   };
   return (
     <form
+      ref={formRef}
       className="form clinical-form"
       aria-label={t('clinical_vitals_title')}
       noValidate
@@ -167,7 +171,17 @@ export function VitalSignsForm({
           onDiscard={draft.dismiss}
         />
       )}
-      {errorKey && <ActionError>{t(errorKey)}</ActionError>}
+      {errorKey && (
+        <ActionError
+          onRetry={
+            isRetryableActionMessage(errorKey)
+              ? () => formRef.current?.requestSubmit()
+              : undefined
+          }
+        >
+          {t(errorKey)}
+        </ActionError>
+      )}
       {saved && <Notice>{t('clinical_vitals_saved')}</Notice>}
       <fieldset
         className="clinical-fields"

@@ -30,7 +30,12 @@ export function CancelEncounterForm({
   encounterId: string;
   onStart: () => void;
   onCancelled: () => void;
-  onFailed: (message: string | null, status: number | null) => void;
+  /** `retry` repite la cancelación con el mismo motivo (UI-03-web R15, R18). */
+  onFailed: (
+    message: string | null,
+    status: number | null,
+    retry: () => void,
+  ) => void;
 }) {
   const { t } = useI18n();
   const cancel = useCancelEncounter(encounterId);
@@ -63,6 +68,7 @@ export function CancelEncounterForm({
             ? null
             : actionErrorMessage(problem, { 409: CONFLICT_MESSAGE }),
           status,
+          () => onValid({ reason }),
         );
       },
     });

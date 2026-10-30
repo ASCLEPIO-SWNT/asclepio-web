@@ -1,7 +1,10 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useReducer, useRef, useState } from 'react';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { useForm, type Path } from 'react-hook-form';
+import { useCurrentStaffId } from '../../../shared/hooks/useCurrentStaff';
+import { useDraft } from '../../../shared/hooks/useDraft';
 import { useI18n } from '../../../shared/i18n';
+import { DraftNotice } from '../../../shared/ui/DraftNotice';
 import { ActionError } from '../../../shared/ui/ActionError';
 import { Notice } from '../../../shared/ui/Notice';
 import { LoadingState } from '../../../shared/ui/LoadingState';
@@ -23,6 +26,34 @@ import {
   type VitalSignsOutput,
 } from '../clinicalSchemas';
 import { useRecordVitalSigns } from '../hooks/useRecordVitalSigns';
+
+/**
+ * Lista blanca del borrador (D4, PA-1): solo campos numéricos o enumerados de signos vitales,
+ * nunca texto libre aunque el contrato lo tuviera.
+ */
+export const VITAL_DRAFT_FIELDS = VITAL_FIELDS.filter((field) =>
+  [
+    'respiratoryRate',
+    'oxygenSaturation',
+    'supplementalOxygen',
+    'systolicBp',
+    'diastolicBp',
+    'heartRate',
+    'consciousness',
+    'temperatureC',
+    'glucoseMgDl',
+  ].includes(field),
+);
+
+/** Validación de forma del borrador (R6): solo campos de la lista blanca, con valores cortos. */
+function isVitalDraft(values: Record<string, unknown>): boolean {
+  return Object.entries(values).every(
+    ([field, value]) =>
+      (VITAL_DRAFT_FIELDS as readonly string[]).includes(field) &&
+      typeof value === 'string' &&
+      /^[0-9A-Za-z.-]{1,8}$/.test(value),
+  );
+}
 
 export function VitalSignsForm({
   encounterId,
@@ -47,6 +78,8 @@ export function VitalSignsForm({
     reset,
     setError,
     setFocus,
+    setValue,
+    getValues,
     formState: { errors, isDirty },
   } = useForm<VitalSignsInput, unknown, VitalSignsOutput>({
     resolver: zodResolver(vitalSignsSchema),
@@ -58,6 +91,20 @@ export function VitalSignsForm({
     onDirtyChange?.(isDirty);
   }, [isDirty, onDirtyChange]);
   useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
+  // UI-03-web R4–R7: borrador de signos vitales solo ante un cierre forzado de sesión.
+  const userId = useCurrentStaffId();
+  const readValues = useCallback(
+    () => getValues() as unknown as Record<string, unknown>,
+    [getValues],
+  );
+  const draft = useDraft({
+    encounterId,
+    userId,
+    dirty: isDirty,
+    getValues: readValues,
+    fields: VITAL_DRAFT_FIELDS,
+    isValid: isVitalDraft,
+  });
   useEffect(() => {
     if (!disabled && !mutation.isPending && pendingFocus.current) {
       setFocus(pendingFocus.current);
@@ -71,6 +118,7 @@ export function VitalSignsForm({
     setSaved(false);
     mutation.mutate(values, {
       onSuccess: () => {
+        draft.dismiss();
         reset(clinicalCaptureInput);
         setSaved(true);
       },
@@ -105,6 +153,20 @@ export function VitalSignsForm({
     >
       <h2>{t('clinical_vitals_title')}</h2>
       <p className="muted">{t('clinical_provisional')}</p>
+      {draft.draft && (
+        <DraftNotice
+          onRestore={() => {
+            const values = draft.draft?.values ?? {};
+            for (const field of VITAL_DRAFT_FIELDS) {
+              const value = values[field];
+              if (value !== undefined)
+                setValue(field, value, { shouldDirty: true });
+            }
+            draft.dismiss();
+          }}
+          onDiscard={draft.dismiss}
+        />
+      )}
       {errorKey && <ActionError>{t(errorKey)}</ActionError>}
       {saved && <Notice>{t('clinical_vitals_saved')}</Notice>}
       <fieldset

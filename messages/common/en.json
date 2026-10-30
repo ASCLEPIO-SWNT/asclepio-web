@@ -120,5 +120,8 @@
   "common_unsaved_title": "There are unsaved changes",
   "common_unsaved_body": "If you leave now, the data you entered will be lost.",
   "common_unsaved_leave": "Leave without saving",
-  "common_unsaved_stay": "Keep editing"
+  "common_unsaved_stay": "Keep editing",
+  "common_draft_found": "There are unsaved vital signs from your previous session. Do you want to recover them?",
+  "common_draft_restore": "Recover draft",
+  "common_draft_discard": "Discard"
 }

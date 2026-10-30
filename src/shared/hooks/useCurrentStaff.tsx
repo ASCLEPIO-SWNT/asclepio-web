@@ -29,3 +29,8 @@ export function useCurrentStaff(): StaffMe {
   }
   return me;
 }
+
+/** El id del perfil activo, o `null` fuera de una sesión (formularios montados sueltos). */
+export function useCurrentStaffId(): string | null {
+  return useContext(CurrentStaffContext)?.id ?? null;
+}

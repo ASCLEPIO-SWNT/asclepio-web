@@ -4,6 +4,14 @@ import type { TitleHandle } from '../../shared/hooks/useDocumentTitle';
 import { FeatureLoader } from '../../shared/lib/lazyPage';
 import { RouteLoading } from '../../shared/ui/RouteLoading';
 
+/** Cargadores creados, para poder precargar el código (p. ej. el arnés de pruebas). */
+const loaders: FeatureLoader<RouteObject[]>[] = [];
+
+/** Descarga ya el código de todas las features diferidas registradas (fallos incluidos). */
+export async function preloadFeatures(): Promise<void> {
+  await Promise.allSettled(loaders.map((loader) => loader.read()));
+}
+
 function LazyRoute({
   loader,
   path,
@@ -43,6 +51,7 @@ export function lazyFeatureRoutes(
   load: () => Promise<RouteObject[]>,
 ): RouteObject[] {
   const loader = new FeatureLoader(load);
+  loaders.push(loader);
   return Object.entries(pages).map(([path, handle]) => ({
     path,
     handle,

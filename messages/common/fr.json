@@ -120,5 +120,8 @@
   "common_unsaved_title": "Des modifications ne sont pas enregistrées",
   "common_unsaved_body": "Si vous quittez maintenant, les données saisies seront perdues.",
   "common_unsaved_leave": "Quitter sans enregistrer",
-  "common_unsaved_stay": "Continuer la saisie"
+  "common_unsaved_stay": "Continuer la saisie",
+  "common_draft_found": "Des signes vitaux de votre session précédente n’ont pas été enregistrés. Voulez-vous les récupérer ?",
+  "common_draft_restore": "Récupérer le brouillon",
+  "common_draft_discard": "Ignorer"
 }

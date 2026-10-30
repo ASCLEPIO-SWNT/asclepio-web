@@ -120,5 +120,8 @@
   "common_unsaved_title": "Es gibt ungespeicherte Änderungen",
   "common_unsaved_body": "Wenn Sie jetzt gehen, gehen die eingegebenen Daten verloren.",
   "common_unsaved_leave": "Ohne Speichern verlassen",
-  "common_unsaved_stay": "Weiter bearbeiten"
+  "common_unsaved_stay": "Weiter bearbeiten",
+  "common_draft_found": "Aus Ihrer vorherigen Sitzung gibt es ungespeicherte Vitalzeichen. Möchten Sie sie wiederherstellen?",
+  "common_draft_restore": "Entwurf wiederherstellen",
+  "common_draft_discard": "Verwerfen"
 }

@@ -10,6 +10,12 @@ import { TOKEN, inMs } from './fakeApi';
 import { AppProviders } from '../app/providers/AppProviders';
 import { routes as appRoutes } from '../app/router/routes';
 import { reportCaughtError } from '../shared/lib/routeErrors';
+import { preloadFeatures } from '../app/router/lazyFeature';
+
+// UI-03-web R28: el código de las features diferidas se descarga antes de las pruebas (como la
+// caché del navegador). Sin esto, la primera importación en frío de un worker cargado agotaba
+// los findBy. Las pruebas de carga diferida (R13, R14) usan cargadores propios.
+await preloadFeatures();
 
 /**
  * Monta la app real (providers + rutas) sobre un router en memoria (D14).

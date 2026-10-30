@@ -120,5 +120,8 @@
   "common_unsaved_title": "Hay cambios sin guardar",
   "common_unsaved_body": "Si sales ahora, se perderán los datos que escribiste.",
   "common_unsaved_leave": "Salir sin guardar",
-  "common_unsaved_stay": "Seguir editando"
+  "common_unsaved_stay": "Seguir editando",
+  "common_draft_found": "Hay signos vitales sin guardar de tu sesión anterior. ¿Quieres recuperarlos?",
+  "common_draft_restore": "Recuperar borrador",
+  "common_draft_discard": "Descartar"
 }

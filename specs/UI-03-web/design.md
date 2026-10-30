@@ -35,7 +35,7 @@ El commit `595bb94` fija Node 22.23.4 (`.nvmrc`, `engines`, `init.sh` compara la
 ### Enmiendas tras la revisión (usuario, chat, 2026-10-30)
 
 - A1: `lazyFeatureRoutes` en lugar del `lazy` de React Router (D10, R12).
-- B1: los errores de acción usan `common_error_network` y `common_error_server` con «Reintentar» (D12, R15, R17, R18); `actionErrorMessage` (`src/shared/lib/problem.ts`) deja de devolver el texto de red de acción y el genérico de acción ante red caída y 5xx. Los demás errores de acción (422, 409, 403, 404) no cambian.
+- B1: los errores de acción usan `common_error_network` y `common_error_server` con «Reintentar» (D12, R15, R17, R18); `actionErrorMessage` (`src/shared/lib/problem.ts`) deja de devolver el texto de red de acción y el genérico de acción ante red caída y 5xx. Los demás errores de acción (422, 409, 403, 404) no cambian. El inicio de sesión (F-01) queda fuera de B1: no usa `actionErrorMessage` y conserva su texto de red propio, ya traducido (observación del reviewer, 2026-10-30).
 
 ## Decisiones
 

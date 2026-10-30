@@ -1,101 +1,90 @@
 # Revisión — UI-03-web (Robustez de la web)
 
-- Rama: `feat/ui-03-web-robustness` (base `main` `dc280a9`, HEAD `0abe71e`). Contrato: 0.4.0 (solo lectura).
-- Fecha: 2026-10-30. Reviewer independiente. `./init.sh` completo ejecutado **una vez** (a petición del leader, por tokens).
+- Rama: `feat/ui-03-web-robustness` (base `main` `dc280a9`). Contrato: 0.4.0 (solo lectura).
+- Primera revisión: HEAD `0abe71e`, RECHAZADO (2 motivos). Re-revisión: HEAD `f296b5c` (diff `0abe71e..f296b5c`: `fe01da6`, `42f16b5`, `f296b5c`).
 
-## Veredicto: **RECHAZADO**
+## Veredicto (re-revisión, 2026-10-30): **APROBADO**
 
-Dos motivos bloqueantes, los dos pequeños: falta la prueba `R22:` del slice y hay requisitos aprobados (R12, R15, R17 y R18) que el código no cumple tal como están escritos. Hay que enmendar la spec, con el visto bueno del usuario, o cambiar el código. El resto es sólido. La suite está en verde, ninguna prueba previa se borró ni se debilitó, la enmienda de privacidad es correcta, no hay reintento al reconectar y la identidad visual se mantiene.
+Los dos motivos están resueltos y no he encontrado regresiones en el diff. La feature puede pasar a `done` cuando se cierre T17. Faltan el recorrido manual y las capturas, que son un límite registrado y no un motivo de rechazo. También falta la entrada de `progress/history.md`, que escribe el leader al cerrar.
 
-## Motivos de rechazo (accionables)
+### Motivo 1 — prueba R22 del slice: resuelto
+- `src/test/i18nKeys.test.ts` contiene `describe('UI-03-web textos nuevos en cinco idiomas')` › `R22: …`. Comprueba que las 14 claves `common_(error|route|unsaved|draft)_*` existen en es, en, pt, fr y de, que no están vacías, que tienen los mismos parámetros y que no coinciden con el español. Solo hay una excepción justificada: pt `common_draft_discard`, «Descartar», que se escribe igual en portugués.
+- La trazabilidad de `impl_UI-03-web.md` y de `docs/ui-robustness-verification.md` ya está corregida.
 
-1. **R22 no tiene ninguna prueba del slice.** No hay ninguna prueba `R22:` bajo `describe('UI-03-web …')`. `grep "R22[: ]" src` solo devuelve pruebas de F-02, F-03 y UI-02. La tabla de `progress/impl_UI-03-web.md` y de `docs/ui-robustness-verification.md` atribuye R22 a `f03Routes.test.tsx` R22 y a `DirectRegistrationPage.test.tsx` R22, que son de otras features. **Acción (implementer):** añadir una prueba `R22:` bajo `UI-03-web …`. Debe comprobar que las claves nuevas (`common_error_*`, `common_route_*`, `common_unsaved_*`, `common_draft_*`) existen en los cinco catálogos con los mismos parámetros y que no hay ningún valor vacío ni igual al español en en/pt/fr/de, salvo los justificados.
-2. **R12, R15, R17 y R18 no se cumplen literalmente y la spec no se ha enmendado.** **Acción (spec_author, con un «aprobado» del usuario):** enmendar `requirements.md` y `design.md`:
-   - **R12 y D10:** el texto exige «`lazy` de rutas de React Router», pero el código usa `lazyFeatureRoutes` (`src/app/router/lazyFeature.tsx`). La desviación está justificada (ver más abajo), pero el requisito aprobado dice otra cosa.
-   - **R15, R17 y R18 en los errores de acción (mutaciones):** `actionErrorMessage` (`src/shared/lib/problem.ts:107-117`) devuelve con un 5xx el genérico «No se pudo completar la acción…», no `common_error_server`. Con un error de red devuelve el texto de acción ya aprobado («No se pudo conectar con el servidor…»), no «No hay conexión con el servidor.». Además, el error de acción no tiene «Reintentar». R18 dice «Si una petición responde 5xx…» sin limitarse a consultas, y R17 dice «mostrar el error de R15». Hay dos salidas: enmendar R15, R17 y R18 para que los textos de red y servidor con «Reintentar» se apliquen a los errores de carga, y para que en las mutaciones valga el texto de acción de red ya aprobado y el genérico con un 5xx; o cambiar el código para que use `common_error_server` y `common_error_network` también en las acciones.
-   - **«Pruebas existentes que cambian» (design.md:77-84):** falta añadir los cambios hechos fuera de la lista: `f03Routes.test.tsx` R5 (clic en «Salir sin guardar»), `ClinicalCaptureForms.test.tsx` R11 (`delay: null`; la lista nombraba `f03Routes` R3, que no cambió), el helper de `SessionProvider.test.tsx` (`session.restore()`), y `renderFeature.tsx` y `testApp.tsx` (`createQueryClient`, `preloadFeatures`).
+### Motivo 2 — spec y código no coincidían: resuelto
+- **A1 (R12, D10 y T12):** la spec enmendada describe `lazyFeatureRoutes` y el `import()` que se hace después de `RequireRole`. La enmienda registra la decisión del usuario del 2026-10-30 y coincide con el código.
+- **B1 (R15, R17, R18 y D12):**
+  - `actionErrorMessage` devuelve `common_error_network` cuando no hay red y `common_error_server` con un 5xx. El 5xx se comprueba antes de los mensajes por estado (`src/shared/lib/problem.ts:111-125`).
+  - `clinicalFailure` hace lo mismo (`src/features/triage/clinicalForm.ts:66-69`).
+  - `ActionError` solo muestra «Reintentar» cuando recibe `onRetry`, y el componente solo se lo pasa si `isRetryableActionMessage` lo permite.
+  - «Reintentar» solo repite la acción al pulsarlo: `requestSubmit()` en los formularios y la última acción en `PreRegistrationCard`. No hay reintento automático; R16 y UI-02 R25 siguen intactos.
+  - Las pruebas nuevas están en `networkErrors.test.tsx`: R18 (acción con 5xx) y dos de R15 (confirmar llegada y cancelar atención).
+- **Pruebas de F-02 y F-03 ajustadas:** el diff de `DirectRegistrationPage`, `ReceptionPage`, `EncounterDetailPage`, `ClinicalCaptureForms` y `problem.test.ts` solo cambia el texto esperado: el de acción de red pasa a «No hay conexión con el servidor.» y el genérico con 500 pasa a «El servidor tuvo un problema…». En `problem.test.ts`, el caso 500 sale de la tabla de R36 y pasa a una prueba propia que verifica más, no menos. No se borra ni se relaja ninguna aserción. Todas están listadas en `design.md` («Pruebas existentes que cambian»), junto con los cambios que faltaban de la primera revisión: f03 R5, `delay: null`, `SessionProvider` y el arnés.
+- **Comprobación:** ejecuté `vitest` sobre `i18nKeys`, `networkErrors` y `problem.test.ts`: 30/30 en verde. No volví a ejecutar `./init.sh`, porque el diff no tiene riesgo transversal y el implementer reporta VERDE sobre `f296b5c`.
 
-Con 1 y 2 resueltos, un `./init.sh` en verde basta para volver a revisar. Solo hay que comprobar R22 y el texto enmendado.
+### Login (F-01) con su propio texto de red: aceptable, no bloquea
+`LoginPage` no usa `actionErrorMessage`; sigue mostrando `feature_network_error` (`src/features/auth/components/LoginPage.tsx:39-40`). B1 y la enmienda de `design.md` hablan de los «errores de acción» del glosario de F-02-web, que pasan por `actionErrorMessage`. El login es anterior (F-01), se usa sin sesión y su texto de red ya es propio, está traducido y no se confunde con el de servidor. Aun así, la nueva redacción de R15 menciona «envío de un formulario», y el login lo es. **Recomendación no bloqueante:** que el leader añada al cerrar una línea en `design.md` («B1 no cubre el login de F-01; conserva su texto de red») para que la exclusión quede escrita, o que lo alinee en una feature posterior.
+
+### Observaciones nuevas (no bloqueantes)
+- El «Reintentar» de los errores de acción usa `button button--secondary`, una clase ya existente (`src/index.css:368`). No afecta a «Corregir» ni a «Validar».
+
+### Checkpoints que cambian respecto a la primera revisión
+- C6: [x] Cada R1–R32 tiene una prueba `R<n>:` bajo `UI-03-web …`; R22 está en `src/test/i18nKeys.test.ts`.
+- C8: [x] `problem+json`: con un 5xx, tanto las consultas como las acciones muestran `common_error_server`, sin `detail` ni `title` (`networkErrors` R18).
+- C5: [ ] Sigue faltando la entrada de `progress/history.md` (le toca al leader al cerrar).
+- Los demás checkpoints siguen como en la primera revisión (abajo).
+
+---
+
+# Primera revisión (HEAD `0abe71e`) — RECHAZADO
+
+- `./init.sh` completo ejecutado **una vez** (a petición del leader, por tokens): VERDE, FAIL 0, WARN 0.
+
+## Motivos de rechazo (resueltos en la re-revisión)
+
+1. **R22 no tenía ninguna prueba del slice.** No había ninguna prueba `R22:` bajo `describe('UI-03-web …')`; la tabla atribuía R22 a pruebas R22 de F-02 y F-03.
+2. **El código no cumplía R12, R15, R17 y R18 tal como estaban aprobados, y la spec no se había enmendado.**
+   - R12 y D10 exigían el `lazy` de React Router, y el código usa `lazyFeatureRoutes`.
+   - En los errores de acción, un 5xx mostraba el genérico en lugar del texto de servidor, y un error de red mostraba otro texto de red sin «Reintentar».
+   - Faltaban cambios en la lista «Pruebas existentes que cambian».
 
 ## Juicio de las 8 desviaciones declaradas
 
 | # | Desviación | Juicio |
 |---|---|---|
-| 1 | `lazyFeatureRoutes` en lugar del `lazy` de React Router | **Aceptable técnicamente, necesita enmienda (R12 y D10).** El `lazy` del router se resuelve al casar la ruta, antes de que rendericen los guards. Por eso incumpliría la razón de ser de D10 (una ruta prohibida no descarga código). Lo cubren `lazyRoutes.test.tsx` R12, R13 y R14. La medida se registró: 712,55 → 658,28 kB; el aviso de 500 kB persiste, que es la condición alternativa de R12. |
-| 2 | Los textos de red conservan el mensaje de cada pantalla | **Aceptable en errores de carga** (`LoadError` y `PanelState` añaden `common_error_network` o `common_error_server` sin tocar aserciones aprobadas). **Necesita enmienda en errores de acción** (motivo 2). |
-| 3 | R5 de `f03Routes.test.tsx` adaptada | **Aceptable.** Solo se añade el clic en «Salir sin guardar» antes de las mismas aserciones; es lo que exige R1. Falta listarla en design.md (motivo 2). |
-| 4 | `maxWorkers: '50%'`, `delay: null` y `preloadFeatures` (R28) | **Aceptable** dentro de D19. `maxWorkers` está permitido de forma explícita, `delay: null` solo cambia la mecánica de espera y no se tocó `testTimeout` (`suiteConfig.test.ts`). `preloadFeatures` es mecánica del arnés, equivalente a la caché del navegador, y la carga diferida real se prueba con cargadores propios en `lazyRoutes.test.tsx`. Hay que corregir la lista de design.md (motivo 2). |
-| 5 | Interpretación de R24 | **Aceptable.** No existe una clave de «datos no válidos». Se usan los genéricos ya aprobados: `feature_field_review` junto al campo y `feature_action_error` sin `errors[]`. El 422 con fecha visible conserva el texto de fecha futura (F-02 R23 intacta). Opcional: aclarar D17. |
-| 6 | Reutilizar claves i18n para los títulos | **Aceptable.** Menos claves, el mismo texto en los cinco idiomas, y lo cubre `documentTitle.test.tsx` R10. |
-| 7 | En T15 el código se escribió antes que las pruebas | **Aceptable con anotación** (desviación de proceso, no de producto). Las pruebas de `vitalsDraft.test.tsx` son de comportamiento y fallarían sin el código. |
-| 8 | Nombre del documento `docs/ui-robustness-verification.md` | **Aceptable.** Es el nombre que fijan tasks.md y design.md; el del leader no constaba en la spec. |
+| 1 | `lazyFeatureRoutes` en lugar del `lazy` de React Router | Aceptable técnicamente, porque así una ruta prohibida no descarga código. Necesitaba enmienda (hecha: A1). |
+| 2 | Los textos de red conservan el mensaje de cada pantalla | Aceptable en los errores de carga. En los errores de acción necesitaba enmienda (hecha: B1). |
+| 3 | R5 de `f03Routes.test.tsx` adaptada | Aceptable: solo se añade un clic, como exige R1, y ahora consta en `design.md`. |
+| 4 | `maxWorkers: '50%'`, `delay: null` y `preloadFeatures` | Aceptable dentro de D19, y ahora consta en `design.md`. |
+| 5 | Interpretación de R24 | Aceptable: usa los genéricos existentes, y F-02 R23 sigue intacta. |
+| 6 | Reutilizar claves i18n | Aceptable. |
+| 7 | En T15 el código se escribió antes que las pruebas | Aceptable con anotación (desviación de proceso). |
+| 8 | Nombre del documento | Aceptable (es el que fija la spec). |
 
-## Comprobaciones específicas pedidas
+## Comprobaciones específicas
+- **Pruebas previas:** no se borró ninguna ni se relajó ninguna aserción. Solo cambian imports, nombres de `describe`, `delay: null`, el clic de R5 y `session.restore()` en el helper.
+- **Privacidad:** solo existe la clave `asclepio.draft.vitals.<uuid>`. Guarda una lista blanca de 9 campos validados con una expresión regular (sin texto libre), además de `userId`, `encounterId` y `savedAt`, y caduca a los 30 minutos. Se borra al enviar, al descartar, al recuperar, al cerrar sesión y al arrancar. `privacy.test.tsx` tiene un caso R24 nuevo; R10 y UI-02 R27 no cambian.
+- **Sin reintento al reconectar:** `refetchOnReconnect: false`, `networkMode: 'always'` y mutaciones con `retry: 0`. Lo prueban `queryClient.test.ts` y `networkErrors` R16.
+- **Identidad visual:** solo se añade CSS con tokens (`.confirm-dialog`, `.route-error`). No hay dependencias nuevas.
+- **Cinco idiomas:** las 14 claves están en los cinco catálogos e `i18n:check` pasa.
 
-- **Pruebas previas no borradas ni debilitadas.** Comparé con `git diff dc280a9..HEAD` los `*.test.*` modificados: solo hay cambios de import (`./testApp` → `../../test/testApp`), nombres de `describe` en `problem.test.ts`, `delay: null` en f02Transversal R40 (×2) y en ClinicalCaptureForms R11, el clic de R5 en f03Routes y `session.restore()` en el helper de `SessionProvider.test.tsx`. En privacy, roleMatrix, ReceptionPage y DirectRegistrationPage no se elimina ninguna línea salvo imports. `testApp.tsx` se movió con el mismo contenido, más `routes`, `restore` y `preload`. No hay ningún `skip` ni `only`, y no se relajó ninguna aserción.
-- **Enmienda de privacidad.** Solo existe la clave `asclepio.draft.vitals.<encounterId>` (`src/shared/lib/drafts.ts:6,28`). Tiene una lista blanca de 9 campos numéricos o enumerados (`VitalSignsForm.tsx` `VITAL_DRAFT_FIELDS`) y una validación de forma con `/^[0-9A-Za-z.-]{1,8}$/`, que impide el texto libre. Guarda `{userId, encounterId, savedAt, values}` sin identidad del paciente. Caduca a los 30 minutos (`DRAFT_TTL_MS`, y lo prueba `vitalsDraft.test.tsx` R6 con 29:59 y 30:01). Se borra al enviar, al descartar, al recuperar, con el logout voluntario (`logout.ts`) y al arrancar (`main.tsx` `purgeExpiredDrafts`). La nueva prueba de `privacy.test.tsx` R24 comprueba que la única clave es la del borrador, con `values = {respiratoryRate}`, y que no contiene el motivo de consulta ni el nombre. R10 y UI-02 R27 no cambian. `localStorage` solo guarda las preferencias, como antes.
-- **Sin reintento automático al reconectar (UI-02 R25 intacto).** `QUERY_DEFAULTS` (`src/app/providers/queryClient.ts`) usa `refetchOnReconnect: false`, `networkMode: 'always'` y mutaciones con `retry: 0`. Lo prueban `queryClient.test.ts` R16 y R17 y `networkErrors.test.tsx` R16 (vista y dashboard: 0 peticiones al reconectar hasta «Reintentar»). Las pruebas de UI-02 con `onlineManager` no cambiaron.
-- **La identidad visual de UI-01 y UI-02 no cambia.** `dashboard.css` solo añade `.confirm-dialog` y `.route-error`, con tokens y sin colores literales (lo comprueba `ui03Transversal` R29). `index.css` no cambia. `LoadError`, `PanelState` y `SummaryFilter` solo añaden una línea cuando reciben `error`. No hay dependencias nuevas: `package.json` solo añade `engines`.
-- **Cinco idiomas.** Las 14 claves `common_*` nuevas están en es, en, pt, fr y de (`messages/common/*.json`). `npm run i18n:check` terminó sin errores. Pero falta la prueba R22 (motivo 1).
-
-## Checkpoints
-
-### C1 — Harness
-- [x] `AGENTS.md`, `CLAUDE.md`, `init.sh` (ejecutable), `feature_list.json`, `progress/current/` y `progress/history.md` existen (`ls`; init: «Archivos base presentes», «init.sh ejecutable»).
-- [x] `docs/architecture.md`, `conventions.md`, `specs.md` y `verification.md` existen.
-- [x] `./init.sh` terminó con exit 0: VERDE, FAIL 0, WARN 0 (lint, typecheck y tests en OK). Fue una sola ejecución; las tres seguidas de R28 constan en `docs/ui-robustness-verification.md:45`.
-
-### C2 — Estado
-- [x] Solo una feature está `in_progress` (UI-03-web). Init: «done: 6, in_progress: 1».
-- [x] Las features `done` tienen pruebas que pasan (la suite completa está en verde).
-- [x] `progress/current/` solo contiene `UI-03-web.md`.
-
-### C3 — Arquitectura
-- [x] `src/` sigue la estructura `app/`, `features/` y `shared/`. Las nuevas piezas comunes están en `shared/` (`ConfirmDialog`, `RouteError`, `drafts`, `errors`…).
-- [x] Ninguna feature importa de otra (grep sin resultados), y `shared/` no importa de `features/` ni de `app/`.
-- [x] No hay `fetch` suelto: solo `src/shared/api/client.ts:14`.
-- [x] No hay dependencias nuevas.
-- [x] No hay `console.log`, `debugger` ni TODOs. El único `console.error` es intencionado y solo registra el tipo de error (`src/shared/lib/routeErrors.ts:23-28`).
-
-### C4 — Verificación
-- [x] Las pruebas con Vitest y Testing Library comprueban comportamiento por roles y texto (`unsavedChanges`, `vitalsDraft`, `networkErrors`, `routeError`, `documentTitle`, `lazyRoutes` y `returnToOrigin`).
-- [x] El HTTP se simula en la frontera de red con `fakeApi`; no se mockean hooks.
-- [x] `npm test` pasa entero: el implementer registró 849 pruebas y init.sh da «tests OK».
-
-### C5 — Cierre de sesión
-- [x] No hay archivos sin trackear (`git status --porcelain` vacío, también tras `api:types`).
-- [ ] `progress/history.md` aún no tiene una entrada de UI-03-web (la última es de UI-02-web). Le toca al leader al cerrar; no bloquea esta revisión.
-- [x] El estado es correcto: `in_progress` mientras T17 está pendiente.
-
-### C6 — SDD
-- [x] `specs/UI-03-web/{requirements,design,tasks}.md` existen.
-- [x] Los requisitos están en EARS y trazados a F-01, F-02 y F-03 (PA-4).
-- [x] No aplica todavía: la feature no está `done`. T1–T16 están en `[x]`; T17 sigue en `[ ]` por el recorrido manual y las capturas, que son un límite registrado (ver abajo).
-- [ ] **Cada R tiene una prueba `R<n>:` del slice:** R1–R21 y R23–R32 la tienen bajo `UI-03-web …`; **R22 no** (motivo 1).
-
-### C7 — Seguridad clínica y privacidad
-- [x] Ni la sugerencia ni el nivel final se tocan en este slice (RNF-17 se conserva). El borrador no incluye niveles.
-- [x] El peso entre «Corregir» y «Validar» no cambia. En el diálogo nuevo, las dos acciones usan la misma clase `button` (`ConfirmDialog.tsx`).
-- [x] «Corregir» sin nivel ni motivo no cambia (fuera de alcance).
-- [x] El triage manual no cambia.
-- [x] No hay datos personales en `console`, `localStorage` ni la URL. R9 sustituye el registro de React y del router (`main.tsx`, `testApp.tsx`). `sessionStorage` solo tiene la sesión y el borrador permitido (`privacy.test.tsx` R24 nuevo, `vitalsDraft` R31, `ui03Transversal` R31). La vuelta al origen solo lleva el `search` existente, sin documento.
-- [x] Las horas en America/Bogotá no cambian.
-
-### C8 — Contrato
-- [x] `consumes_contract: "0.4.0"` coincide con `info.version` 0.4.0 (`../asclepio-api/openapi/asclepio-api.v1.json:1269`).
-- [x] `npm run api:types` no produce diff (`git status` vacío). `ui03Transversal` R32 compara el SHA-256 de `schema.d.ts`.
-- [~] `problem+json` se muestra con un mensaje comprensible y sin `detail` ni `title` (`networkErrors` R18). Ver el motivo 2 sobre el texto de 5xx en las acciones.
+## Checkpoints (primera revisión)
+- C1: [x] harness completo; [x] docs; [x] `./init.sh` con exit 0.
+- C2: [x] solo una feature `in_progress`; [x] las features `done` pasan sus pruebas; [x] `progress/current/` solo tiene UI-03-web.
+- C3: [x] estructura; [x] sin imports entre features; [x] `fetch` solo en `shared/api/client.ts:14`; [x] sin dependencias nuevas; [x] sin `console.log` ni TODOs (el único `console.error` es intencionado y solo registra el tipo, `routeErrors.ts:23-28`).
+- C4: [x] pruebas de comportamiento; [x] `fakeApi` en la frontera de red; [x] suite en verde.
+- C5: [x] sin archivos sin trackear; [ ] falta la entrada de `progress/history.md` (le toca al leader al cerrar); [x] estado `in_progress`.
+- C6: [x] specs; [x] EARS con trazas; [x] T1–T16 `[x]` (T17 pendiente del recorrido manual); [ ] R22 sin prueba → resuelto en la re-revisión.
+- C7: [x] sugerencia, nivel, «Corregir» y triage manual sin tocar; [x] sin datos personales en `console`, `localStorage` ni la URL; [x] horas de Bogotá sin cambios.
+- C8: [x] 0.4.0 = `info.version`; [x] `api:types` sin diff; [~] texto de 5xx en las acciones → resuelto en la re-revisión.
 
 ## Observaciones no bloqueantes
+1. T1 está en `[x]`, pero las capturas «antes» (`ui03-*`) no existen. Habrá que tomarlas sobre `0bd94f7`.
+2. R30 solo se prueba con el diálogo; no hay prueba de teclado para R5, R8, R14, R15 y R18.
+3. La prueba de R28 es estática. La evidencia real son las tres ejecuciones registradas.
+4. En producción, las consultas conservan `retry` por defecto (3) con `networkMode: 'always'`, así que el error de red tarda unos segundos en aparecer. No es un reintento por reconexión.
+5. La «validación de forma» del borrador es la lista blanca más la expresión regular, no el esquema Zod completo. Basta para R6.
 
-1. **Tabla de trazabilidad contaminada.** La tabla R → prueba de `impl_UI-03-web.md` y de `docs/ui-robustness-verification.md` mezcla pruebas `R<n>:` de F-01, F-02, F-03 y UI-02 con las del slice (por ejemplo, R1 incluye `f03Routes` R1 y `roleMatrix` R1). Conviene filtrarla a `describe('UI-03-web …')`.
-2. **T1 está en `[x]` pero las capturas «antes» no existen** (`docs/ui-evidence/` no tiene `ui03-*`). Conviene anotarlo en tasks.md. Las capturas tendrán que tomarse sobre `0bd94f7`.
-3. **R30 tiene poca cobertura.** Solo se prueba el diálogo (foco inicial y Escape). No hay una prueba de teclado para el aviso de R5 ni para los estados de R8, R14, R15 y R18, aunque usan botones nativos.
-4. **La prueba de R28 es estática** (solo mira `vite.config.ts`). La evidencia real son las tres ejecuciones registradas por el implementer; esta revisión hizo una, en verde.
-5. **En producción las consultas conservan `retry` por defecto (3)** con `networkMode: 'always'`. Un error de red tarda unos segundos en aparecer por los reintentos con espera creciente. No es un reintento por reconexión (UI-02 R25 se cumple), pero conviene verlo en el recorrido manual con la API detenida.
-6. **D6 y R6:** la «validación de forma» del borrador es la lista blanca más una expresión regular, no el esquema Zod completo. Basta para R6 tal como está escrito.
-
-## Límites de esta revisión (no son motivo de rechazo)
-
-- El usuario aún tiene pendiente el recorrido manual con login de RECEPTION, NURSE, PHYSICIAN y ADMIN contra `http://localhost:3000`, y las capturas `ui03-*-{antes,despues}.jpg` (T17).
-- `./init.sh` se ejecutó una vez, no tres. `npm run build` no se repitió: la medida 712,55 → 658,28 kB es la que registró el implementer.
+## Límites (no son motivo de rechazo)
+- El usuario aún tiene pendiente el recorrido manual con login de los cuatro roles contra `http://localhost:3000` y las capturas `ui03-*-{antes,despues}.jpg` (T17).
+- `./init.sh` se ejecutó una vez, en la primera revisión. En la re-revisión solo ejecuté las pruebas afectadas por el diff. `npm run build` no se repitió.

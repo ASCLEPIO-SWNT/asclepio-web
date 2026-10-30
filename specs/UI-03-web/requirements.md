@@ -39,16 +39,16 @@ Glosario de la spec:
 
 ### Carga diferida por rol
 
-- **R12** (Ubicuo) El sistema deberá cargar de forma diferida (`lazy` de rutas de React Router) el código de cada feature privada (`reception`, `triage`, `queue`, `reports` y la consulta de atenciones), de modo que el fragmento inicial contenga solo el marco, las rutas públicas, el login y los guards, y que `npm run build` no emita el aviso de fragmento mayor de 500 kB; si tras la división algún fragmento sigue superándolo, el sistema deberá tener un fragmento inicial menor que el medido antes del cambio, con ambas medidas registradas. (→ F-01.AC6; RNF-13)
+- **R12** (Ubicuo) El sistema deberá cargar de forma diferida el código de cada feature privada (`reception`, `triage`, `queue`, `reports` y la consulta de atenciones) con `lazyFeatureRoutes` (`src/app/router/lazyFeature.tsx`), que hace el `import()` de la feature solo después de que `RequireRole` permita la ruta, de modo que una ruta prohibida no descargue su código, que el fragmento inicial contenga solo el marco, las rutas públicas, el login y los guards, y que `npm run build` no emita el aviso de fragmento mayor de 500 kB; si tras la división algún fragmento sigue superándolo, el sistema deberá tener un fragmento inicial menor que el medido antes del cambio, con ambas medidas registradas. (→ F-01.AC6; RNF-13)
 - **R13** (Por estado) Mientras se descarga el código de una ruta diferida, el sistema deberá mostrar dentro del marco un estado de carga con `role="status"` y texto traducido, sin desplazar la barra lateral ni la cabecera. (→ F-01.AC6)
 - **R14** (No deseado) Si la descarga del código de una ruta diferida falla, entonces el sistema deberá mostrar el estado de error de R8 con un mensaje propio de «no se pudo cargar la pantalla» y un «Reintentar» que vuelve a pedir ese código. (→ F-01.AC6)
 
 ### Errores de red, de sesión y del servidor
 
-- **R15** (No deseado) Si una petición falla por error de red, entonces el sistema deberá mostrar en el lugar del error el texto traducido «No hay conexión con el servidor» con «Reintentar», distinto del de error del servidor. (→ F-01.AC6; RNF-14)
+- **R15** (No deseado) Si una petición falla por error de red, tanto una consulta (error de carga) como una acción (envío de un formulario, confirmar, rechazar, cancelar, registrar), entonces el sistema deberá mostrar en el lugar del error el texto traducido «No hay conexión con el servidor» (`common_error_network`) con «Reintentar», distinto del de error del servidor; en una acción, «Reintentar» repite el envío con los valores escritos solo cuando el usuario lo pulsa. (→ F-01.AC6, F-02.AC9, F-03.AC5; RNF-14)
 - **R16** (Por evento) Cuando el navegador recupere la conexión, el sistema deberá mantener el error de R15 hasta que el usuario pulse «Reintentar» (o, en los dashboards, hasta el siguiente intervalo de UI-02-web R24), sin repetir ninguna consulta ni mutación por la reconexión, conforme a UI-02-web R25. (→ F-01.AC6)
-- **R17** (No deseado) Si una mutación (envío de un formulario o una acción) falla por error de red, entonces el sistema deberá conservar los valores escritos, mostrar el error de R15 y no reenviarla de forma automática, ni al reconectar. (→ F-03.AC1, F-02.AC9)
-- **R18** (No deseado) Si una petición responde 5xx, entonces el sistema deberá mostrar el texto traducido de error del servidor con «Reintentar», sin el `detail` ni el `title` del `problem+json` ni otros detalles técnicos. (→ F-01.AC6; RNF-14)
+- **R17** (No deseado) Si una mutación (envío de un formulario o una acción) falla por error de red, entonces el sistema deberá conservar los valores escritos, mostrar el texto de red de R15 (`common_error_network`, no el texto de acción anterior) con «Reintentar» y no reenviarla de forma automática, ni al reconectar. (→ F-03.AC1, F-02.AC9)
+- **R18** (No deseado) Si una petición responde 5xx, tanto una consulta como una acción, entonces el sistema deberá mostrar el texto traducido de error del servidor (`common_error_server`, también en lugar del genérico de acción «No se pudo completar la acción…») con «Reintentar», conservando en una acción los valores escritos, sin el `detail` ni el `title` del `problem+json` ni otros detalles técnicos. (→ F-01.AC6; RNF-14)
 - **R19** (Por evento) Cuando un cierre forzado de sesión lleve al login, el sistema deberá mostrar «Tu sesión expiró. Vuelve a iniciar sesión.» y, tras un login correcto, abrir la ruta de origen (con su `search`) si el rol del usuario la permite, o el inicio de su rol si no la permite o es otro usuario sin acceso. (→ F-01.AC6, F-01.AC3)
 
 ### Textos traducidos
@@ -81,3 +81,8 @@ No queda ninguna pregunta abierta. Resueltas por el usuario por chat el 2026-10-
 - [x] PA-2 ¿Cuánto dura un borrador? → 30 minutos desde su creación. Cubierto por R6.
 - [x] PA-3 ¿Reintento al reconectar? → Ninguna consulta se repite sola al reconectar; el usuario pulsa «Reintentar». UI-02-web R25 se respeta sin cambios. Cubierto por R15 y R16.
 - [x] PA-4 ¿Trazas sin brief propio? → Se aceptan las trazas a F-01, F-02 y F-03, sin documento adicional.
+
+Enmiendas tras la revisión (`progress/review_UI-03-web.md`), decididas por el usuario por chat el 2026-10-30:
+
+- [x] A1 Carga diferida → se acepta `lazyFeatureRoutes` (`import()` solo tras `RequireRole`) en lugar del `lazy` de React Router. Enmienda R12 y D10.
+- [x] B1 Errores de acción → los envíos también usan `common_error_network` (R15) y `common_error_server` (R18) con «Reintentar»; el código cambia y se ajustan las pruebas de F-02 afectadas. Enmienda R15, R17 y R18.

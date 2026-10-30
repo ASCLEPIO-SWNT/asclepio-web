@@ -4,7 +4,7 @@
 
 Slice transversal de robustez sobre la web existente, sin pantallas nuevas ni cambios de contrato. Capas (según `docs/architecture.md`):
 
-- `app/router/`: `errorElement` por ruta, rutas diferidas (`lazy`), título por pantalla en `handle`, vuelta a la ruta de origen, `canAccess` con `subpaths`.
+- `app/router/`: `errorElement` por ruta, rutas diferidas (`lazyFeatureRoutes`, D10), título por pantalla en `handle`, vuelta a la ruta de origen, `canAccess` con `subpaths`.
 - `shared/ui/`: componentes nuevos `ConfirmDialog`, `RouteError`, `RouteLoading`, `DraftNotice`, `RouteAnnouncer` y una variante de error de red / servidor reutilizable por `PanelState` y `LoadError`.
 - `shared/hooks/`: `useUnsavedChanges` (`useBlocker` + `beforeunload`), `useDraft` (borrador en `sessionStorage`, según PA-1), `useDocumentTitle`.
 - `shared/lib/`: clasificación de errores (`network` | `server` | `session` | `forbidden` | `problem`) a partir de lo que ya devuelve `shared/api`.
@@ -32,6 +32,11 @@ El commit `595bb94` fija Node 22.23.4 (`.nvmrc`, `engines`, `init.sh` compara la
 - PA-3: sin reintento automático por reconexión en ninguna consulta; UI-02-web R25 intacto.
 - PA-4: trazas a F-01, F-02 y F-03 aceptadas, sin brief adicional.
 
+### Enmiendas tras la revisión (usuario, chat, 2026-10-30)
+
+- A1: `lazyFeatureRoutes` en lugar del `lazy` de React Router (D10, R12).
+- B1: los errores de acción usan `common_error_network` y `common_error_server` con «Reintentar» (D12, R15, R17, R18); `actionErrorMessage` (`src/shared/lib/problem.ts`) deja de devolver el texto de red de acción y el genérico de acción ante red caída y 5xx. Los demás errores de acción (422, 409, 403, 404) no cambian.
+
 ## Decisiones
 
 | # | Decisión | Alternativa descartada | Por qué |
@@ -45,9 +50,9 @@ El commit `595bb94` fija Node 22.23.4 (`.nvmrc`, `engines`, `init.sh` compara la
 | D7 | `errorElement: <RouteError />` en la ruta del `Layout` (públicas) y en cada hija del `AppShell` (privadas), para que el marco y la navegación sigan montados. «Reintentar» = `navigate(0)`‑equivalente vía `useRevalidator`/re‑montaje por `key`; «Volver al inicio» = `HOME_BY_ROLE`. | Un único `ErrorBoundary` en la raíz. | En la raíz se perdería la barra lateral. |
 | D8 | `RouteError` distingue: fallo de `import()` diferido (R14, mensaje «no se pudo cargar la pantalla», «Reintentar» recarga el documento si el fragmento ya no existe tras un despliegue) y error de render (R8). Nunca muestra `error.message` ni traza. | Mostrar el mensaje técnico. | Privacidad (RNF-05) y claridad. |
 | D9 | Título: `handle.titleKey` en cada ruta; `useDocumentTitle` en `Layout` lee `useMatches()` y escribe `${t(titleKey)} | Asclepio`. `RouteAnnouncer` (región `aria-live="polite"` visualmente oculta, única) anuncia el título al cambiar `location.key`. | `useEffect` en cada página. | Un solo punto, cubre rutas diferidas y error; WCAG 2.4.2. No se mueve el foco (cada pantalla ya gestiona su `h1`). |
-| D10 | Carga diferida con `lazy` de rutas de React Router en `FEATURE_ROUTES` (un fragmento por feature: `reception`, `triage` + atenciones, `queue`, `reports`); `HydrateFallback`/`RouteLoading` con `role="status"` dentro del `Outlet` del `AppShell`. | `React.lazy` + `Suspense` por componente. | La API `lazy` del router carga antes de renderizar y se integra con `errorElement` (R14); los guards (`RequireRole`) siguen en el fragmento inicial, así una ruta prohibida no descarga código. Si `manualChunks` hace falta para separar vendor (TanStack, RHF/Zod), se añade en `vite.config.ts` y se justifica en la medida. |
+| D10 | Carga diferida con `lazyFeatureRoutes` (`src/app/router/lazyFeature.tsx`) en `FEATURE_ROUTES` (un fragmento por feature: `reception`, `triage` + atenciones, `queue`, `reports`): el `import()` de la feature se hace dentro del elemento hijo de `RequireRole`, solo cuando el guard permite la ruta; mientras carga, `RouteLoading` con `role="status"` dentro del `Outlet` del `AppShell`; un `import()` rechazado llega a `RouteError` (R14). Enmienda decidida por el usuario el 2026-10-30 (A1). | El `lazy` de rutas de React Router (spec original) y `React.lazy` + `Suspense` por componente. | El `lazy` del router se resuelve al casar la ruta, antes de que rendericen los guards, así que una ruta prohibida descargaría código; `lazyFeatureRoutes` lo evita (lo cubre `lazyRoutes.test.tsx` R12–R14). Medida registrada: 712,55 → 658,28 kB, con el aviso de 500 kB aún presente (condición alternativa de R12). Si `manualChunks` hace falta para separar vendor (TanStack, RHF/Zod), se añade en `vite.config.ts` y se justifica en la medida. |
 | D11 | Medida del build: `npm run build` antes (en el commit de partida) y después, registrando tamaño bruto y gzip de cada fragmento en `docs/ui-robustness-verification.md`. | Medir solo después. | R12 exige comparar. |
-| D12 | Clasificador `classifyError(error | response)` en `shared/lib/errors.ts`: `TypeError` de `fetch` → `network`; 5xx → `server`; 401 → `session`; 403 → `forbidden`; resto → `problem` (sigue el mapeo actual de `problem.ts`). `PanelState`, `LoadError` y los errores de acción usan los textos `error_network` y `error_server`. | Tratar todo error como genérico. | R15 y R18 piden textos distintos; se reaprovecha la tubería existente. |
+| D12 | Clasificador `classifyError(error | response)` en `shared/lib/errors.ts`: `TypeError` de `fetch` → `network`; 5xx → `server`; 401 → `session`; 403 → `forbidden`; resto → `problem` (sigue el mapeo actual de `problem.ts`). `PanelState`, `LoadError` y los errores de acción usan los textos `common_error_network` y `common_error_server`; en las acciones con «Reintentar» que repite el envío solo al pulsarlo (B1, 2026-10-30). | Tratar todo error como genérico. | R15 y R18 piden textos distintos; se reaprovecha la tubería existente. |
 | D13 | Sin reintento por reconexión: `refetchOnReconnect: false` como valor por defecto del `QueryClient` (ya lo tienen los dashboards); mutaciones con `retry: 0` y `networkMode: 'always'` para que fallen de inmediato y no queden en pausa hasta reconectar (R16, R17). La recuperación es siempre «Reintentar» o el intervalo de UI-02-web R24. | Reintentar al reconectar las consultas en error. | Decisión del usuario (PA-3), coherente con UI-02-web R25; reenviar una captura podría duplicar mediciones (F-03.AC1). |
 | D14 | Ruta de origen: `state.from = pathname + search` en `RequireSession`; `LoginRoute` valida con `canAccess` sobre el `pathname` y conserva el `search`. No se guarda nada en almacenamiento (el `state` del historial basta). | Guardar la ruta en `sessionStorage`. | Privacidad R10/R24; el `search` solo lleva `siteId`/`offset`/filtros, sin datos personales. |
 | D15 | Anti‑literales: prueba `src/test/noUiLiterals.test.ts` que recorre `src/**/*.tsx` (sin pruebas) con el parser de TypeScript (ya dependencia de desarrollo) y falla ante `JSXText` con letras o atributos `aria-label`, `title`, `placeholder`, `alt` con cadena literal, y ante cadenas con letras pasadas a `setError`/mensajes mostrados. Excepciones explícitas en un arreglo con motivo: la marca «Asclepio», nombres de idioma en su propia lengua del selector, códigos técnicos. | Regla ESLint (`react/jsx-no-literals`). | Exigiría `eslint-plugin-react` (dependencia nueva); la prueba usa `typescript`, ya instalado. |
@@ -81,7 +86,11 @@ Sin impacto en datos (sin migraciones; la web no tiene base de datos). Único ca
 - `routes.test.tsx`/pruebas de `canAccess`: añadir casos de subrutas no declaradas (denegadas); los casos permitidos no cambian.
 - Imports de `renderApp` (todas las pruebas de `src/app/router/`).
 - `problem.test.ts`: solo los nombres de `describe`.
-- `f02Transversal.test.tsx` R40 y `f03Routes.test.tsx` R3: solo cambios de mecánica de espera (D19), con las mismas aserciones.
+- `f02Transversal.test.tsx` R40 (×2) y `ClinicalCaptureForms.test.tsx` R11: solo `delay: null` de `userEvent` (D19), con las mismas aserciones. `f03Routes.test.tsx` R3 no cambió.
+- `f03Routes.test.tsx` R5 (ya adaptada): solo se añade el clic en «Salir sin guardar» antes de las mismas aserciones, como exige R1.
+- Helper de `SessionProvider.test.tsx`: llama a `session.restore()` antes de montar (D18).
+- `src/test/renderFeature.tsx` y `src/test/testApp.tsx`: `createQueryClient` (valores de D13) y `preloadFeatures` (mecánica del arnés para R28; la carga diferida real se prueba en `lazyRoutes.test.tsx`).
+- Pruebas de F-02 (y de F-03, si las hay) que afirman el texto de red de acción («No se pudo conectar con el servidor…») o el genérico de acción con un 5xx: pasan a `common_error_network` y `common_error_server` por B1. La lista exacta (`archivo::prueba`) la añade el `implementer` aquí y en `progress/impl_UI-03-web.md` al hacer el cambio; solo cambia el texto esperado, no el resto de aserciones.
 
 ## Riesgos y pruebas
 

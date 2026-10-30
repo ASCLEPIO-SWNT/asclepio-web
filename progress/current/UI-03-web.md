@@ -41,3 +41,12 @@
 - T16: `src/test/ui03Transversal.test.tsx` (R29 CSS solo tokens y clases existentes; R31 recorrido sin datos personales; R32 contrato 0.4.0, SHA-256 de `schema.d.ts` igual al de `0bd94f7`, mismas 16 peticiones).
 - T17 (parcial): tres `./init.sh` seguidos en verde (849 pruebas), `i18n:check` OK, `api:types` sin diff, build inicial 658,28 kB (antes 712,55; aviso persiste). Tabla R1–R32 en `docs/ui-robustness-verification.md` y `progress/impl_UI-03-web.md`. **Pendiente** (leader/usuario): recorrido manual con login de los cuatro roles y capturas `ui03-*`; por eso T17 queda sin marcar.
 - Nombre del documento: se usa `docs/ui-robustness-verification.md` (el de tasks.md/design.md); el leader pidió `docs/ui-03-verification.md`.
+
+## 2026-10-30 — Enmienda de spec tras el rechazo del reviewer (spec_author)
+
+Decisiones del usuario por chat (2026-10-30), registradas en `requirements.md` (Preguntas abiertas → enmiendas) y `design.md`:
+
+- A1: se acepta `lazyFeatureRoutes` (`import()` solo tras `RequireRole`) en lugar del `lazy` de React Router. Enmendados R12, D10, el resumen de design.md y T12.
+- B1: las acciones (envíos) también usan `common_error_network` (R15) y `common_error_server` (R18) con «Reintentar» que repite el envío solo al pulsarlo. Enmendados R15, R17, R18 y D12. **Cambia código** (`actionErrorMessage` en `src/shared/lib/problem.ts`) y algunas pruebas de F-02: el implementer las añade por nombre a «Pruebas existentes que cambian» de design.md.
+- «Pruebas existentes que cambian» completada: `f03Routes.test.tsx` R5, `ClinicalCaptureForms.test.tsx` R11 y `f02Transversal.test.tsx` R40 (`delay: null`), helper de `SessionProvider.test.tsx`, `renderFeature.tsx` y `testApp.tsx`; corregida la mención errónea a `f03Routes` R3.
+- Sin renumerar. Pendiente del reviewer, fuera de la spec: prueba `R22:` bajo `UI-03-web …` (motivo 1). La enmienda necesita un «aprobado» del usuario.

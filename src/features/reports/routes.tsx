@@ -1,4 +1,5 @@
 import type { RouteObject } from 'react-router';
+import { REPORT_PAGES } from './pages';
 import { ReportsPage } from './components/ReportsPage';
 
 /**
@@ -7,5 +8,9 @@ import { ReportsPage } from './components/ReportsPage';
  * la franja «pendiente» de F-07.
  */
 export const reportRoutes: RouteObject[] = [
-  { path: '/reportes', element: <ReportsPage /> },
+  {
+    path: '/reportes',
+    element: <ReportsPage />,
+    handle: REPORT_PAGES['/reportes'],
+  },
 ];

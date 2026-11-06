@@ -357,12 +357,9 @@ describe('EncounterDetailPage — cancelación', () => {
   });
 
   it.each([
-    [problem(500), 'No se pudo completar la acción. Inténtalo de nuevo.'],
+    [problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
     [problem(403), 'No tienes permiso para realizar esta acción.'],
-    [
-      networkError(),
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
-    ],
+    [networkError(), 'No hay conexión con el servidor.'],
   ])(
     'R36: ante otro error muestra un error de acción (%#)',
     async (handler, message) => {

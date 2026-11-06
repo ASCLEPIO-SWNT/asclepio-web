@@ -19,5 +19,9 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // UI-03-web R28 (D19): con un worker por núcleo, la contención de CPU (jsdom + user-event)
+    // llevaba pruebas largas de ~2 s a más de 5 s. La mitad de los núcleos es más rápido en total
+    // y estable; el `testTimeout` global no se toca.
+    maxWorkers: '50%',
   },
 });

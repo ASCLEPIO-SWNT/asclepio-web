@@ -3,9 +3,14 @@ import { useI18n } from '../../../shared/i18n';
 import { useState } from 'react';
 import type { Patient } from '../../../shared/api/client';
 import { SITES_ERROR_MESSAGE, useSites } from '../../../shared/hooks/useSites';
-import { actionErrorMessage, problemOf } from '../../../shared/lib/problem';
+import {
+  actionErrorMessage,
+  isRetryableActionMessage,
+  problemOf,
+} from '../../../shared/lib/problem';
 import { ActionError } from '../../../shared/ui/ActionError';
 import { LoadError } from '../../../shared/ui/LoadError';
+import { UnsavedChangesGuard } from '../../../shared/ui/UnsavedChangesGuard';
 import {
   usePatientSearch,
   type PatientSearchParams,
@@ -25,6 +30,7 @@ export function DirectRegistrationPage() {
   const search = usePatientSearch(params);
   const [form, setForm] = useState<PatientFormMode | null>(null);
   const [created, setCreated] = useState<Patient | null>(null);
+  const [patientDirty, setPatientDirty] = useState(false);
 
   const found = params && search.isSuccess ? (search.data[0] ?? null) : null;
   const selected = created ?? (form ? null : found);
@@ -47,19 +53,31 @@ export function DirectRegistrationPage() {
 
   return (
     <section className="card" aria-labelledby="direct-title">
+      <UnsavedChangesGuard dirty={patientDirty} />
       <h1 id="direct-title">{t('feature_registration_direct')}</h1>
 
       {sites.isError && (
         <LoadError
           message={featureMessage(SITES_ERROR_MESSAGE)}
           retrying={sites.isFetching}
+          error={sites.error}
           onRetry={() => void sites.refetch()}
         />
       )}
 
       <PatientSearch busy={search.isFetching} onSearch={onSearch} />
       {params && search.isError && (
-        <ActionError>{actionErrorMessage(problemOf(search.error))}</ActionError>
+        <ActionError
+          onRetry={
+            isRetryableActionMessage(
+              actionErrorMessage(problemOf(search.error)),
+            )
+              ? () => void search.refetch()
+              : undefined
+          }
+        >
+          {featureMessage(actionErrorMessage(problemOf(search.error)))}
+        </ActionError>
       )}
       {noResults && !created && (
         <div className="search-result">
@@ -100,6 +118,7 @@ export function DirectRegistrationPage() {
         <PatientForm
           key={form.kind}
           mode={form}
+          onDirtyChange={setPatientDirty}
           onCreated={(patient) => {
             setCreated(patient);
             setForm(null);

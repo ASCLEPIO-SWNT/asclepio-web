@@ -2,6 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useReducer, useRef, useState } from 'react';
 import { useFieldArray, useForm, type Path } from 'react-hook-form';
 import { useI18n } from '../../../shared/i18n';
+import { isRetryableActionMessage } from '../../../shared/lib/problem';
 import { ActionError } from '../../../shared/ui/ActionError';
 import { Notice } from '../../../shared/ui/Notice';
 import { LoadingState } from '../../../shared/ui/LoadingState';
@@ -25,10 +26,13 @@ export function SymptomFindingsForm({
   disabled = false,
   onConflict,
   onUnavailable,
+  onDirtyChange,
 }: ClinicalFormProps) {
   const { t } = useI18n();
   const mutation = useRecordSymptomFindings(encounterId);
   const inFlight = useRef(false);
+  // UI-03-web R15/R17/R18: «Reintentar» vuelve a enviar el formulario con lo escrito.
+  const formRef = useRef<HTMLFormElement>(null);
   const [focusVersion, requestFocus] = useReducer(
     (version: number) => version + 1,
     0,
@@ -43,13 +47,18 @@ export function SymptomFindingsForm({
     reset,
     setError,
     setFocus,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<SymptomFindingsInput, unknown, SymptomFindingsOutput>({
     resolver: zodResolver(symptomFindingsSchema),
     defaultValues: emptyDraft(),
     shouldFocusError: true,
   });
   const { fields, append, remove } = useFieldArray({ control, name: 'items' });
+  // UI-03-web R1–R3: la página decide el aviso de cambios sin guardar con este estado.
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
   useEffect(() => {
     if (!disabled && !mutation.isPending && pendingFocus.current) {
       setFocus(pendingFocus.current);
@@ -92,6 +101,7 @@ export function SymptomFindingsForm({
   );
   return (
     <form
+      ref={formRef}
       className="form clinical-form"
       aria-label={t('clinical_findings_title')}
       noValidate
@@ -105,7 +115,17 @@ export function SymptomFindingsForm({
     >
       <h2>{t('clinical_findings_title')}</h2>
       <p className="muted">{t('clinical_original_readonly')}</p>
-      {errorKey && <ActionError>{t(errorKey)}</ActionError>}
+      {errorKey && (
+        <ActionError
+          onRetry={
+            isRetryableActionMessage(errorKey)
+              ? () => formRef.current?.requestSubmit()
+              : undefined
+          }
+        >
+          {t(errorKey)}
+        </ActionError>
+      )}
       {saved && <Notice>{t('clinical_findings_saved')}</Notice>}
       {listError && <ActionError>{listError}</ActionError>}
       <fieldset disabled={disabled || mutation.isPending}>

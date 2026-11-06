@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { session } from '../../shared/api/session';
 import { useMe } from './hooks/useMe';
 import { useSession } from './useSession';
@@ -12,8 +12,7 @@ const MAX_TIMEOUT_MS = 2 ** 31 - 1;
  */
 export function SessionProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
-  // R12: se lee sessionStorage una vez, antes del primer render de los guards.
-  useState(() => session.restore());
+  // R12 / UI-03-web R26 (D18): sessionStorage ya se leyó una vez en main.tsx, fuera del render.
   const { session: current } = useSession();
   const me = useMe();
 

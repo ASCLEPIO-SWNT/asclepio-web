@@ -186,7 +186,7 @@ it('R10: blocks a second submit and disables only the pending form', async () =>
 it('R11: adds and removes only draft findings, validates rows and limits the draft to twenty entries', async () => {
   const net = fakeApi({});
   mount();
-  const user = userEvent.setup();
+  const user = userEvent.setup({ delay: null });
   await user.click(screen.getByRole('button', { name: 'Añadir elemento' }));
   expect(screen.getAllByLabelText('Descripción')).toHaveLength(2);
   await user.click(screen.getByRole('button', { name: 'Quitar elemento 2' }));
@@ -293,9 +293,7 @@ it('R18: keeps drafts after network failure and permits only a manual new attemp
     screen.getByRole('button', { name: 'Guardar hallazgos' }),
   );
   expect(
-    await screen.findByText(
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
-    ),
+    await screen.findByText('No hay conexión con el servidor.'),
   ).toBeInTheDocument();
   expect(net.calls(FINDINGS)).toHaveLength(1);
   expect(screen.getByLabelText('Descripción')).toHaveValue(

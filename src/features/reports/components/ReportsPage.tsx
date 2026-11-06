@@ -68,6 +68,7 @@ export function ReportsPage() {
           kind="error"
           message={t('feature_sites_error')}
           retrying={sites.isFetching}
+          error={sites.error}
           onRetry={() => void sites.refetch()}
         />
       );

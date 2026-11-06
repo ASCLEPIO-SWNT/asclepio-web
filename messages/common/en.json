@@ -109,5 +109,19 @@
   "dash_view_all_encounters": "View all encounters",
   "dash_col_action": "Action",
   "guide_queue": "This screen summarizes encounters by status: waiting for triage, triaged and in care. Below you will see the most recent encounters; open one to review its details. It updates on its own periodically; use Refresh to check right away. The queue by level and waiting time is not available yet. The guide does not read patient data.",
-  "guide_reports": "This screen summarizes encounters by status and those waiting for triage at each location. It updates on its own periodically; use Refresh to check right away. Time reports and the CSV download are not available yet. The screen does not show patient data."
+  "guide_reports": "This screen summarizes encounters by status and those waiting for triage at each location. It updates on its own periodically; use Refresh to check right away. Time reports and the CSV download are not available yet. The screen does not show patient data.",
+  "common_error_network": "There is no connection to the server.",
+  "common_error_server": "The server ran into a problem. Please try again.",
+  "common_route_error_title": "Something went wrong on this screen",
+  "common_route_error_body": "The screen could not be displayed. You can try again or go back to the start.",
+  "common_route_chunk_error_body": "The screen could not be loaded. Check your connection and try again.",
+  "common_route_home": "Back to start",
+  "common_route_loading": "Loading the screen…",
+  "common_unsaved_title": "There are unsaved changes",
+  "common_unsaved_body": "If you leave now, the data you entered will be lost.",
+  "common_unsaved_leave": "Leave without saving",
+  "common_unsaved_stay": "Keep editing",
+  "common_draft_found": "There are unsaved vital signs from your previous session. Do you want to recover them?",
+  "common_draft_restore": "Recover draft",
+  "common_draft_discard": "Discard"
 }

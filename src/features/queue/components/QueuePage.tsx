@@ -80,6 +80,7 @@ export function QueuePage() {
           kind="error"
           message={t('dash_queue_recent_error')}
           retrying={recent.isFetching}
+          error={recent.error}
           onRetry={() => void recent.refetch()}
         />
       );

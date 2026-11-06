@@ -12,7 +12,7 @@ import {
 const res = (status: number, headers: Record<string, string> = {}) =>
   new Response(null, { status, headers });
 
-describe('problem', () => {
+describe('F-01-web problem', () => {
   it('R6: 401 se traduce a unauthorized sin conservar detail ni errores', () => {
     expect(
       toApiProblem(res(401), {
@@ -86,7 +86,7 @@ describe('problem', () => {
   });
 });
 
-describe('actionErrorMessage (D11)', () => {
+describe('F-02-web actionErrorMessage (D11)', () => {
   const other = (status: number): ApiProblem => ({
     kind: 'other',
     status,
@@ -109,13 +109,20 @@ describe('actionErrorMessage (D11)', () => {
   });
 
   it('R27: sin respuesta HTTP da el mensaje de conexión', () => {
+    // UI-03-web B1: la clave del texto de red de R15.
     expect(actionErrorMessage({ kind: 'network' }, { 409: 'x' })).toBe(
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
+      'common_error_network',
+    );
+  });
+
+  // UI-03-web B1: un 5xx ya no da el genérico, sino el texto del servidor de R18.
+  it('R36: un 5xx da la clave del texto del servidor (UI-03-web B1)', () => {
+    expect(actionErrorMessage(other(500), { 409: 'x', 404: 'y' })).toBe(
+      'common_error_server',
     );
   });
 
   it.each([
-    [other(500)],
     [other(400)],
     [{ kind: 'rateLimited', retryAfterSeconds: 5 }],
   ] as ApiProblem[][])(
@@ -139,7 +146,7 @@ describe('actionErrorMessage (D11)', () => {
   });
 });
 
-describe('applyFieldErrors (D11)', () => {
+describe('F-02-web applyFieldErrors (D11)', () => {
   it('R23: aplica solo los errors[] cuyo field es un campo del formulario', () => {
     const setError = vi.fn();
     const applied = applyFieldErrors<{ fullName: string; sex: string }>(

@@ -12,6 +12,7 @@ import { problemOf, statusOf } from '../../../shared/lib/problem';
 import { LoadError } from '../../../shared/ui/LoadError';
 import { LoadingState } from '../../../shared/ui/LoadingState';
 import { PatientDetails } from '../../../shared/ui/PatientDetails';
+import { UnsavedChangesGuard } from '../../../shared/ui/UnsavedChangesGuard';
 import { ViewForbidden } from '../../../shared/ui/ViewForbidden';
 import { useClinicalCapture } from '../hooks/useClinicalCapture';
 import { useEncounter } from '../hooks/useEncounter';
@@ -35,6 +36,8 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
     encounterId,
     me.role === 'NURSE' && detail.isSuccess,
   );
+  const [vitalsDirty, setVitalsDirty] = useState(false);
+  const [findingsDirty, setFindingsDirty] = useState(false);
   const [unavailable, setUnavailable] = useState<403 | 404 | null>(null);
   const [stateCheck, setStateCheck] = useState<'idle' | 'checking' | 'failed'>(
     'idle',
@@ -72,6 +75,7 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
   const mountedForms = detail.data !== undefined && capture.data !== undefined;
   return (
     <section className="clinical-workspace" aria-labelledby="capture-title">
+      <UnsavedChangesGuard dirty={vitalsDirty || findingsDirty} />
       <header className="clinical-workspace__header">
         <div>
           <h1 id="capture-title">{t('clinical_capture_title')}</h1>
@@ -100,6 +104,7 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
             <LoadError
               message={t('feature_encounter_error')}
               retrying={detail.isFetching}
+              error={detail.error}
               onRetry={() => void refresh()}
             />
           )}
@@ -138,6 +143,7 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
             <LoadError
               message={t('clinical_state_error')}
               retrying={detail.isFetching || capture.isFetching}
+              error={detail.error ?? capture.error ?? undefined}
               onRetry={() => void refresh()}
             />
           )}
@@ -154,6 +160,7 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
                   disabled={!canCapture}
                   onConflict={() => void refresh()}
                   onUnavailable={setUnavailable}
+                  onDirtyChange={setVitalsDirty}
                 />
               </div>
               <div className="card">
@@ -162,6 +169,7 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
                   disabled={!canCapture}
                   onConflict={() => void refresh()}
                   onUnavailable={setUnavailable}
+                  onDirtyChange={setFindingsDirty}
                 />
               </div>
             </div>

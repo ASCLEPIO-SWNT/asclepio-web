@@ -1,5 +1,6 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
+import { createQueryClient } from '../app/providers/queryClient';
 import {
   createMemoryRouter,
   Outlet,
@@ -31,8 +32,10 @@ export function renderFeature(
     role = 'RECEPTION',
   }: { entries?: Entries; role?: StaffRole } = {},
 ) {
-  const queryClient = new QueryClient({
-    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  // Los mismos valores por defecto que la app (UI-03-web D13), sin reintentos en las pruebas.
+  const queryClient = createQueryClient({
+    queries: { retry: false },
+    mutations: { retry: false },
   });
   const router = createMemoryRouter(
     [

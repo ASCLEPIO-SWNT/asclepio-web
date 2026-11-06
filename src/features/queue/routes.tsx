@@ -1,4 +1,5 @@
 import type { RouteObject } from 'react-router';
+import { QUEUE_PAGES } from './pages';
 import { QueuePage } from './components/QueuePage';
 
 /**
@@ -7,5 +8,9 @@ import { QueuePage } from './components/QueuePage';
  * «pendiente» de F-06.
  */
 export const queueRoutes: RouteObject[] = [
-  { path: '/cola', element: <QueuePage /> },
+  {
+    path: '/cola',
+    element: <QueuePage />,
+    handle: QUEUE_PAGES['/cola'],
+  },
 ];

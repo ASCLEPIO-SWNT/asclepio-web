@@ -11,9 +11,14 @@ export function RequireSession() {
   const location = useLocation();
   switch (staff.status) {
     case 'none':
-      // R18 / PA-7: la ruta de origen va en el estado de navegación, nunca en la URL.
+      // R18 / PA-7: la ruta de origen va en el estado de navegación, nunca en la URL. Incluye el
+      // search (filtros como siteId y offset, sin datos personales; UI-03-web R19, D14).
       return (
-        <Navigate to="/login" replace state={{ from: location.pathname }} />
+        <Navigate
+          to="/login"
+          replace
+          state={{ from: `${location.pathname}${location.search}` }}
+        />
       );
     case 'error':
       return <ProfileError />;

@@ -4,7 +4,7 @@ import {
 } from '../../../shared/lib/featureMessages';
 import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm, useWatch, type Path, type Resolver } from 'react-hook-form';
 import type { DocumentType, Patient } from '../../../shared/api/client';
 import {
@@ -15,6 +15,7 @@ import {
 import {
   actionErrorMessage,
   applyFieldErrors,
+  isRetryableActionMessage,
   problemOf,
   statusOf,
 } from '../../../shared/lib/problem';
@@ -31,9 +32,9 @@ import {
   type PatientWithDocumentForm,
 } from '../schemas';
 
-const CONFLICT_MESSAGE = 'Ya existe un paciente con ese documento.';
-const FUTURE_BIRTH_DATE_MESSAGE =
-  'La fecha de nacimiento no puede ser posterior a hoy.';
+// Claves de catálogo (UI-03-web R20); `featureMessage`/`fieldMessage` las traducen al mostrarlas.
+const CONFLICT_MESSAGE = 'feature_patient_conflict';
+const FUTURE_BIRTH_DATE_MESSAGE = 'feature_birth_future';
 
 type FormValues = PatientWithDocumentForm & NnPatientForm;
 const SERVER_FIELDS: Path<FormValues>[] = [
@@ -80,12 +81,17 @@ function FieldMessage({
 export function PatientForm({
   mode,
   onCreated,
+  onDirtyChange,
 }: {
   mode: PatientFormMode;
   onCreated: (patient: Patient) => void;
+  /** Avisa a la página de si el alta tiene cambios sin guardar (UI-03-web R1–R3). */
+  onDirtyChange?: (dirty: boolean) => void;
 }) {
   const { t } = useI18n();
   const create = useCreatePatient();
+  // UI-03-web R15/R18: «Reintentar» vuelve a enviar el formulario con lo escrito.
+  const formRef = useRef<HTMLFormElement>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const isDocument = mode.kind === 'document';
   const {
@@ -93,7 +99,7 @@ export function PatientForm({
     handleSubmit,
     control,
     setError,
-    formState: { errors },
+    formState: { errors, isDirty },
   } = useForm<FormValues>({
     // El esquema depende del modo; los dos trabajan sobre los mismos nombres de campo.
     resolver: (isDocument
@@ -110,6 +116,11 @@ export function PatientForm({
     },
     shouldFocusError: true,
   });
+  // UI-03-web R1–R3: la página decide el aviso de cambios sin guardar con este estado.
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+  useEffect(() => () => onDirtyChange?.(false), [onDirtyChange]);
   const ageMode = useWatch({ control, name: 'ageMode' });
   const showBirthDate = isDocument || ageMode === 'birthDate';
   const showAge = !isDocument && ageMode === 'estimatedAge';
@@ -132,19 +143,16 @@ export function PatientForm({
           });
           return;
         }
+        // UI-03-web R24 (D17): un 422 sin fecha de nacimiento (NN con edad estimada) no es de
+        // fecha futura: se marca el campo con el texto genérico o se muestra el error genérico.
         if (
-          status === 400 &&
+          (status === 400 || status === 422) &&
           problem.kind === 'other' &&
           applyFieldErrors(setError, problem.fieldErrors, SERVER_FIELDS) > 0
         ) {
           return;
         }
-        setActionError(
-          actionErrorMessage(problem, {
-            409: CONFLICT_MESSAGE,
-            422: FUTURE_BIRTH_DATE_MESSAGE,
-          }),
-        );
+        setActionError(actionErrorMessage(problem, { 409: CONFLICT_MESSAGE }));
       },
     });
   };
@@ -155,6 +163,7 @@ export function PatientForm({
 
   return (
     <form
+      ref={formRef}
       className="form"
       aria-label={title}
       noValidate
@@ -304,7 +313,17 @@ export function PatientForm({
       {create.isPending && (
         <LoadingState>{t('feature_patient_saving')}</LoadingState>
       )}
-      {actionError && <ActionError>{featureMessage(actionError)}</ActionError>}
+      {actionError && (
+        <ActionError
+          onRetry={
+            isRetryableActionMessage(actionError)
+              ? () => formRef.current?.requestSubmit()
+              : undefined
+          }
+        >
+          {featureMessage(actionError)}
+        </ActionError>
+      )}
     </form>
   );
 }

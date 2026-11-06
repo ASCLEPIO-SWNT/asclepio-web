@@ -21,7 +21,10 @@ export function LoginRoute() {
   if (staff.status === 'staff') {
     const { role } = staff.me;
     const from = fromOf(location.state);
-    const target = from && canAccess(role, from) ? from : HOME_BY_ROLE[role];
+    // UI-03-web R19 (D14): el permiso se decide sobre el pathname; el search se conserva.
+    const pathname = from?.split('?')[0];
+    const target =
+      from && pathname && canAccess(role, pathname) ? from : HOME_BY_ROLE[role];
     return <Navigate to={target} replace />;
   }
   // `none` y `loading`: LoginPage muestra su propio estado "Ingresando…" (R4, R11).

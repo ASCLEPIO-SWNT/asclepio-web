@@ -17,6 +17,7 @@ import {
   publicTenants,
   type Handler,
 } from '../../../test/fakeApi';
+import { setCurrentLocale } from '../../../shared/i18n/locale';
 import { renderFeature } from '../../../test/renderFeature';
 import { receptionRoutes } from '../routes';
 
@@ -180,12 +181,9 @@ describe('Registro directo — búsqueda', () => {
   });
 
   it.each([
-    [problem(500), 'No se pudo completar la acción. Inténtalo de nuevo.'],
+    [problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
     [problem(403), 'No tienes permiso para realizar esta acción.'],
-    [
-      networkError(),
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
-    ],
+    [networkError(), 'No hay conexión con el servidor.'],
   ])(
     'R19: si la búsqueda falla muestra un error de acción (%#)',
     async (handler, message) => {
@@ -524,11 +522,8 @@ describe('Registro directo — alta de paciente', () => {
   });
 
   it.each([
-    [problem(500), 'No se pudo completar la acción. Inténtalo de nuevo.'],
-    [
-      networkError(),
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
-    ],
+    [problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
+    [networkError(), 'No hay conexión con el servidor.'],
   ])(
     'R23: ante otro error muestra un error de acción y conserva lo escrito (%#)',
     async (handler, message) => {
@@ -713,7 +708,7 @@ describe('Registro directo — llegada', () => {
 
   it.each([
     [problem(422), 'La sede o el paciente ya no son válidos.'],
-    [problem(500), 'No se pudo completar la acción. Inténtalo de nuevo.'],
+    [problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
     [problem(403), 'No tienes permiso para realizar esta acción.'],
   ])(
     'R27: ante %# muestra el error de acción sin enlace y conserva lo escrito',
@@ -758,5 +753,76 @@ describe('Registro directo — llegada', () => {
     await search(user);
     await screen.findByRole('region', { name: 'Paciente seleccionado' });
     expect(within(arrivalForm()).getByLabelText('Sede')).toBeDisabled();
+  });
+});
+
+describe('UI-03-web 422 del alta NN con edad estimada', () => {
+  async function fillNnWithAge(user: User) {
+    const form = await openNn(user);
+    await user.selectOptions(
+      within(form).getByLabelText('Dato de edad'),
+      'Edad estimada (años)',
+    );
+    await user.type(within(form).getByLabelText('Edad estimada (años)'), '45');
+    await user.selectOptions(within(form).getByLabelText('Sexo'), 'Masculino');
+    await user.click(
+      within(form).getByRole('button', { name: 'Guardar paciente' }),
+    );
+    return form;
+  }
+
+  it('R24: un 422 sin errores de campo muestra el error genérico, no el de fecha de nacimiento futura', async () => {
+    const { net, user } = setup({ [CREATE_PATIENT]: problem(422) });
+    const form = await fillNnWithAge(user);
+    expect(await within(form).findByRole('alert')).toHaveTextContent(
+      'No se pudo completar la acción. Inténtalo de nuevo.',
+    );
+    expect(
+      screen.queryByText(
+        'La fecha de nacimiento no puede ser posterior a hoy.',
+      ),
+    ).not.toBeInTheDocument();
+    expect(within(form).getByLabelText('Edad estimada (años)')).toHaveValue(45);
+    expect(net.calls(CREATE_PATIENT)).toHaveLength(1);
+  });
+
+  it('R24: un 422 con error en la edad estimada lo marca junto a su campo con el texto genérico', async () => {
+    const { user } = setup({
+      [CREATE_PATIENT]: problem(422, {
+        errors: [{ field: 'estimatedAgeYears', message: 'out of range' }],
+      }),
+    });
+    const form = await fillNnWithAge(user);
+    await screen.findByText('Revisa este campo.');
+    expectAccessibleError(
+      within(form).getByLabelText('Edad estimada (años)'),
+      'Revisa este campo.',
+    );
+    expect(
+      screen.queryByText(
+        'La fecha de nacimiento no puede ser posterior a hoy.',
+      ),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe('UI-03-web textos traducidos', () => {
+  it('R20: el error de la búsqueda sale del catálogo del idioma activo, no en español', async () => {
+    setCurrentLocale('en');
+    const { user } = setup({ [SEARCH]: networkError() });
+    const form = screen.getByRole('form', { name: 'Search for a patient' });
+    await user.selectOptions(
+      within(form).getByLabelText('Document type'),
+      'Citizenship identity card',
+    );
+    await user.type(
+      within(form).getByLabelText('Document number'),
+      '1032456789',
+    );
+    await user.click(within(form).getByRole('button', { name: 'Search' }));
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      'There is no connection to the server.',
+    );
+    expect(screen.queryByText(/No hay conexión/)).not.toBeInTheDocument();
   });
 });

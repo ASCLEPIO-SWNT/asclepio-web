@@ -26,3 +26,31 @@ describe('matriz de roles (D4 de F-02-web)', () => {
     expect(canAccess('NURSE', '/atencionesx')).toBe(false);
   });
 });
+
+describe('UI-03-web subrutas declaradas (D16)', () => {
+  const ID = 'e0e0e0e0-0000-4000-8000-000000000001';
+
+  it('R23: las subrutas declaradas en subpaths siguen permitidas para sus roles', () => {
+    expect(canAccess('RECEPTION', '/recepcion/registro')).toBe(true);
+    expect(canAccess('NURSE', `/triage/${ID}`)).toBe(true);
+    for (const role of ['RECEPTION', 'NURSE', 'PHYSICIAN', 'ADMIN'] as const) {
+      expect(canAccess(role, `/atenciones/${ID}`)).toBe(true);
+    }
+  });
+
+  it('R23: una subruta no declarada se deniega por defecto', () => {
+    expect(canAccess('RECEPTION', '/recepcion/otra')).toBe(false);
+    expect(canAccess('RECEPTION', '/recepcion/registro/x')).toBe(false);
+    expect(canAccess('NURSE', '/triage/a/b')).toBe(false);
+    expect(canAccess('NURSE', '/triage/')).toBe(false);
+    expect(canAccess('ADMIN', '/atenciones/')).toBe(false);
+    expect(canAccess('ADMIN', `/atenciones/${ID}/editar`)).toBe(false);
+    expect(canAccess('PHYSICIAN', '/cola/x')).toBe(false);
+    expect(canAccess('ADMIN', '/reportes/x')).toBe(false);
+  });
+
+  it('R23: el rol sigue mandando sobre la subruta', () => {
+    expect(canAccess('PHYSICIAN', `/triage/${ID}`)).toBe(false);
+    expect(canAccess('NURSE', '/recepcion/registro')).toBe(false);
+  });
+});

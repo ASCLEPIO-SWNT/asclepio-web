@@ -95,10 +95,18 @@ export function statusOf(problem: ApiProblem): number | null {
 
 export const FORBIDDEN_ACTION_MESSAGE =
   'No tienes permiso para realizar esta acción.';
-export const NETWORK_ACTION_MESSAGE =
-  'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.';
+/** Claves de catálogo de los errores de red y de servidor (UI-03-web R15, R18, B1). */
+export const NETWORK_ACTION_MESSAGE = 'common_error_network';
+export const SERVER_ACTION_MESSAGE = 'common_error_server';
 export const GENERIC_ACTION_MESSAGE =
   'No se pudo completar la acción. Inténtalo de nuevo.';
+
+/** Un error de acción de red o de servidor admite «Reintentar» (UI-03-web R15, R18). */
+export function isRetryableActionMessage(message: string | null): boolean {
+  return (
+    message === NETWORK_ACTION_MESSAGE || message === SERVER_ACTION_MESSAGE
+  );
+}
 
 /**
  * Mensaje de un "error de acción" (glosario de F-02-web, D11): primero el mensaje en
@@ -110,6 +118,7 @@ export function actionErrorMessage(
 ): string {
   const status = statusOf(problem);
   if (status === null) return NETWORK_ACTION_MESSAGE;
+  if (status >= 500) return SERVER_ACTION_MESSAGE;
   const inContext = byStatus[status];
   if (inContext !== undefined) return inContext;
   if (status === 403) return FORBIDDEN_ACTION_MESSAGE;

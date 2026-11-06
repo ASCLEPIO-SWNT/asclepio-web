@@ -74,9 +74,24 @@ export function routesFor(role: StaffRole): RoleRoute[] {
   return ROLE_ROUTES.filter((route) => route.roles.includes(role));
 }
 
-/** La ruta exacta o una subruta (`/atenciones/<id>`) de una ruta del rol (D4 de F-02-web). */
+/** `true` si `path` casa con el patrón: `:param` vale exactamente un segmento no vacío. */
+function matchesPattern(pattern: string, path: string): boolean {
+  const expected = pattern.split('/');
+  const actual = path.split('/');
+  if (expected.length !== actual.length) return false;
+  return expected.every((segment, index) =>
+    segment.startsWith(':') ? actual[index] !== '' : segment === actual[index],
+  );
+}
+
+/**
+ * La ruta exacta o una subruta declarada en `subpaths` (con patrones `:id`) de una ruta del rol
+ * (D4 de F-02-web). Cualquier otra subruta se deniega por defecto (UI-03-web R23, D16).
+ */
 export function canAccess(role: StaffRole, path: string): boolean {
   return routesFor(role).some(
-    (route) => path === route.path || path.startsWith(`${route.path}/`),
+    (route) =>
+      path === route.path ||
+      (route.subpaths ?? []).some((pattern) => matchesPattern(pattern, path)),
   );
 }

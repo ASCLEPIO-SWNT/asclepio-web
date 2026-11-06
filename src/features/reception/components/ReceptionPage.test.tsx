@@ -322,11 +322,8 @@ describe('ReceptionPage — confirmación de llegada', () => {
 
   it.each([
     [problem(403), 'No tienes permiso para realizar esta acción.'],
-    [
-      networkError(),
-      'No se pudo conectar con el servidor. Revisa tu conexión e inténtalo de nuevo.',
-    ],
-    [problem(500), 'No se pudo completar la acción. Inténtalo de nuevo.'],
+    [networkError(), 'No hay conexión con el servidor.'],
+    [problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
     [problem(422), 'No se pudo completar la acción. Inténtalo de nuevo.'],
   ])(
     'R13: ante otro error muestra el error de acción (%#)',
@@ -457,7 +454,7 @@ describe('ReceptionPage — rechazo', () => {
   it.each([
     [409, 'Este preregistro ya no está pendiente.', true],
     [404, 'Este preregistro ya no existe.', true],
-    [500, 'No se pudo completar la acción. Inténtalo de nuevo.', false],
+    [500, 'El servidor tuvo un problema. Inténtalo de nuevo.', false],
     [403, 'No tienes permiso para realizar esta acción.', false],
   ])(
     'R16: con %i muestra "%s" (refresca la bandeja: %s)',
@@ -512,5 +509,45 @@ describe('ReceptionPage — rechazo', () => {
     expect(net.calls(REJECT)).toHaveLength(1);
     act(() => gate.release());
     await screen.findByText('Preregistro rechazado.');
+  });
+});
+
+describe('UI-03-web bandeja con sede elegida', () => {
+  it('R25: con una sede elegida la bandeja pide y muestra solo esa sede, también al repetirse cada 30 s', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const net = fakeApi({
+      [TENANTS]: json(200, publicTenants),
+      [TRAY]: (request) =>
+        new URL(request.url).searchParams.get('siteId') === SITE_SUR.id
+          ? json(200, [second])(request)
+          : json(200, [pendingPreRegistration, second])(request),
+      [LIST]: json(200, { items: [] }),
+    });
+    const user = userEvent.setup({
+      advanceTimers: (ms) => vi.advanceTimersByTime(ms),
+    });
+    renderFeature(receptionRoutes, { entries: ['/recepcion'] });
+    await card();
+    await waitFor(() => expect(screen.getByLabelText('Sede')).toBeEnabled());
+    await user.selectOptions(screen.getByLabelText('Sede'), 'Sede Sur');
+
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('article', { name: patient.fullName! }),
+      ).not.toBeInTheDocument(),
+    );
+    expect(screen.getByRole('article', { name: 'Andrés Ruiz' })).toBeVisible();
+    expect(net.calls(TRAY).at(-1)!.query.get('siteId')).toBe(SITE_SUR.id);
+
+    const before = net.calls(TRAY).length;
+    await act(() => vi.advanceTimersByTimeAsync(30_000));
+    await waitFor(() => expect(net.calls(TRAY)).toHaveLength(before + 1));
+    expect([...net.calls(TRAY).at(-1)!.query.entries()]).toEqual([
+      ['siteId', SITE_SUR.id],
+    ]);
+    expect(screen.getByRole('article', { name: 'Andrés Ruiz' })).toBeVisible();
+    expect(
+      screen.queryByRole('article', { name: patient.fullName! }),
+    ).not.toBeInTheDocument();
   });
 });

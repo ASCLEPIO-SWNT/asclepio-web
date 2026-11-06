@@ -15,7 +15,13 @@ export function SummaryFilter({
   id: string;
   label: string;
   children: ReactNode;
-  error?: { message: string; onRetry: () => void; retrying?: boolean };
+  error?: {
+    message: string;
+    onRetry: () => void;
+    retrying?: boolean;
+    /** El error de la petición (UI-03-web R15, R18). */
+    cause?: unknown;
+  };
 }) {
   return (
     <div className="summary__filter">
@@ -25,6 +31,7 @@ export function SummaryFilter({
         <LoadError
           message={error.message}
           retrying={error.retrying}
+          error={error.cause}
           onRetry={error.onRetry}
         />
       )}

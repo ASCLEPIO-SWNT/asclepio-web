@@ -28,7 +28,7 @@ import {
   staffMe,
   type RecordedRequest,
 } from '../../test/fakeApi';
-import { renderApp } from './testApp';
+import { renderApp } from '../../test/testApp';
 
 const PR = pendingPreRegistration;
 const REJECT_REASON = 'Paciente no se presentó a la ventanilla';
@@ -160,7 +160,7 @@ describe('F-02 transversal', () => {
         resolvedAt: '2026-10-27T15:00:00.000Z',
       }),
     });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const { router } = renderApp({ entries: ['/recepcion'], stored: true });
     const stop = trackUrls(router);
 
@@ -216,7 +216,7 @@ describe('F-02 transversal', () => {
         cancellationReason: CANCEL_REASON,
       }),
     });
-    const user = userEvent.setup();
+    const user = userEvent.setup({ delay: null });
     const { router } = renderApp({
       entries: ['/recepcion/registro'],
       stored: true,

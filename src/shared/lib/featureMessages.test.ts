@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { setCurrentLocale } from '../i18n/locale';
+import { LOCALES, setCurrentLocale } from '../i18n/locale';
+import { translate } from '../i18n';
 import { featureMessage, fieldMessage } from './featureMessages';
 import {
   DOCUMENT_TYPE_LABELS,
@@ -53,5 +54,33 @@ describe('UI-01 controlled messages', () => {
         documentNumber: null,
       }),
     ).toBe('Ana María');
+  });
+});
+
+describe('UI-03-web mensajes por clave', () => {
+  it('R20: featureMessage y fieldMessage traducen las claves de catálogo en los cinco idiomas', () => {
+    const expected = {
+      es: 'La atención ya está cerrada o cancelada.',
+      en: 'The encounter is already closed or cancelled.',
+      pt: 'O atendimento já foi encerrado ou cancelado.',
+      fr: 'La prise en charge est déjà clôturée ou annulée.',
+      de: 'Die Behandlung ist bereits abgeschlossen oder storniert.',
+    } as const;
+    for (const locale of LOCALES) {
+      setCurrentLocale(locale);
+      expect(featureMessage('feature_cancel_conflict')).toBe(expected[locale]);
+    }
+    setCurrentLocale('en');
+    expect(fieldMessage('feature_birth_future')).toBe(
+      translate('en', 'feature_birth_future'),
+    );
+    setCurrentLocale('es');
+  });
+
+  it('R20: un texto que no es clave ni mensaje conocido no se convierte en otra cosa', () => {
+    expect(featureMessage('feature_unknown_key_xyz')).toBe(
+      'feature_unknown_key_xyz',
+    );
+    expect(fieldMessage('server said something')).toBe('Revisa este campo.');
   });
 });

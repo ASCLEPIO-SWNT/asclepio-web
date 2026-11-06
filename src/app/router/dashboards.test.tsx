@@ -36,7 +36,7 @@ import {
   type Handler,
 } from '../../test/fakeApi';
 import { ROLE_ROUTES } from './roleMatrix';
-import { renderApp } from './testApp';
+import { renderApp } from '../../test/testApp';
 
 type Group = 'common' | 'features';
 

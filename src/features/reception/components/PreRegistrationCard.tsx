@@ -4,7 +4,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { featureMessage } from '../../../shared/lib/featureMessages';
 import { useI18n } from '../../../shared/i18n';
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import type {
   Encounter,
   PendingPreRegistration,
@@ -18,7 +18,11 @@ import {
   patientDocument,
   patientName,
 } from '../../../shared/lib/labels';
-import { actionErrorMessage, problemOf } from '../../../shared/lib/problem';
+import {
+  actionErrorMessage,
+  isRetryableActionMessage,
+  problemOf,
+} from '../../../shared/lib/problem';
 import { ActionError } from '../../../shared/ui/ActionError';
 import { LoadingState } from '../../../shared/ui/LoadingState';
 import { StatusBadge } from '../../../shared/ui/StatusBadge';
@@ -26,13 +30,14 @@ import { useConfirmPreRegistration } from '../hooks/useConfirmPreRegistration';
 import { useRejectPreRegistration } from '../hooks/useRejectPreRegistration';
 import { RejectForm } from './RejectForm';
 
+// Claves de catálogo (UI-03-web R20); `featureMessage` las traduce al mostrarlas.
 const CONFIRM_MESSAGES = {
-  409: 'Este preregistro ya no está pendiente o el paciente ya tiene una atención activa.',
-  404: 'Este preregistro ya no existe.',
+  409: 'feature_confirm_conflict',
+  404: 'feature_pr_gone',
 };
 const REJECT_MESSAGES = {
-  409: 'Este preregistro ya no está pendiente.',
-  404: 'Este preregistro ya no existe.',
+  409: 'feature_reject_conflict',
+  404: 'feature_pr_gone',
 };
 
 /** 409 y 404 vuelven a pedir la bandeja (R13, R16). */
@@ -105,6 +110,8 @@ export function PreRegistrationCard({
     IDENTITY_VIEW[preRegistration.identityVerified ? 'verified' : 'unverified'];
   const documentText = patientDocument(patient);
 
+  // UI-03-web R15/R18: «Reintentar» repite la última acción (confirmar o rechazar) al pulsarlo.
+  const lastAction = useRef<(() => void) | null>(null);
   const fail = (cause: unknown, messages: Record<number, string>) => {
     const problem = problemOf(cause);
     const status = problem.kind === 'other' ? problem.status : undefined;
@@ -113,6 +120,7 @@ export function PreRegistrationCard({
 
   const onConfirm = () => {
     if (busy || !verified) return;
+    lastAction.current = onConfirm;
     onStart();
     confirm.mutate(id, {
       onSuccess: onConfirmed,
@@ -122,6 +130,7 @@ export function PreRegistrationCard({
 
   const onReject = (reason: string) => {
     if (busy) return;
+    lastAction.current = () => onReject(reason);
     onStart();
     reject.mutate(
       { id, reason },
@@ -209,7 +218,17 @@ export function PreRegistrationCard({
         {confirm.isPending && (
           <LoadingState>{t('feature_confirming_arrival')}</LoadingState>
         )}
-        {error && <ActionError>{featureMessage(error)}</ActionError>}
+        {error && (
+          <ActionError
+            onRetry={
+              isRetryableActionMessage(error)
+                ? () => lastAction.current?.()
+                : undefined
+            }
+          >
+            {featureMessage(error)}
+          </ActionError>
+        )}
         {rejecting && (
           <RejectForm
             id={id}

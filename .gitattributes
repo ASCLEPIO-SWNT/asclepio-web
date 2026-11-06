@@ -1,0 +1,14 @@
+# Saltos de línea LF en todo el árbol de trabajo, también en Windows con core.autocrlf=true:
+# Prettier exige LF y R36 (UI-02-web) compara la huella SHA-256 de los tipos generados.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary

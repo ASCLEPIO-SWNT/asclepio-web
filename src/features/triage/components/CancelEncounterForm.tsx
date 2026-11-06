@@ -3,7 +3,6 @@ import { useI18n } from '../../../shared/i18n';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import type { Encounter } from '../../../shared/api/client';
 import {
   actionErrorMessage,
   problemOf,
@@ -14,7 +13,8 @@ import { TextAreaField } from '../../../shared/ui/TextAreaField';
 import { useCancelEncounter } from '../hooks/useCancelEncounter';
 import { reasonSchema, type Reason, type ReasonForm } from '../schemas';
 
-const CONFLICT_MESSAGE = 'La atención ya está cerrada o cancelada.';
+// Clave de catálogo (UI-03-web R20); la página la traduce con `featureMessage`.
+const CONFLICT_MESSAGE = 'feature_cancel_conflict';
 
 /**
  * "Cancelar atención" con su motivo (R34–R36). "Volver" no llama a la API. El error de
@@ -29,8 +29,13 @@ export function CancelEncounterForm({
 }: {
   encounterId: string;
   onStart: () => void;
-  onCancelled: (encounter: Encounter) => void;
-  onFailed: (message: string | null, status: number | null) => void;
+  onCancelled: () => void;
+  /** `retry` repite la cancelación con el mismo motivo (UI-03-web R15, R18). */
+  onFailed: (
+    message: string | null,
+    status: number | null,
+    retry: () => void,
+  ) => void;
 }) {
   const { t } = useI18n();
   const cancel = useCancelEncounter(encounterId);
@@ -49,10 +54,10 @@ export function CancelEncounterForm({
     if (cancel.isPending) return;
     onStart();
     cancel.mutate(reason, {
-      onSuccess: (encounter) => {
+      onSuccess: () => {
         setOpen(false);
         reset();
-        onCancelled(encounter);
+        onCancelled();
       },
       onError: (cause) => {
         const problem = problemOf(cause);
@@ -63,6 +68,7 @@ export function CancelEncounterForm({
             ? null
             : actionErrorMessage(problem, { 409: CONFLICT_MESSAGE }),
           status,
+          () => onValid({ reason }),
         );
       },
     });

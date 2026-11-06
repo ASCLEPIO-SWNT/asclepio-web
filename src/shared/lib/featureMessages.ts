@@ -48,7 +48,19 @@ const MESSAGE_KEYS: Record<string, string> = {
   'La atención ya está cerrada o cancelada.': 'feature_cancel_conflict',
 };
 
+const KNOWN_KEYS = new Set([
+  ...Object.values(MESSAGE_KEYS),
+  // UI-03-web B1: errores de acción de red y de servidor.
+  'common_error_network',
+  'common_error_server',
+]);
+
+/**
+ * La clave de catálogo de un mensaje: el propio texto si ya es una clave conocida (UI-03-web R20:
+ * los componentes guardan claves, no literales) o la del texto canónico en español.
+ */
 function keyOf(message: string): string | undefined {
+  if (KNOWN_KEYS.has(message)) return message;
   return Object.hasOwn(MESSAGE_KEYS, message)
     ? MESSAGE_KEYS[message]
     : undefined;

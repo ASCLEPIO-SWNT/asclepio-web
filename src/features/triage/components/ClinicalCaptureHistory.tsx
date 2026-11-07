@@ -35,9 +35,16 @@ export function ClinicalCaptureHistory({
                   <Fragment key={field}>
                     <dt>{t(`clinical_field_${field}`)}</dt>
                     <dd>
-                      {typeof record[field] === 'boolean'
-                        ? t(record[field] ? 'clinical_yes' : 'clinical_no')
-                        : (record[field] ?? '—')}
+                      {field === 'consciousness' && record[field] !== null ? (
+                        // UI-04-web R11: insignia neutra, sin tono que sugiera gravedad.
+                        <span className="badge tone--neutral">
+                          {record[field]}
+                        </span>
+                      ) : typeof record[field] === 'boolean' ? (
+                        t(record[field] ? 'clinical_yes' : 'clinical_no')
+                      ) : (
+                        (record[field] ?? '—')
+                      )}
                       {record[field] !== null &&
                         VITAL_UNITS[field] &&
                         ` ${VITAL_UNITS[field]}`}

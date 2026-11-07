@@ -70,8 +70,14 @@ export const ROLE_LABELS: Record<StaffRole, string> = {
   ADMIN: 'Administración',
 };
 
+/** Rutas del rol: su inicio (`HOME_BY_ROLE`) primero y el resto en el orden de la matriz (UI-04-web R14, D14). */
 export function routesFor(role: StaffRole): RoleRoute[] {
-  return ROLE_ROUTES.filter((route) => route.roles.includes(role));
+  const routes = ROLE_ROUTES.filter((route) => route.roles.includes(role));
+  const home = HOME_BY_ROLE[role];
+  return [
+    ...routes.filter((route) => route.path === home),
+    ...routes.filter((route) => route.path !== home),
+  ];
 }
 
 /** `true` si `path` casa con el patrón: `:param` vale exactamente un segmento no vacío. */

@@ -385,7 +385,7 @@ describe('UI-02-web dashboard de medicina', () => {
   });
 
   describe('franja «pendiente»', () => {
-    it('R18: nombra la funcionalidad de F-06 y no tiene acciones, niveles, tiempos ni gráficos', async () => {
+    it('R18: muestra el texto neutral de pendiente y no tiene acciones, niveles, tiempos ni gráficos', async () => {
       const { net } = setup();
       await rows();
       const pending = strip();
@@ -395,7 +395,8 @@ describe('UI-02-web dashboard de medicina', () => {
       );
       expect(within(pending).getByText('Próximamente')).toHaveClass('badge');
       expect(
-        within(pending).getByText('Esta funcionalidad llega en F-06.'),
+        // UI-04-web R10: texto neutral, sin código interno de feature.
+        within(pending).getByText('Esta funcionalidad aún no está disponible.'),
       ).toBeInTheDocument();
       expect(
         pending.querySelectorAll(
@@ -403,7 +404,7 @@ describe('UI-02-web dashboard de medicina', () => {
         ),
       ).toHaveLength(0);
       // Nada que parezca un dato: ninguna cifra salvo la de la feature.
-      expect(pending.textContent.replace('F-06', '')).not.toMatch(/\d/);
+      expect(pending.textContent).not.toMatch(/\d/);
       // Es estática: no añade peticiones propias (solo las cuatro de atenciones).
       expect(net.requests.every((r) => r.path === '/api/v1/encounters')).toBe(
         true,

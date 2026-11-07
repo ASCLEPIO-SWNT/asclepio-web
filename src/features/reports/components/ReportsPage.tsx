@@ -148,7 +148,6 @@ export function ReportsPage() {
         <PendingStrip
           id="reports-pending"
           title={t('dash_reports_pending_title')}
-          feature="F-07"
         >
           {t('dash_reports_pending_body')}
         </PendingStrip>

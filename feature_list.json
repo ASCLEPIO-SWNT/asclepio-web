@@ -200,7 +200,7 @@
         "Ver specs/UI-03-web/requirements.md"
       ],
       "sdd": true,
-      "status": "in_progress"
+      "status": "done"
     },
     {
       "id": "UI-04-web",
@@ -216,7 +216,7 @@
         "Ver specs/UI-04-web/requirements.md; hallazgos H1–H16 en progress/current/UI-04-web.md."
       ],
       "sdd": true,
-      "status": "pending"
+      "status": "in_progress"
     }
   ]
 }

@@ -1,6 +1,8 @@
 import { featureMessage } from '../../../shared/lib/featureMessages';
 import { useI18n } from '../../../shared/i18n';
+import { ArrowLeftIcon } from '@heroicons/react/24/outline';
 import { useState } from 'react';
+import { Link } from 'react-router';
 import type { Patient } from '../../../shared/api/client';
 import { SITES_ERROR_MESSAGE, useSites } from '../../../shared/hooks/useSites';
 import {
@@ -10,6 +12,7 @@ import {
 } from '../../../shared/lib/problem';
 import { ActionError } from '../../../shared/ui/ActionError';
 import { LoadError } from '../../../shared/ui/LoadError';
+import { PageHeader } from '../../../shared/ui/PageHeader';
 import { UnsavedChangesGuard } from '../../../shared/ui/UnsavedChangesGuard';
 import {
   usePatientSearch,
@@ -51,88 +54,102 @@ export function DirectRegistrationPage() {
     setParams(next);
   };
 
+  // UI-04-web R8 (D8): encabezado de los dashboards y, debajo, la tarjeta del flujo.
   return (
-    <section className="card" aria-labelledby="direct-title">
+    <div className="dashboard">
       <UnsavedChangesGuard dirty={patientDirty} />
-      <h1 id="direct-title">{t('feature_registration_direct')}</h1>
-
-      {sites.isError && (
-        <LoadError
-          message={featureMessage(SITES_ERROR_MESSAGE)}
-          retrying={sites.isFetching}
-          error={sites.error}
-          onRetry={() => void sites.refetch()}
-        />
-      )}
-
-      <PatientSearch busy={search.isFetching} onSearch={onSearch} />
-      {params && search.isError && (
-        <ActionError
-          onRetry={
-            isRetryableActionMessage(
-              actionErrorMessage(problemOf(search.error)),
-            )
-              ? () => void search.refetch()
-              : undefined
+      <div className="stack">
+        <PageHeader
+          title={t('feature_registration_direct')}
+          description={t('feature_registration_direct_lead')}
+          actions={
+            <Link className="button button--secondary" to="/recepcion">
+              <ArrowLeftIcon aria-hidden="true" />
+              {t('feature_reception_back')}
+            </Link>
           }
-        >
-          {featureMessage(actionErrorMessage(problemOf(search.error)))}
-        </ActionError>
-      )}
-      {noResults && !created && (
-        <div className="search-result">
-          <p>{t('feature_no_patient')}</p>
-          {form?.kind !== 'document' && (
+        />
+        <section className="card" aria-label={t('feature_registration_direct')}>
+          {sites.isError && (
+            <LoadError
+              message={featureMessage(SITES_ERROR_MESSAGE)}
+              retrying={sites.isFetching}
+              error={sites.error}
+              onRetry={() => void sites.refetch()}
+            />
+          )}
+
+          <PatientSearch busy={search.isFetching} onSearch={onSearch} />
+          {/* UI-04-web R8: justo después de la búsqueda y antes de su resultado. */}
+          <div className="actions">
             <button
               type="button"
-              className="button"
-              onClick={() =>
-                setForm({
-                  kind: 'document',
-                  documentType: params.documentType,
-                  documentNumber: params.documentNumber,
-                })
+              className="button button--secondary"
+              onClick={() => {
+                setParams(null);
+                setCreated(null);
+                setForm({ kind: 'nn' });
+              }}
+            >
+              {t('feature_patient_nn_register')}
+            </button>
+          </div>
+
+          {params && search.isError && (
+            <ActionError
+              onRetry={
+                isRetryableActionMessage(
+                  actionErrorMessage(problemOf(search.error)),
+                )
+                  ? () => void search.refetch()
+                  : undefined
               }
             >
-              {t('feature_patient_create')}
-            </button>
+              {featureMessage(actionErrorMessage(problemOf(search.error)))}
+            </ActionError>
           )}
-        </div>
-      )}
+          {noResults && !created && (
+            <div className="search-result">
+              <p>{t('feature_no_patient')}</p>
+              {form?.kind !== 'document' && (
+                <button
+                  type="button"
+                  className="button"
+                  onClick={() =>
+                    setForm({
+                      kind: 'document',
+                      documentType: params.documentType,
+                      documentNumber: params.documentNumber,
+                    })
+                  }
+                >
+                  {t('feature_patient_create')}
+                </button>
+              )}
+            </div>
+          )}
 
-      <div className="actions">
-        <button
-          type="button"
-          className="button"
-          onClick={() => {
-            setParams(null);
-            setCreated(null);
-            setForm({ kind: 'nn' });
-          }}
-        >
-          {t('feature_patient_nn_register')}
-        </button>
+          {form && !created && (
+            <PatientForm
+              key={form.kind}
+              mode={form}
+              onDirtyChange={setPatientDirty}
+              onCreated={(patient) => {
+                setCreated(patient);
+                setForm(null);
+              }}
+            />
+          )}
+
+          {selected && (
+            <ArrivalForm
+              key={selected.id}
+              patient={selected}
+              sites={sites.isSuccess ? sites.data : null}
+            />
+          )}
+        </section>
       </div>
-
-      {form && !created && (
-        <PatientForm
-          key={form.kind}
-          mode={form}
-          onDirtyChange={setPatientDirty}
-          onCreated={(patient) => {
-            setCreated(patient);
-            setForm(null);
-          }}
-        />
-      )}
-
-      {selected && (
-        <ArrivalForm
-          key={selected.id}
-          patient={selected}
-          sites={sites.isSuccess ? sites.data : null}
-        />
-      )}
-    </section>
+    </div>
   );
 }

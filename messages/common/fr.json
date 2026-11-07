@@ -45,7 +45,7 @@
   "common_nav_cola": "File prioritaire",
   "common_nav_reportes": "Rapports",
   "common_nav_atenciones": "Prises en charge",
-  "common_pending": "Cette fonctionnalité sera disponible dans {feature}.",
+  "common_pending": "Cette fonctionnalité n'est pas encore disponible.",
   "common_pending_label": "Bientôt",
   "common_forbidden": "Vous n’avez pas l’autorisation de consulter cette page.",
   "common_home": "Aller à ma page d’accueil",

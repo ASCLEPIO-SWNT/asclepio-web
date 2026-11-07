@@ -30,7 +30,7 @@ Glosario de la spec:
 
 ### Prioridad 2
 
-- **R11** (Ubicuo) El sistema deberá mostrar, en el selector «Nivel de conciencia (ACVPU)» de la captura y en «Tomas registradas», junto a cada letra el significado de ese nivel con el texto que fije PA-1, en los cinco idiomas, sin cambiar el valor enviado a la API (`A`, `C`, `V`, `P`, `U`). **Bloqueado por PA-1.** (→ H9; F-03.AC5)
+- **R11** (Ubicuo) El sistema deberá mostrar el nivel de conciencia ACVPU solo con sus letras (`A`, `C`, `V`, `P`, `U`), sin texto clínico nuevo (PA-1): en la captura, como el selector actual «Nivel de conciencia (ACVPU)» con ancho ajustado a su contenido, alineado al inicio del campo y con la letra en seminegrita, conservando su etiqueta, el valor enviado, la validación y los mensajes de error de F-03-web; y en «Tomas registradas», la letra como insignia neutra (`badge tone--neutral`), sin tono que sugiera gravedad. (→ H9; F-03.AC5)
 - **R12** (Ubicuo) El sistema deberá presentar el aviso «PROVISIONAL — no validado clínicamente, revisar con asesor clínico.» de la captura de signos vitales con el estilo de aviso de advertencia existente (`status status--warn`), sin `role="alert"` y sin cambiar su texto en ningún idioma. (→ H10; F-03.AC5)
 - **R13** (Ubicuo) El sistema deberá presentar «Quitar elemento N» de cada elemento de hallazgos como botón secundario de ancho ajustado a su texto y alineado al inicio del elemento, sin ocupar todo el ancho. (→ H11; F-03.AC5)
 - **R14** (Ubicuo) El sistema deberá ordenar la navegación lateral con el inicio del rol (`HOME_BY_ROLE`) en primer lugar y el resto en el orden de la matriz de roles, de modo que ADMIN vea «Reportes», «Cola priorizada», «Atenciones» y los demás roles conserven su orden actual. (→ H12; F-01.AC6)
@@ -49,4 +49,6 @@ Glosario de la spec:
 
 ## Preguntas abiertas
 
-- [ ] PA-1 ¿Qué texto muestra cada nivel ACVPU (A, C, V, P, U) en los cinco idiomas? `../asclepio-api/docs/` no lo define: PA-F03-1 del brief F-03 solo dice «nivel de conciencia ACVPU (`consciousness`: A, C, V, P, U)», PROVISIONAL, basado en NEWS2 (Royal College of Physicians, 2017); el glosario, el RNF, `data-model.md` y el contrato tampoco dan el significado. Opciones: (a) el usuario fija el texto de cada nivel y su fuente, y se anota en el brief F-03 en una sesión de `asclepio-api`; (b) H9 sale de UI-04 y R11 se tacha. — bloquea R11
+No queda ninguna pregunta abierta.
+
+- [x] PA-1 ¿Qué texto muestra cada nivel ACVPU (A, C, V, P, U)? `../asclepio-api/docs/` no lo define (PA-F03-1 del brief F-03 solo nombra la escala, PROVISIONAL, basada en NEWS2). → Opción (b), decidida por el usuario por chat el 2026-11-06, con la spec aprobada ese día: no se añade ningún significado ni texto clínico; las letras se quedan solas y solo mejora su presentación. Cubierto por R11 (reescrito).

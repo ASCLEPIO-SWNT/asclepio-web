@@ -20,3 +20,4 @@ coverage/
 .claude/settings.local.json
 .vitest/
 src/paraglide/
+.playwright-mcp/

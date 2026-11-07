@@ -207,11 +207,7 @@ export function QueuePage() {
         </Panel>
       }
       pending={
-        <PendingStrip
-          id="queue-pending"
-          title={t('dash_queue_pending_title')}
-          feature="F-06"
-        >
+        <PendingStrip id="queue-pending" title={t('dash_queue_pending_title')}>
           {t('dash_queue_pending_body')}
         </PendingStrip>
       }

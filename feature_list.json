@@ -201,6 +201,22 @@
       ],
       "sdd": true,
       "status": "in_progress"
+    },
+    {
+      "id": "UI-04-web",
+      "global_id": "UI-04",
+      "name": "demo_polish",
+      "title": "Pulido para la demo",
+      "description": "Corrección de los defectos visuales y de navegación encontrados en el recorrido manual de los cuatro roles (cierre de sesión que hereda la ruta, desborde móvil de atenciones, estado como insignia, línea de tiempo, registro directo, textos internos en paneles pendientes). Sin funcionalidades ni endpoints nuevos.",
+      "depends_on": [
+        "UI-03-web"
+      ],
+      "consumes_contract": "0.4.0",
+      "acceptance": [
+        "Ver specs/UI-04-web/requirements.md; hallazgos H1–H16 en progress/current/UI-04-web.md."
+      ],
+      "sdd": true,
+      "status": "pending"
     }
   ]
 }

@@ -8,7 +8,6 @@ import { useCurrentStaff } from '../../../shared/hooks/useCurrentStaff';
 import { formatBogota } from '../../../shared/lib/datetime';
 import {
   COMPLAINT_SOURCE_LABELS,
-  ENCOUNTER_STATUS_LABELS,
   ORIGIN_LABELS,
 } from '../../../shared/lib/labels';
 import {
@@ -21,6 +20,7 @@ import {
   statusOf,
 } from '../../../shared/lib/problem';
 import { ActionError } from '../../../shared/ui/ActionError';
+import { EncounterStatusBadge } from '../../../shared/ui/EncounterStatusBadge';
 import { LoadError } from '../../../shared/ui/LoadError';
 import { LoadingState } from '../../../shared/ui/LoadingState';
 import { Notice } from '../../../shared/ui/Notice';
@@ -97,7 +97,9 @@ function EncounterDetailPage({ id }: { id: string }) {
         {cancelled && <Notice>{t('feature_encounter_cancelled')}</Notice>}
         <dl className="details">
           <dt>{t('feature_status')}</dt>
-          <dd>{ENCOUNTER_STATUS_LABELS[encounter.status]}</dd>
+          <dd>
+            <EncounterStatusBadge status={encounter.status} />
+          </dd>
           <dt>{t('feature_origin')}</dt>
           <dd>{ORIGIN_LABELS[encounter.origin]}</dd>
           <dt>{t('feature_site')}</dt>

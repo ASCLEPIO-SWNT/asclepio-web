@@ -75,11 +75,7 @@ function Composition({ filter = false }: { filter?: boolean }) {
         </Panel>
       }
       pending={
-        <PendingStrip
-          id="pendiente"
-          title="Indicadores y reportes"
-          feature="F-07"
-        >
+        <PendingStrip id="pendiente" title="Indicadores y reportes">
           Aquí aparecerán los tiempos y el CSV.
         </PendingStrip>
       }
@@ -916,11 +912,7 @@ describe('UI-02-web componentes del dashboard', () => {
   describe('franja pendiente y avisos', () => {
     it('R18: PendingStrip no tiene botones, enlaces ni formularios, y lleva la insignia y la frase de «pendiente»', () => {
       const { container } = render(
-        <PendingStrip
-          id="pendiente"
-          title="Cola por nivel y espera"
-          feature="F-06"
-        >
+        <PendingStrip id="pendiente" title="Cola por nivel y espera">
           Aquí aparecerá la cola priorizada.
         </PendingStrip>,
       );
@@ -938,7 +930,8 @@ describe('UI-02-web componentes del dashboard', () => {
         'tone--neutral',
       );
       expect(
-        within(strip).getByText('Esta funcionalidad llega en F-06.'),
+        // UI-04-web R10: texto neutral, sin código interno de feature.
+        within(strip).getByText('Esta funcionalidad aún no está disponible.'),
       ).toBeVisible();
       expect(
         container.querySelector('button, a, form, input, select'),

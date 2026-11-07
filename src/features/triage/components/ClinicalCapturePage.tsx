@@ -7,7 +7,7 @@ import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { useCurrentStaff } from '../../../shared/hooks/useCurrentStaff';
 import { useI18n } from '../../../shared/i18n';
-import { ENCOUNTER_STATUS_LABELS } from '../../../shared/lib/labels';
+import { EncounterStatusBadge } from '../../../shared/ui/EncounterStatusBadge';
 import { problemOf, statusOf } from '../../../shared/lib/problem';
 import { LoadError } from '../../../shared/ui/LoadError';
 import { LoadingState } from '../../../shared/ui/LoadingState';
@@ -122,7 +122,9 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
                 <dt>{t('feature_site')}</dt>
                 <dd>{detail.data.siteName}</dd>
                 <dt>{t('feature_status')}</dt>
-                <dd>{ENCOUNTER_STATUS_LABELS[detail.data.status]}</dd>
+                <dd>
+                  <EncounterStatusBadge status={detail.data.status} />
+                </dd>
               </dl>
               <div className="clinical-context__complaint">
                 <h3>{t('clinical_original_complaint')}</h3>

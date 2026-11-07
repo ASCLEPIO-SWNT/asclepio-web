@@ -1,7 +1,11 @@
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { formatBogota } from '../../../shared/lib/datetime';
+import {
+  formatDateBogota,
+  formatTimeBogota,
+} from '../../../shared/lib/datetime';
+import { norm } from '../../../test/text';
 import {
   ENCOUNTER_ID,
   SITE_SUR,
@@ -122,7 +126,13 @@ describe('EncounterListPage', () => {
     expect(rows).toHaveLength(2);
     const [first, second] = rows;
     expect(screen.getByRole('columnheader', { name: 'Llegada' })).toBeVisible();
-    expect(first).toHaveTextContent(formatBogota(encounterSummary().arrivalAt));
+    // UI-04-web R7: la llegada es la hora sin segundos y, debajo, la fecha.
+    expect(first).toHaveTextContent(
+      norm(formatTimeBogota(encounterSummary().arrivalAt)),
+    );
+    expect(first).toHaveTextContent(
+      formatDateBogota(encounterSummary().arrivalAt),
+    );
     expect(first).toHaveTextContent('Laura Gómez Pérez');
     expect(first).toHaveTextContent('Cédula de ciudadanía 1032456789');
     expect(first).toHaveTextContent('Sede Norte');
@@ -135,7 +145,10 @@ describe('EncounterListPage', () => {
     expect(second).toHaveTextContent('Sede Sur');
     expect(second).toHaveTextContent('Cancelada');
     expect(second).toHaveTextContent('Registro directo');
-    expect(second).toHaveTextContent(formatBogota(nnSummary.arrivalAt));
+    expect(second).toHaveTextContent(
+      norm(formatTimeBogota(nnSummary.arrivalAt)),
+    );
+    expect(second).toHaveTextContent(formatDateBogota(nnSummary.arrivalAt));
   });
 
   it('R30: muestra role="status" mientras carga', async () => {

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canAccess, routesFor } from './roleMatrix';
+import { HOME_BY_ROLE, canAccess, routesFor } from './roleMatrix';
 
 describe('matriz de roles (D4 de F-02-web)', () => {
   it('R1: /recepcion y /recepcion/registro solo para RECEPTION', () => {
@@ -53,4 +53,19 @@ describe('UI-03-web subrutas declaradas (D16)', () => {
     expect(canAccess('PHYSICIAN', `/triage/${ID}`)).toBe(false);
     expect(canAccess('NURSE', '/recepcion/registro')).toBe(false);
   });
+});
+
+describe('UI-04-web orden de la navegación', () => {
+  it.each([
+    ['RECEPTION', ['/recepcion', '/atenciones']],
+    ['NURSE', ['/triage', '/cola', '/atenciones']],
+    ['PHYSICIAN', ['/cola', '/atenciones']],
+    ['ADMIN', ['/reportes', '/cola', '/atenciones']],
+  ] as const)(
+    'R14: routesFor(%s) pone primero el inicio del rol y el resto en el orden de la matriz',
+    (role, paths) => {
+      expect(routesFor(role).map((r) => r.path)).toEqual(paths);
+      expect(routesFor(role)[0].path).toBe(HOME_BY_ROLE[role]);
+    },
+  );
 });

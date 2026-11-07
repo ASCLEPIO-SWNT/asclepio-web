@@ -365,7 +365,9 @@ describe('F-02 transversal', () => {
 
     await router.navigate('/atenciones');
     const table = await screen.findByRole('table');
-    expect(table).toHaveTextContent(/27\/10\/26, 11:30:00/);
+    // UI-04-web R7: hora sin segundos («11:30 p. m.», con U+00A0) y, debajo, la fecha.
+    expect(table.querySelector('time')?.textContent).toBe('11:30 p. m.');
+    expect(table).toHaveTextContent('27/10/26');
     expect(table).not.toHaveTextContent(/28\/10\/26/);
 
     await router.navigate(`/atenciones/${ENCOUNTER_ID}`);

@@ -509,7 +509,7 @@ describe('UI-02-web dashboard de administración', () => {
   });
 
   describe('franja «pendiente»', () => {
-    it('R18: nombra la funcionalidad de F-07 y no tiene acciones, cifras de reportes ni gráficos', async () => {
+    it('R18: muestra el texto neutral de pendiente y no tiene acciones, cifras de reportes ni gráficos', async () => {
       const { net } = setup();
       await table();
       const pending = strip();
@@ -519,14 +519,15 @@ describe('UI-02-web dashboard de administración', () => {
       );
       expect(within(pending).getByText('Próximamente')).toHaveClass('badge');
       expect(
-        within(pending).getByText('Esta funcionalidad llega en F-07.'),
+        // UI-04-web R10: texto neutral, sin código interno de feature.
+        within(pending).getByText('Esta funcionalidad aún no está disponible.'),
       ).toBeInTheDocument();
       expect(
         pending.querySelectorAll(
           'button, a, input, select, textarea, form, canvas, img, [role="img"], [role="progressbar"], [role="meter"]',
         ),
       ).toHaveLength(0);
-      expect(pending.textContent.replace('F-07', '')).not.toMatch(/\d/);
+      expect(pending.textContent).not.toMatch(/\d/);
       // Es estática: ninguna petición propia.
       expect(
         net.requests.every((r) =>

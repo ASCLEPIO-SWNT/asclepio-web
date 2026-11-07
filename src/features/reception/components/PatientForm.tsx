@@ -176,135 +176,140 @@ export function PatientForm({
       }}
     >
       <h2>{title}</h2>
-      {isDocument && (
-        <>
-          <div className="field">
-            <label htmlFor="patient-document-type">
-              {t('feature_document_type')}
-            </label>
-            <input
-              {...invalid(
-                'patient-document-type',
-                errors.documentType?.message,
-              )}
-              type="text"
-              readOnly
-              value={DOCUMENT_TYPE_LABELS[mode.documentType]}
-            />
-            <FieldMessage
-              id="patient-document-type"
-              message={errors.documentType?.message}
-            />
-          </div>
-          <div className="field">
-            <label htmlFor="patient-document-number">
-              {t('feature_document_number')}
-            </label>
-            <input
-              {...invalid(
-                'patient-document-number',
-                errors.documentNumber?.message,
-              )}
-              type="text"
-              readOnly
-              value={mode.documentNumber}
-            />
-            <FieldMessage
-              id="patient-document-number"
-              message={errors.documentNumber?.message}
-            />
-          </div>
-        </>
-      )}
+      {/* UI-04-web R9 (D9): dos columnas desde 640 px, como .clinical-fields. */}
+      <div className="form-grid">
+        {isDocument && (
+          <>
+            <div className="field">
+              <label htmlFor="patient-document-type">
+                {t('feature_document_type')}
+              </label>
+              <input
+                {...invalid(
+                  'patient-document-type',
+                  errors.documentType?.message,
+                )}
+                type="text"
+                readOnly
+                value={DOCUMENT_TYPE_LABELS[mode.documentType]}
+              />
+              <FieldMessage
+                id="patient-document-type"
+                message={errors.documentType?.message}
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="patient-document-number">
+                {t('feature_document_number')}
+              </label>
+              <input
+                {...invalid(
+                  'patient-document-number',
+                  errors.documentNumber?.message,
+                )}
+                type="text"
+                readOnly
+                value={mode.documentNumber}
+              />
+              <FieldMessage
+                id="patient-document-number"
+                message={errors.documentNumber?.message}
+              />
+            </div>
+          </>
+        )}
 
-      <div className="field">
-        <label htmlFor="patient-full-name">{t('feature_full_name')}</label>
-        {!isDocument && <p className="muted">{t('feature_nn_optional')}</p>}
-        <input
-          {...invalid('patient-full-name', errors.fullName?.message)}
-          type="text"
-          autoComplete="off"
-          {...register('fullName')}
-        />
-        <FieldMessage
-          id="patient-full-name"
-          message={errors.fullName?.message}
-        />
-      </div>
-
-      {!isDocument && (
         <div className="field">
-          <label htmlFor="patient-age-mode">
-            {t('feature_age_information')}
-          </label>
+          <label htmlFor="patient-full-name">{t('feature_full_name')}</label>
+          {!isDocument && <p className="muted">{t('feature_nn_optional')}</p>}
+          <input
+            {...invalid('patient-full-name', errors.fullName?.message)}
+            type="text"
+            autoComplete="off"
+            {...register('fullName')}
+          />
+          <FieldMessage
+            id="patient-full-name"
+            message={errors.fullName?.message}
+          />
+        </div>
+
+        {!isDocument && (
+          <div className="field">
+            <label htmlFor="patient-age-mode">
+              {t('feature_age_information')}
+            </label>
+            <select
+              {...invalid('patient-age-mode', errors.ageMode?.message)}
+              {...register('ageMode')}
+            >
+              <option value="">{t('feature_choose')}</option>
+              <option value="birthDate">{t('feature_birth_date')}</option>
+              <option value="estimatedAge">{t('feature_estimated_age')}</option>
+            </select>
+            <FieldMessage
+              id="patient-age-mode"
+              message={errors.ageMode?.message}
+            />
+          </div>
+        )}
+
+        {showBirthDate && (
+          <div className="field">
+            <label htmlFor="patient-birth-date">
+              {t('feature_birth_date')}
+            </label>
+            <input
+              {...invalid('patient-birth-date', errors.birthDate?.message)}
+              type="date"
+              {...register('birthDate')}
+            />
+            <FieldMessage
+              id="patient-birth-date"
+              message={errors.birthDate?.message}
+            />
+          </div>
+        )}
+
+        {showAge && (
+          <div className="field">
+            <label htmlFor="patient-estimated-age">
+              {t('feature_estimated_age')}
+            </label>
+            <input
+              {...invalid(
+                'patient-estimated-age',
+                errors.estimatedAgeYears?.message,
+              )}
+              type="number"
+              inputMode="numeric"
+              min={0}
+              max={120}
+              step={1}
+              {...register('estimatedAgeYears')}
+            />
+            <FieldMessage
+              id="patient-estimated-age"
+              message={errors.estimatedAgeYears?.message}
+            />
+          </div>
+        )}
+
+        <div className="field">
+          <label htmlFor="patient-sex">{t('feature_sex')}</label>
           <select
-            {...invalid('patient-age-mode', errors.ageMode?.message)}
-            {...register('ageMode')}
+            {...invalid('patient-sex', errors.sex?.message)}
+            {...register('sex')}
           >
             <option value="">{t('feature_choose')}</option>
-            <option value="birthDate">{t('feature_birth_date')}</option>
-            <option value="estimatedAge">{t('feature_estimated_age')}</option>
+            {SEXES.map((sex) => (
+              <option key={sex} value={sex}>
+                {SEX_LABELS[sex]}
+              </option>
+            ))}
           </select>
-          <FieldMessage
-            id="patient-age-mode"
-            message={errors.ageMode?.message}
-          />
+          <FieldMessage id="patient-sex" message={errors.sex?.message} />
         </div>
-      )}
-
-      {showBirthDate && (
-        <div className="field">
-          <label htmlFor="patient-birth-date">{t('feature_birth_date')}</label>
-          <input
-            {...invalid('patient-birth-date', errors.birthDate?.message)}
-            type="date"
-            {...register('birthDate')}
-          />
-          <FieldMessage
-            id="patient-birth-date"
-            message={errors.birthDate?.message}
-          />
-        </div>
-      )}
-
-      {showAge && (
-        <div className="field">
-          <label htmlFor="patient-estimated-age">
-            {t('feature_estimated_age')}
-          </label>
-          <input
-            {...invalid(
-              'patient-estimated-age',
-              errors.estimatedAgeYears?.message,
-            )}
-            type="number"
-            inputMode="numeric"
-            min={0}
-            max={120}
-            step={1}
-            {...register('estimatedAgeYears')}
-          />
-          <FieldMessage
-            id="patient-estimated-age"
-            message={errors.estimatedAgeYears?.message}
-          />
-        </div>
-      )}
-
-      <div className="field">
-        <label htmlFor="patient-sex">{t('feature_sex')}</label>
-        <select
-          {...invalid('patient-sex', errors.sex?.message)}
-          {...register('sex')}
-        >
-          <option value="">{t('feature_choose')}</option>
-          {SEXES.map((sex) => (
-            <option key={sex} value={sex}>
-              {SEX_LABELS[sex]}
-            </option>
-          ))}
-        </select>
-        <FieldMessage id="patient-sex" message={errors.sex?.message} />
       </div>
 
       <button type="submit" className="button" disabled={create.isPending}>

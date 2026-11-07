@@ -151,7 +151,10 @@ describe('rutas de F-02', () => {
     );
     await user.type(screen.getByLabelText('Contraseña'), PASSWORD);
     await user.click(screen.getByRole('button', { name: 'Ingresar' }));
-    await screen.findByRole('heading', { level: 1, name: 'Atenciones' });
+    // UI-04-web R1: tras el cierre voluntario, el nuevo login abre el inicio del rol (antes
+    // heredaba /atenciones como ruta de origen, H1).
+    await screen.findByRole('article', { name: 'Laura Gómez Pérez' });
+    expect(router.state.location.pathname).toBe('/recepcion');
     await waitFor(() =>
       expect(net.calls('GET /api/v1/public/tenants')).toHaveLength(2),
     );

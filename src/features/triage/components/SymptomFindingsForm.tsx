@@ -126,7 +126,7 @@ export function SymptomFindingsForm({
           {t(errorKey)}
         </ActionError>
       )}
-      {saved && <Notice>{t('clinical_findings_saved')}</Notice>}
+      {saved && <Notice autoFocus>{t('clinical_findings_saved')}</Notice>}
       {listError && <ActionError>{listError}</ActionError>}
       <fieldset disabled={disabled || mutation.isPending}>
         <legend className="visually-hidden">

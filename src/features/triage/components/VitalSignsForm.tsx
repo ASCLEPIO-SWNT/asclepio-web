@@ -156,7 +156,8 @@ export function VitalSignsForm({
       }}
     >
       <h2>{t('clinical_vitals_title')}</h2>
-      <p className="muted">{t('clinical_provisional')}</p>
+      {/* UI-04-web R12: aviso estático de advertencia, sin role="alert". */}
+      <p className="status status--warn">{t('clinical_provisional')}</p>
       {draft.draft && (
         <DraftNotice
           onRestore={() => {
@@ -182,7 +183,7 @@ export function VitalSignsForm({
           {t(errorKey)}
         </ActionError>
       )}
-      {saved && <Notice>{t('clinical_vitals_saved')}</Notice>}
+      {saved && <Notice autoFocus>{t('clinical_vitals_saved')}</Notice>}
       <fieldset
         className="clinical-fields"
         disabled={disabled || mutation.isPending}
@@ -205,6 +206,12 @@ export function VitalSignsForm({
               {field === 'supplementalOxygen' || field === 'consciousness' ? (
                 <select
                   id={id}
+                  // UI-04-web R11 (D11): solo la letra ACVPU, sin texto clínico nuevo (PA-1 b).
+                  className={
+                    field === 'consciousness'
+                      ? 'clinical-select--letters'
+                      : undefined
+                  }
                   aria-invalid={Boolean(error)}
                   aria-describedby={error ? `${id}-error` : undefined}
                   {...register(field)}

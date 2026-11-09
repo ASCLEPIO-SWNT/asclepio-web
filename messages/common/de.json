@@ -45,7 +45,7 @@
   "common_nav_cola": "Priorisierte Warteschlange",
   "common_nav_reportes": "Berichte",
   "common_nav_atenciones": "Behandlungen",
-  "common_pending": "Diese Funktion folgt mit {feature}.",
+  "common_pending": "Diese Funktion ist noch nicht verfügbar.",
   "common_pending_label": "Demnächst",
   "common_forbidden": "Sie dürfen diese Seite nicht aufrufen.",
   "common_home": "Zu meiner Startseite",

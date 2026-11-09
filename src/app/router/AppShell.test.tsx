@@ -34,7 +34,8 @@ const CASES: Array<{
     role: 'ADMIN',
     home: '/reportes',
     label: 'Administración',
-    links: ['Cola priorizada', 'Reportes', 'Atenciones'],
+    // UI-04-web R14: el inicio del rol va primero.
+    links: ['Reportes', 'Cola priorizada', 'Atenciones'],
   },
 ];
 
@@ -111,5 +112,20 @@ describe('AppShell', () => {
       screen.queryByRole('heading', { name: 'Cola priorizada' }),
     ).not.toBeInTheDocument();
     expect(net.calls('GET /api/v1/me')).toHaveLength(1);
+  });
+});
+
+describe('UI-04-web avatar de la barra lateral', () => {
+  it('R17: «Dra. Camila Torres» muestra «C» en el avatar', async () => {
+    fakeApi({
+      'GET /api/v1/me': json(200, {
+        ...staffMe.PHYSICIAN,
+        fullName: 'Dra. Camila Torres',
+      }),
+    });
+    renderApp({ entries: ['/cola'], stored: true });
+    const header = await screen.findByRole('region', { name: 'Sesión' });
+    await within(header).findByText('Dra. Camila Torres');
+    expect(header.querySelector('.shell__avatar')).toHaveTextContent(/^C$/);
   });
 });

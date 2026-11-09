@@ -77,7 +77,11 @@ export function CancelEncounterForm({
   return (
     <div className="cancel">
       {!open && (
-        <button type="button" className="button" onClick={() => setOpen(true)}>
+        <button
+          type="button"
+          className="button button--secondary"
+          onClick={() => setOpen(true)}
+        >
           {t('feature_encounter_cancel')}
         </button>
       )}
@@ -110,7 +114,7 @@ export function CancelEncounterForm({
             </button>
             <button
               type="button"
-              className="button"
+              className="button button--secondary"
               disabled={cancel.isPending}
               onClick={() => {
                 setOpen(false);

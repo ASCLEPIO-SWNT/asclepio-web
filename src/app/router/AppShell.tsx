@@ -15,6 +15,7 @@ import { CurrentStaffProvider } from '../../shared/hooks/useCurrentStaff';
 import { routesFor } from './roleMatrix';
 import { useI18n } from '../../shared/i18n';
 import { Brand } from '../../shared/ui/Brand';
+import { initialOf } from '../../shared/lib/initials';
 import { useStaff } from './useStaff';
 
 /** Marco de las vistas protegidas: usuario, rol, navegación por rol y "Cerrar sesión" (R21, R22); provee el perfil a las features (D2 de F-02-web). */
@@ -83,7 +84,7 @@ export function AppShell() {
         </nav>
         <div className="shell__profile">
           <span className="shell__avatar" aria-hidden="true">
-            {fullName.charAt(0)}
+            {initialOf(fullName)}
           </span>
           <p className="shell__user">
             <strong>{fullName}</strong>

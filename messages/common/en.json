@@ -45,7 +45,7 @@
   "common_nav_cola": "Priority queue",
   "common_nav_reportes": "Reports",
   "common_nav_atenciones": "Encounters",
-  "common_pending": "This feature is coming in {feature}.",
+  "common_pending": "This feature is not available yet.",
   "common_pending_label": "Coming soon",
   "common_forbidden": "You do not have permission to view this page.",
   "common_home": "Go to my home screen",

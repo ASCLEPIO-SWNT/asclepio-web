@@ -45,7 +45,7 @@
   "common_nav_cola": "Cola priorizada",
   "common_nav_reportes": "Reportes",
   "common_nav_atenciones": "Atenciones",
-  "common_pending": "Esta funcionalidad llega en {feature}.",
+  "common_pending": "Esta funcionalidad aún no está disponible.",
   "common_pending_label": "Próximamente",
   "common_forbidden": "No tienes permiso para ver esta página.",
   "common_home": "Ir a mi pantalla de inicio",

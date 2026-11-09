@@ -18,19 +18,17 @@ export function EncounterTimeline({ events }: { events: EncounterEvent[] }) {
       <h2 id="timeline-title">{t('feature_timeline')}</h2>
       <ol className="timeline">
         {events.map((event) => (
+          // UI-04-web R5 (D7): hora, evento y actor en tres elementos, uno por línea, sin separadores.
           <li key={event.id}>
             <time dateTime={event.occurredAt}>
               {formatBogota(event.occurredAt)}
-            </time>{' '}
-            · <strong>{eventLabel(event.type)}</strong>
-            {event.type === 'STATUS_CHANGED' && (
-              <>
-                {' '}
-                ({statusLabel(event.fromStatus)} → {statusLabel(event.toStatus)}
-                )
-              </>
-            )}{' '}
-            · {actorLabel(event.actor)}
+            </time>
+            <p>
+              <strong>{eventLabel(event.type)}</strong>
+              {event.type === 'STATUS_CHANGED' &&
+                ` (${statusLabel(event.fromStatus)} → ${statusLabel(event.toStatus)})`}
+            </p>
+            <p className="muted">{actorLabel(event.actor)}</p>
           </li>
         ))}
       </ol>

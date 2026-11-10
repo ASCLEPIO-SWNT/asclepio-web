@@ -324,6 +324,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/encounters/{id}/triage-suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lista las sugerencias de la atención (la más reciente primero)
+         * @description La sugerencia es una PROPUESTA, nunca una decisión: no cambia la atención ni asigna el nivel final (lo decide enfermería en F-05). suggestedLevel puede ser más grave que llmLevel porque los SafetyGuards (PROVISIONALES) solo suben la gravedad. items[0] es la sugerencia vigente. Se puede leer en cualquier estado de la atención.
+         */
+        get: operations["TriageSuggestionsController_list"];
+        put?: never;
+        /**
+         * Pide una sugerencia de nivel de triage al LLM
+         * @description La sugerencia es una PROPUESTA, nunca una decisión: no cambia la atención ni asigna el nivel final (lo decide enfermería en F-05). suggestedLevel puede ser más grave que llmLevel porque los SafetyGuards (PROVISIONALES) solo suben la gravedad. Solo con la atención en WAITING_TRIAGE y al menos una toma de signos vitales (si no, 409). Responde 201 también si el LLM falla (status INVALID_OUTPUT, TIMEOUT o FAILED): la web ofrece el triage manual. Cada solicitud guarda una sugerencia nueva.
+         */
+        post: operations["TriageSuggestionsController_request"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/encounters/{id}/triage-decision": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Lee la decisión de triage de la atención
+         * @description La IA propone, el profesional decide: esta es la decisión de enfermería y la única vía a TRIAGED (fija finalLevel, triagedAt y triagedBy con la hora del servidor y el usuario del token). Como mucho una por atención (sin re-triage). suggestedLevel es el nivel sugerido (ya ajustado por los SafetyGuards) de la sugerencia decidida, o null en MANUAL.
+         */
+        get: operations["TriageDecisionsController_findOne"];
+        put?: never;
+        /**
+         * Registra la decisión de triage: validar, corregir o clasificar a mano
+         * @description La IA propone, el profesional decide: esta es la decisión de enfermería y la única vía a TRIAGED (fija finalLevel, triagedAt y triagedBy con la hora del servidor y el usuario del token). Como mucho una por atención (sin re-triage). Solo con la atención en WAITING_TRIAGE. Responde solo la decisión: el nuevo estado se lee en GET /encounters/{id}.
+         */
+        post: operations["TriageDecisionsController_decide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -590,10 +638,10 @@ export interface components {
             /** @description bigint serializado como texto. */
             id: string;
             /**
-             * @description Tipo de evento. F-02: ENCOUNTER_CREATED, STATUS_CHANGED. F-03: VITAL_SIGNS_RECORDED (payload { vitalSignsId }) y SYMPTOM_FINDINGS_RECORDED (payload { findingIds, count }), sin fromStatus/toStatus ni valores clínicos. Las features siguientes añaden tipos: los clientes deben tolerar tipos desconocidos.
+             * @description Tipo de evento. F-02: ENCOUNTER_CREATED, STATUS_CHANGED. F-03: VITAL_SIGNS_RECORDED (payload { vitalSignsId }) y SYMPTOM_FINDINGS_RECORDED (payload { findingIds, count }), sin fromStatus/toStatus ni valores clínicos. F-05: TRIAGE_DECIDED (fromStatus WAITING_TRIAGE, toStatus TRIAGED, payload { decisionId, action }), sin el nivel ni el motivo. Las features siguientes añaden tipos: los clientes deben tolerar tipos desconocidos.
              * @enum {string}
              */
-            type: "ENCOUNTER_CREATED" | "STATUS_CHANGED" | "VITAL_SIGNS_RECORDED" | "SYMPTOM_FINDINGS_RECORDED";
+            type: "ENCOUNTER_CREATED" | "STATUS_CHANGED" | "VITAL_SIGNS_RECORDED" | "SYMPTOM_FINDINGS_RECORDED" | "TRIAGE_DECIDED";
             /** @enum {string|null} */
             fromStatus: "REGISTERED" | "WAITING_TRIAGE" | "TRIAGED" | "IN_CARE" | "CLOSED" | "CANCELLED" | null;
             /** @enum {string|null} */
@@ -630,6 +678,15 @@ export interface components {
             cancellationReason: string | null;
             registeredBy: components["schemas"]["StaffRefDto"];
             patient: components["schemas"]["PatientDto"];
+            /** @description Nivel final de triage decidido por enfermería (F-05, POST /encounters/{id}/triage-decision); null hasta la decisión. */
+            finalLevel: number | null;
+            /**
+             * Format: date-time
+             * @description Hora del servidor de la decisión de triage; null hasta la decisión.
+             */
+            triagedAt: string | null;
+            /** @description Enfermera que decidió el triage; null hasta la decisión. */
+            triagedBy: components["schemas"]["StaffRefDto"] | null;
             events: components["schemas"]["EncounterEventDto"][];
         };
         RejectPreRegistrationDto: {
@@ -678,6 +735,15 @@ export interface components {
             cancellationReason: string | null;
             registeredBy: components["schemas"]["StaffRefDto"];
             patient: components["schemas"]["PatientDto"];
+            /** @description Nivel final de triage decidido por enfermería (F-05, POST /encounters/{id}/triage-decision); null hasta la decisión. */
+            finalLevel: number | null;
+            /**
+             * Format: date-time
+             * @description Hora del servidor de la decisión de triage; null hasta la decisión.
+             */
+            triagedAt: string | null;
+            /** @description Enfermera que decidió el triage; null hasta la decisión. */
+            triagedBy: components["schemas"]["StaffRefDto"] | null;
         };
         EncounterListDto: {
             items: components["schemas"]["EncounterSummaryDto"][];
@@ -785,6 +851,124 @@ export interface components {
             vitalSigns: components["schemas"]["VitalSignsDto"][];
             /** @description Todos los hallazgos, por recordedAt e id ascendentes. */
             symptomFindings: components["schemas"]["SymptomFindingDto"][];
+        };
+        /**
+         * @description OK: hay nivel sugerido. INVALID_OUTPUT, TIMEOUT o FAILED: no hay nivel y la web ofrece el triage manual.
+         * @enum {string}
+         */
+        TriageSuggestionStatus: "OK" | "INVALID_OUTPUT" | "TIMEOUT" | "FAILED";
+        TriageFactorDto: {
+            /** @description Campo de la entrada que sustenta la sugerencia: age_years, sex, chief_complaint_text, complaint_source, vital_signs.<campo> o symptom_findings[<n>]. */
+            field: string;
+            /** @description Por qué importa ese dato (máx. 200). */
+            note: string;
+        };
+        GuardTriggerDto: {
+            /** @description Puntuación NEWS2 total. */
+            news2Total: number;
+            /** @description Parámetro que disparó la regla (G3), p. ej. vital_signs.heart_rate. */
+            field?: string;
+            points?: number;
+        };
+        GuardReasonDto: {
+            /** @description Regla (G1, G2 o G3). PROVISIONAL. */
+            rule: string;
+            maxLevel: number;
+            trigger: components["schemas"]["GuardTriggerDto"];
+        };
+        /** @enum {string} */
+        LlmProvider: "GROQ" | "OPENROUTER";
+        TriageSuggestionDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            encounterId: string;
+            /** @description OK: hay nivel sugerido. INVALID_OUTPUT, TIMEOUT o FAILED: no hay nivel y la web ofrece el triage manual. */
+            status: components["schemas"]["TriageSuggestionStatus"];
+            /** @description Nivel sugerido (1 = I, el más grave) tras los SafetyGuards; puede ser más grave que llmLevel. null si status ≠ OK. */
+            suggestedLevel: number | null;
+            /** @description Nivel que propuso el LLM. null si status ≠ OK. */
+            llmLevel: number | null;
+            explanation: string | null;
+            factors: components["schemas"]["TriageFactorDto"][] | null;
+            /** @description true si un SafetyGuard subió la gravedad respecto a llmLevel. */
+            guardApplied: boolean;
+            guardReasons: components["schemas"]["GuardReasonDto"][];
+            provider: components["schemas"]["LlmProvider"] | null;
+            model: string | null;
+            /** @example triage-v1 */
+            promptVersion: string;
+            latencyMs: number;
+            /**
+             * Format: date-time
+             * @description Hora del servidor.
+             */
+            createdAt: string;
+            requestedBy: components["schemas"]["StaffRefDto"];
+        };
+        TriageSuggestionListDto: {
+            /** @description De la más reciente a la más antigua: items[0] es la vigente. */
+            items: components["schemas"]["TriageSuggestionDto"][];
+        };
+        ValidateTriageDecisionRequest: {
+            /**
+             * @description Acepta el nivel sugerido (ya ajustado por los SafetyGuards) de la sugerencia vigente válida. (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            action: "VALIDATE";
+            /**
+             * Format: uuid
+             * @description Id de la sugerencia VIGENTE de la atención (items[0] de GET /encounters/{id}/triage-suggestions), con status OK. Si no lo es → 409.
+             */
+            suggestionId: string;
+        };
+        CorrectTriageDecisionRequest: {
+            /**
+             * @description Fija un nivel distinto del sugerido por la sugerencia vigente válida, con motivo (igual al sugerido → 422). (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            action: "CORRECT";
+            /**
+             * Format: uuid
+             * @description Id de la sugerencia VIGENTE de la atención (items[0] de GET /encounters/{id}/triage-suggestions), con status OK. Si no lo es → 409.
+             */
+            suggestionId: string;
+            /** @description Nivel de triage I–V. No entero → 400; fuera de 1–5 → 422. */
+            level: number;
+            /** @description Motivo de corrección: de 1 a 500 caracteres sin contar los espacios iniciales y finales (se guardan recortados). Ausente o inválido → 422. */
+            reason: string;
+        };
+        ManualTriageDecisionRequest: {
+            /**
+             * @description Clasificación manual: solo si la atención no tiene sugerencia vigente válida (si la tiene → 409; use VALIDATE o CORRECT). (enum property replaced by openapi-typescript)
+             * @enum {string}
+             */
+            action: "MANUAL";
+            /** @description Nivel de triage I–V. No entero → 400; fuera de 1–5 → 422. */
+            level: number;
+        };
+        /** @enum {string} */
+        TriageDecisionAction: "VALIDATE" | "CORRECT" | "MANUAL";
+        TriageDecisionDto: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            encounterId: string;
+            action: components["schemas"]["TriageDecisionAction"];
+            /** @description Nivel final decidido por enfermería. */
+            level: number;
+            /** Format: uuid */
+            suggestionId: string | null;
+            /** @description Nivel sugerido de la sugerencia decidida, ya ajustado por los SafetyGuards; null en MANUAL. */
+            suggestedLevel: number | null;
+            /** @description Motivo de corrección (solo en CORRECT). */
+            reason: string | null;
+            /**
+             * Format: date-time
+             * @description Hora del servidor.
+             */
+            decidedAt: string;
+            decidedBy: components["schemas"]["StaffRefDto"];
         };
         FieldErrorDto: {
             field: string;
@@ -1624,6 +1808,217 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ClinicalCaptureDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    TriageSuggestionsController_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriageSuggestionListDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    TriageSuggestionsController_request: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Sin cuerpo o {}. Cualquier campo → 400. */
+        requestBody?: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriageSuggestionDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    TriageDecisionsController_findOne: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriageDecisionDto"];
+                };
+            };
+            /** @description Sin token válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Rol distinto de NURSE o PHYSICIAN, o token de paciente. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description La atención no existe, es de otro tenant o el id está mal formado; o existe pero aún no tiene decisión (detail distinto). */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    TriageDecisionsController_decide: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Uno de los tres cuerpos según action. Un campo que no corresponde a la acción, un tipo incorrecto o cualquier campo no declarado (horas, responsable, tenant, finalLevel, id) → 400. */
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ValidateTriageDecisionRequest"] | components["schemas"]["CorrectTriageDecisionRequest"] | components["schemas"]["ManualTriageDecisionRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TriageDecisionDto"];
+                };
+            };
+            /** @description Cuerpo mal formado (errors[] con el campo). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Sin token válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Rol distinto de NURSE o token de paciente. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description La atención no existe, es de otro tenant o el id está mal formado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description La atención ya tiene una decisión, no está en WAITING_TRIAGE, la sugerencia no es la vigente o no es válida (VALIDATE/CORRECT), o hay una sugerencia válida (MANUAL). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description level fuera de 1–5, motivo de corrección inválido o CORRECT con el mismo nivel que el sugerido (errors[] con el campo). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
                 };
             };
             /** @description Error en application/problem+json (RFC 9457) */

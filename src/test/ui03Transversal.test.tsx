@@ -25,30 +25,12 @@ import {
   publicTenants,
   staffMe,
 } from './fakeApi';
+import {
+  EXPECTED_CONTRACT,
+  SCHEMA_SHA256,
+  WEB_OPERATIONS,
+} from './contractBaseline';
 import { renderApp } from './testApp';
-
-/** Las peticiones que la web hacía al empezar UI-03 (contrato 0.4.0): este slice no añade ninguna. */
-const BASELINE_REQUESTS = [
-  'GET /api/v1/encounters',
-  'GET /api/v1/encounters/{id}',
-  'GET /api/v1/encounters/{id}/clinical-capture',
-  'GET /api/v1/health',
-  'GET /api/v1/me',
-  'GET /api/v1/patients',
-  'GET /api/v1/pre-registrations',
-  'GET /api/v1/public/tenants',
-  'POST /api/v1/auth/login',
-  'POST /api/v1/encounters',
-  'POST /api/v1/encounters/{id}/cancel',
-  'POST /api/v1/encounters/{id}/symptom-findings',
-  'POST /api/v1/encounters/{id}/vital-signs',
-  'POST /api/v1/patients',
-  'POST /api/v1/pre-registrations/{id}/confirm',
-  'POST /api/v1/pre-registrations/{id}/reject',
-];
-/** SHA-256 de `schema.d.ts` en el commit de partida (0bd94f7). */
-const SCHEMA_SHA256 =
-  '4aa1abd68b07ea5f0671b3afae41d4c911ad52638c5bf2485a44993c9376ffb7';
 
 function sources(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -104,8 +86,8 @@ describe('UI-03-web transversales', () => {
     }
   });
 
-  it('R32: consume el contrato 0.4.0 sin cambiar los tipos generados', () => {
-    expect(CONSUMED_CONTRACT).toBe('0.4.0');
+  it('R32: consume el contrato declarado sin cambiar los tipos generados', () => {
+    expect(CONSUMED_CONTRACT).toBe(EXPECTED_CONTRACT);
     const schema = readFileSync('src/shared/api/schema.d.ts');
     expect(createHash('sha256').update(schema).digest('hex')).toBe(
       SCHEMA_SHA256,
@@ -121,7 +103,7 @@ describe('UI-03-web transversales', () => {
         calls.add(`${method} ${path}`);
       }
     }
-    expect([...calls].sort()).toEqual(BASELINE_REQUESTS);
+    expect([...calls].sort()).toEqual(WEB_OPERATIONS);
   });
 
   it('R31: cambios sin guardar, salida sin guardar y error de red no dejan datos personales en la consola, la URL ni localStorage', async () => {

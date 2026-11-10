@@ -21,6 +21,7 @@ import {
 } from '../../../test/fakeApi';
 import { renderFeature } from '../../../test/renderFeature';
 import { captureFixture } from '../testing/clinicalFixtures';
+import { LIST_SUGGESTIONS, noSuggestions } from '../testing/suggestionFixtures';
 import { encounterRoutes, triageRoutes } from '../routes';
 
 const DETAIL = `GET /api/v1/encounters/${ENCOUNTER_ID}`;
@@ -34,6 +35,7 @@ function network(routes: Record<string, Handler> = {}) {
   return fakeApi({
     [DETAIL]: json(200, encounter),
     [CAPTURE]: json(200, captureFixture()),
+    [LIST_SUGGESTIONS]: noSuggestions,
     ...routes,
   });
 }

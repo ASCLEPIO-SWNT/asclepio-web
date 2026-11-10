@@ -35,6 +35,11 @@ import {
   staffMe,
   type Handler,
 } from '../../test/fakeApi';
+import {
+  CLINICAL_CONTRACT_SHA256,
+  EXPECTED_CONTRACT,
+  SCHEMA_SHA256,
+} from '../../test/contractBaseline';
 import { ROLE_ROUTES } from './roleMatrix';
 import { renderApp } from '../../test/testApp';
 
@@ -1163,17 +1168,15 @@ function specifiersOf(source: string): string[] {
 const featureOf = (file: string) => /^src\/features\/([^/]+)\//.exec(file)?.[1];
 
 describe('UI-02-web arquitectura y contrato', () => {
-  it('R36: la web consume el contrato 0.4.0 y sus tipos generados no cambian', () => {
-    expect(CONSUMED_CONTRACT).toBe('0.4.0');
-    // Huellas de lo que `npm run api:types` generó desde 0.4.0. Si un cambio de contrato los
-    // regenera a propósito, se actualizan aquí junto con CONSUMED_CONTRACT.
+  it('R36: la web consume el contrato declarado y sus tipos generados no cambian', () => {
+    expect(CONSUMED_CONTRACT).toBe(EXPECTED_CONTRACT);
+    // Huellas de lo que `npm run api:types` generó (F-04-web D10): un cambio de contrato
+    // las actualiza solo en src/test/contractBaseline.ts.
     const sha256 = (file: string) =>
       createHash('sha256').update(readFileSync(file)).digest('hex');
-    expect(sha256('src/shared/api/schema.d.ts')).toBe(
-      '4aa1abd68b07ea5f0671b3afae41d4c911ad52638c5bf2485a44993c9376ffb7',
-    );
+    expect(sha256('src/shared/api/schema.d.ts')).toBe(SCHEMA_SHA256);
     expect(sha256('src/features/triage/clinicalContract.generated.ts')).toBe(
-      '3f3d5ba029f59f394ad73bafa89b9b6f4cb5ed780ca7c3e8a94bde4cfbc3fd7c',
+      CLINICAL_CONTRACT_SHA256,
     );
   });
 

@@ -5,29 +5,12 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { CONSUMED_CONTRACT } from '../shared/api/client';
 import { LOCALES } from '../shared/i18n/locale';
+import {
+  EXPECTED_CONTRACT,
+  SCHEMA_SHA256,
+  WEB_OPERATIONS,
+} from './contractBaseline';
 
-/** Las operaciones que la web usaba al empezar UI-04 (contrato 0.4.0): este slice no añade ninguna. */
-const BASELINE_REQUESTS = [
-  'GET /api/v1/encounters',
-  'GET /api/v1/encounters/{id}',
-  'GET /api/v1/encounters/{id}/clinical-capture',
-  'GET /api/v1/health',
-  'GET /api/v1/me',
-  'GET /api/v1/patients',
-  'GET /api/v1/pre-registrations',
-  'GET /api/v1/public/tenants',
-  'POST /api/v1/auth/login',
-  'POST /api/v1/encounters',
-  'POST /api/v1/encounters/{id}/cancel',
-  'POST /api/v1/encounters/{id}/symptom-findings',
-  'POST /api/v1/encounters/{id}/vital-signs',
-  'POST /api/v1/patients',
-  'POST /api/v1/pre-registrations/{id}/confirm',
-  'POST /api/v1/pre-registrations/{id}/reject',
-];
-/** SHA-256 de `schema.d.ts` generado desde 0.4.0 (el mismo que fija UI-02-web R36). */
-const SCHEMA_SHA256 =
-  '4aa1abd68b07ea5f0671b3afae41d4c911ad52638c5bf2485a44993c9376ffb7';
 /** Dependencias de `package.json` al empezar UI-04 (5d759d9): el slice no añade ninguna. */
 const DEPENDENCIES = [
   '@heroicons/react',
@@ -97,8 +80,8 @@ describe('UI-04-web transversales', () => {
     expect(block.match(/^\s*'[^']+\|[^']+':/gm)).toHaveLength(5);
   });
 
-  it('R19: consume el contrato 0.4.0 con schema.d.ts intacto', () => {
-    expect(CONSUMED_CONTRACT).toBe('0.4.0');
+  it('R19: consume el contrato declarado con schema.d.ts intacto', () => {
+    expect(CONSUMED_CONTRACT).toBe(EXPECTED_CONTRACT);
     expect(
       createHash('sha256')
         .update(readFileSync('src/shared/api/schema.d.ts'))
@@ -113,7 +96,7 @@ describe('UI-04-web transversales', () => {
         /\.(GET|POST|PUT|PATCH|DELETE)\(\s*'([^']+)'/g,
       ))
         used.add(`${match[1]} ${match[2]}`);
-    expect([...used].sort()).toEqual(BASELINE_REQUESTS);
+    expect([...used].sort()).toEqual(WEB_OPERATIONS);
   });
 
   it('R19: sin dependencias nuevas en package.json', () => {

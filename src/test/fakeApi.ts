@@ -226,6 +226,10 @@ export const encounter: Schemas['EncounterDto'] = {
   complaintSource: 'TYPED',
   cancellationReason: null,
   registeredBy: { id: staffMe.RECEPTION.id, fullName: 'Rosa Recepción' },
+  // Campos aditivos de 0.6.0 (F-04-web D11): con 0.5.0 ninguna atención está decidida.
+  finalLevel: null,
+  triagedAt: null,
+  triagedBy: null,
   patient,
   events: [
     {
@@ -252,8 +256,8 @@ export const encounter: Schemas['EncounterDto'] = {
     },
     {
       id: '10',
-      // Tipo que la web aún no conoce: se tolera (contrato).
-      type: 'TRIAGE_DECIDED' as Schemas['EncounterEventDto']['type'],
+      // Tipo que la web aún no presenta (aditivo en 0.6.0): se tolera (contrato).
+      type: 'TRIAGE_DECIDED',
       fromStatus: null,
       toStatus: null,
       payload: {},

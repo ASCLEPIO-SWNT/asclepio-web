@@ -3,7 +3,7 @@ import type { components, paths } from './schema';
 import { session } from './session';
 
 /** Versión del contrato que consume esta web (feature_list.json → consumes_contract). */
-export const CONSUMED_CONTRACT = '0.4.0';
+export const CONSUMED_CONTRACT = '0.5.0';
 
 const LOGIN_PATH = '/api/v1/auth/login';
 
@@ -68,3 +68,10 @@ export type SymptomFinding = Schemas['SymptomFindingDto'];
 export type SymptomFindingKind = Schemas['SymptomFindingKind'];
 export type ConsciousnessLevel = Schemas['ConsciousnessLevel'];
 export type ClinicalCapture = Schemas['ClinicalCaptureDto'];
+
+// F-04-web (contrato 0.5.0): sugerencia de triage por IA. Solo alias de tipos generados.
+export type TriageSuggestion = Schemas['TriageSuggestionDto'];
+export type TriageSuggestionList = Schemas['TriageSuggestionListDto'];
+export type TriageSuggestionStatus = Schemas['TriageSuggestionStatus'];
+export type TriageFactor = Schemas['TriageFactorDto'];
+export type GuardReason = Schemas['GuardReasonDto'];

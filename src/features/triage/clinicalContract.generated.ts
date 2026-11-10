@@ -1,4 +1,4 @@
-// Generated from OpenAPI 0.4.0 by scripts/extract-clinical-contract.mjs. Do not edit.
+// Generated from OpenAPI 0.6.0 by scripts/extract-clinical-contract.mjs. Do not edit.
 export const VITAL_SIGN_CONTRACT = {
   respiratoryRate: {
     type: 'integer',

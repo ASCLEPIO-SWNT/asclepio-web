@@ -17,6 +17,10 @@ import {
   staffMe,
 } from '../../test/fakeApi';
 import { renderApp } from '../../test/testApp';
+import {
+  GET_QUEUE,
+  queueResponse,
+} from '../../features/queue/testing/queueFixtures';
 
 /** Texto neutral de la franja «pendiente» en cada idioma (D10). */
 const NEUTRAL: Record<(typeof LOCALES)[number], string> = {
@@ -44,6 +48,8 @@ function dashboardApi(role: StaffRole) {
     ),
     'GET /api/v1/pre-registrations': json(200, [pendingPreRegistration]),
     'GET /api/v1/encounters': encountersFor(() => 3),
+    // F-06-web: /cola lee la cola priorizada.
+    [GET_QUEUE]: queueResponse(),
   });
 }
 
@@ -56,7 +62,6 @@ afterEach(() => {
 
 describe('UI-04-web franja «pendiente» sin códigos internos', () => {
   it.each([
-    ['PHYSICIAN', '/cola', 'Cola priorizada', 'Cola por nivel y espera'],
     ['ADMIN', '/reportes', 'Reportes', 'Indicadores y reportes'],
   ] as const)(
     'R10: %s ve en %s la franja con el texto neutral, sin código de feature',

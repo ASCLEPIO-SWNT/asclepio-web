@@ -21,6 +21,8 @@ import {
 import { renderApp } from '../../test/testApp';
 
 const LIST = 'GET /api/v1/encounters';
+/** F-06-web: los dashboards de /cola fallan en la cola priorizada. */
+const QUEUE = 'GET /api/v1/queue';
 const DETAIL = `GET /api/v1/encounters/${ENCOUNTER_ID}`;
 const CAPTURE = `${DETAIL}/clinical-capture`;
 const VITALS = `POST /api/v1/encounters/${ENCOUNTER_ID}/vital-signs`;
@@ -92,7 +94,7 @@ describe('UI-03-web errores de red y del servidor', () => {
   });
 
   it('R15: un error de red en un dashboard muestra el mismo texto de red en su panel con «Reintentar»', async () => {
-    setup('/cola', { [LIST]: networkError() }, 'PHYSICIAN');
+    setup('/cola', { [QUEUE]: networkError() }, 'PHYSICIAN');
     const alert = await alertWith(NETWORK);
     expect(alert).not.toHaveTextContent(SERVER);
     expect(
@@ -116,7 +118,7 @@ describe('UI-03-web errores de red y del servidor', () => {
   it('R18: un 5xx en un dashboard tampoco muestra detalles técnicos', async () => {
     setup(
       '/cola',
-      { [LIST]: problem(500, { title: TITLE_SECRET, detail: DETAIL_SECRET }) },
+      { [QUEUE]: problem(500, { title: TITLE_SECRET, detail: DETAIL_SECRET }) },
       'PHYSICIAN',
     );
     await alertWith(SERVER);
@@ -148,15 +150,17 @@ describe('UI-03-web errores de red y del servidor', () => {
 
   it('R16: al recuperar la conexión un dashboard con error de red no repite peticiones; solo «Reintentar» o el intervalo de 30 s', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    const { net } = setup('/cola', { [LIST]: networkError() }, 'PHYSICIAN');
+    const { net } = setup('/cola', { [QUEUE]: networkError() }, 'PHYSICIAN');
     await alertWith(NETWORK);
-    const before = net.calls(LIST).length;
+    const before = net.calls(QUEUE).length;
     reconnect();
     await act(() => vi.advanceTimersByTimeAsync(1_000));
-    expect(net.calls(LIST)).toHaveLength(before);
+    expect(net.calls(QUEUE)).toHaveLength(before);
     expect(screen.getByText(NETWORK)).toBeVisible();
     await act(() => vi.advanceTimersByTimeAsync(30_000));
-    await waitFor(() => expect(net.calls(LIST).length).toBeGreaterThan(before));
+    await waitFor(() =>
+      expect(net.calls(QUEUE).length).toBeGreaterThan(before),
+    );
   });
 
   it('R17: una toma con la red caída falla de inmediato (sin quedar en pausa), conserva lo escrito y no se reenvía al reconectar', async () => {

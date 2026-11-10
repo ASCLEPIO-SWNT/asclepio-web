@@ -2,74 +2,61 @@ import { focusManager, onlineManager } from '@tanstack/react-query';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { StaffRole } from '../../../shared/api/client';
+import type { QueueItem, StaffRole } from '../../../shared/api/client';
 import {
   formatDateBogota,
   formatTimeBogota,
 } from '../../../shared/lib/datetime';
-import { ENCOUNTER_STATUS_VIEW } from '../../../shared/lib/encounterStatus';
-import {
-  ENCOUNTER_STATUSES,
-  ENCOUNTER_STATUS_LABELS,
-} from '../../../shared/lib/labels';
 import {
   deferred,
-  encounterSummary,
-  encountersFor,
-  encountersInEveryStatus,
   fakeApi,
   json,
+  SITE_NORTE,
+  SITE_SUR,
   networkError,
-  patient,
   problem,
+  publicTenants,
   sequence,
   type Handler,
-  type RecordedRequest,
 } from '../../../test/fakeApi';
 import { renderFeature } from '../../../test/renderFeature';
 import { watchScrolling } from '../../../test/scroll';
 import { norm } from '../../../test/text';
 import { queueRoutes } from '../routes';
+import {
+  CLOSE,
+  GET_QUEUE,
+  LATER_SERVER_NOW,
+  START_CARE,
+  closeOk,
+  startCareOk,
+  emptyQueue,
+  inCareNorte,
+  inCareSur,
+  queue,
+  queueBySite,
+  queueWith,
+  surQueue,
+  triagedLevel1,
+  triagedLevel2,
+  triagedLevel2Overdue,
+  triagedLevel4,
+  unorderedQueue,
+  waitingLong,
+  waitingNN,
+} from '../testing/queueFixtures';
 
-const LIST = 'GET /api/v1/encounters';
 const TENANTS = 'GET /api/v1/public/tenants';
-const PRE_REGISTRATIONS = 'GET /api/v1/pre-registrations';
-
-type Key = 'recent' | 'WAITING_TRIAGE' | 'TRIAGED' | 'IN_CARE';
-
-/**
- * `GET /encounters` del dashboard: una petición por estado con `limit=100` y la lista reciente con
- * `limit=8`. `overrides` cambia la respuesta de una sola de las cuatro.
- */
-function encounters(overrides: Partial<Record<Key, Handler>> = {}): Handler {
-  const handlers: Record<Key, Handler> = {
-    recent: json(200, { items: encountersInEveryStatus }),
-    WAITING_TRIAGE: encountersFor(() => 8),
-    TRIAGED: encountersFor(() => 0),
-    IN_CARE: encountersFor(() => 3),
-    ...overrides,
-  };
-  return (request) => {
-    const query = new URL(request.url).searchParams;
-    const key =
-      query.get('limit') === '8' ? 'recent' : (query.get('status') as Key);
-    return handlers[key](request);
-  };
-}
-
-const keyOf = (request: RecordedRequest): Key =>
-  request.query.get('limit') === '8'
-    ? 'recent'
-    : (request.query.get('status') as Key);
-const callsOf = (net: ReturnType<typeof fakeApi>, key: Key) =>
-  net.calls(LIST).filter((request) => keyOf(request) === key);
-const queryOf = (request: RecordedRequest) => Object.fromEntries(request.query);
 
 function setup({
   role = 'PHYSICIAN',
   routes = {},
 }: { role?: StaffRole; routes?: Record<string, Handler> } = {}) {
-  const net = fakeApi({ [LIST]: encounters(), ...routes });
+  const net = fakeApi({
+    [TENANTS]: json(200, publicTenants),
+    [GET_QUEUE]: queueBySite(),
+    ...routes,
+  });
   const user = userEvent.setup();
   const view = renderFeature(queueRoutes, { entries: ['/cola'], role });
   return { net, user, ...view };
@@ -77,15 +64,27 @@ function setup({
 
 const bar = () => screen.getByRole('region', { name: 'Indicadores' });
 const cells = () => within(bar()).getAllByRole('listitem');
-const panel = () =>
-  screen.getByRole('region', { name: 'Atenciones recientes' });
-const strip = () =>
-  screen.getByRole('region', { name: 'Cola por nivel y espera' });
-/** Espera a que la tabla pinte filas. */
-const rows = () => screen.findAllByRole('link', { name: 'Ver atención' });
+const SECTION_NAMES = [
+  'En espera de triage',
+  'Clasificadas',
+  'En atención',
+] as const;
+const section = (name: (typeof SECTION_NAMES)[number]) =>
+  screen.getByRole('region', { name });
+/** Las filas de datos de la tabla de una sección (sin la de encabezados). */
+const rowsOf = (name: (typeof SECTION_NAMES)[number]) =>
+  within(within(section(name)).getByRole('table'))
+    .getAllByRole('row')
+    .slice(1);
+/** Espera a que la cola pinte sus filas. */
+const loaded = () => screen.findAllByRole('link', { name: 'Ver atención' });
 /** `b` aparece después de `a` en el documento. */
 const follows = (a: Node, b: Node) =>
   Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+const rowOf = (item: QueueItem) =>
+  document
+    .getElementById(`queue-patient-${item.encounterId}`)!
+    .closest('tr') as HTMLElement;
 
 afterEach(() => {
   vi.useRealTimers();
@@ -95,77 +94,20 @@ afterEach(() => {
   onlineManager.setOnline(true);
 });
 
-describe('UI-02-web dashboard de medicina', () => {
-  describe('estructura', () => {
-    it('R3: encabezado con un h1 y su descripción, región «Indicadores» con tres celdas y sin filtro, panel con h2 y franja «pendiente», en ese orden de documento y sin columna lateral', async () => {
-      const { container } = setup();
-      await rows();
+describe('F-06-web cola priorizada: estructura', () => {
+  it.each(['PHYSICIAN', 'NURSE', 'ADMIN'] as const)(
+    'R1: %s ve el h1 con su descripción, «Actualizar» como única acción del encabezado, los indicadores con el filtro y las tres secciones en orden, sin recientes ni franja «pendiente»',
+    async (role) => {
+      const { container } = setup({ role });
+      await loaded();
       const title = screen.getByRole('heading', {
         level: 1,
         name: 'Cola priorizada',
       });
       expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
       expect(title.nextElementSibling).toHaveTextContent(
-        'Estado de las atenciones y las llegadas más recientes.',
+        'Atenciones activas por nivel de triage y tiempo de espera.',
       );
-
-      const region = bar();
-      expect(within(region).getAllByRole('listitem')).toHaveLength(3);
-      // Medicina no filtra por sede: ni selector ni etiqueta «Sede» en la barra.
-      expect(within(region).queryByLabelText('Sede')).not.toBeInTheDocument();
-      expect(region.querySelector('select')).toBeNull();
-      expect(region).not.toHaveClass('summary--filter');
-
-      const main = panel();
-      const heading = within(main).getByRole('heading', {
-        level: 2,
-        name: 'Atenciones recientes',
-      });
-      expect(heading.querySelector('svg')).toBeNull();
-      const pending = strip();
-      expect(
-        within(pending).getByRole('heading', {
-          level: 2,
-          name: 'Cola por nivel y espera',
-        }),
-      ).toBeInTheDocument();
-      expect(follows(title, region)).toBe(true);
-      expect(follows(region, main)).toBe(true);
-      expect(follows(main, pending)).toBe(true);
-      const stack = container.querySelector('.dashboard > .stack');
-      expect(
-        [...stack!.children].map((zone) => zone.tagName.toLowerCase()),
-      ).toEqual(['header', 'section', 'section', 'section']);
-      expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
-    });
-
-    it('R34: la barra escribe --cells = 3', async () => {
-      setup();
-      await rows();
-      expect(bar().style.getPropertyValue('--cells')).toBe('3');
-    });
-
-    it('R38: la nota «Se actualiza cada 30 s» va en la cabecera del panel, a la derecha del h2, como texto plano con punto decorativo', async () => {
-      setup();
-      await rows();
-      const note = within(panel()).getByText('Se actualiza cada 30 s');
-      expect(note.closest('.panel__head')).not.toBeNull();
-      expect(note.closest('.panel__meta')).not.toBeNull();
-      expect(
-        follows(within(panel()).getByRole('heading', { level: 2 }), note),
-      ).toBe(true);
-      expect(note).toHaveClass('live');
-      expect(note).not.toHaveAttribute('role');
-      expect(note.closest('[aria-live]')).toBeNull();
-      expect(note.querySelector('button, a, input')).toBeNull();
-      expect(
-        screen.getAllByRole('button', { name: 'Actualizar' }),
-      ).toHaveLength(1);
-    });
-
-    it('R2: «Actualizar» es la única acción del encabezado y es un botón secundario', async () => {
-      setup();
-      await rows();
       const header = document.querySelector(
         'header.page-header',
       ) as HTMLElement;
@@ -173,650 +115,915 @@ describe('UI-02-web dashboard de medicina', () => {
         within(header).getByRole('button', { name: 'Actualizar' }),
       ).toHaveClass('button', 'button--secondary');
       expect(header.querySelectorAll('button, a')).toHaveLength(1);
-    });
-  });
 
-  describe('indicadores por estado', () => {
-    it('R15: tres indicadores, uno por estado, con una petición cada uno, sin sede y sin filtro', async () => {
-      const { net } = setup();
-      await rows();
-      const [waiting, triaged, inCare] = cells();
-      await waitFor(() =>
-        expect(waiting).toHaveTextContent('En espera de triage8'),
-      );
-      expect(triaged).toHaveTextContent('Clasificadas0');
-      expect(inCare).toHaveTextContent('En atención3');
-      // El cero es una cifra completa, no una celda vacía.
-      expect(triaged).not.toHaveAttribute('aria-busy');
-      expect(within(triaged).getByText('0')).toBeInTheDocument();
-
-      for (const status of ['WAITING_TRIAGE', 'TRIAGED', 'IN_CARE'] as const) {
-        const calls = callsOf(net, status);
-        expect(calls).toHaveLength(1);
-        expect(queryOf(calls[0])).toEqual({ status, limit: '100' });
-      }
-      expect(net.calls(TENANTS)).toHaveLength(0);
-    });
-
-    it('R15: cada celda lleva el icono y el tono de su estado', async () => {
-      setup();
-      await rows();
-      const tones = cells().map((cell) =>
-        [...cell.classList].find((name) => name.startsWith('tone--')),
-      );
-      expect(tones).toEqual([
-        `tone--${ENCOUNTER_STATUS_VIEW.WAITING_TRIAGE.tone}`,
-        `tone--${ENCOUNTER_STATUS_VIEW.TRIAGED.tone}`,
-        `tone--${ENCOUNTER_STATUS_VIEW.IN_CARE.tone}`,
-      ]);
-      for (const cell of cells()) {
-        expect(cell.querySelector('.summary__icon svg')).toHaveAttribute(
-          'aria-hidden',
-          'true',
-        );
-      }
-    });
-
-    it('R8: con 100 atenciones en un estado la celda se escribe «100+» y dice «Al menos 100»', async () => {
-      setup({
-        routes: { [LIST]: encounters({ TRIAGED: encountersFor(() => 100) }) },
-      });
-      await rows();
-      const triaged = cells()[1];
-      await waitFor(() =>
-        expect(triaged).toHaveTextContent('Clasificadas100+'),
-      );
-      expect(within(triaged).getByText('Al menos 100')).toBeInTheDocument();
-      expect(cells()[2]).not.toHaveTextContent('+');
-    });
-  });
-
-  describe('atenciones recientes', () => {
-    it('R16: pide las 8 atenciones más recientes sin filtros y las muestra en el orden recibido, con el nombre y sin documento', async () => {
-      const { net } = setup();
-      await rows();
-      const calls = callsOf(net, 'recent');
-      expect(calls).toHaveLength(1);
-      expect(queryOf(calls[0])).toEqual({ limit: '8', offset: '0' });
-
-      const table = screen.getByRole('table', { name: 'Atenciones recientes' });
-      expect(
-        within(table)
-          .getAllByRole('columnheader')
-          .map((header) => header.textContent),
-      ).toEqual(['Paciente', 'Sede', 'Llegada', 'Estado', 'Acción']);
-      const names = within(table)
-        .getAllByRole('row')
-        .slice(1)
-        .map((row) => within(row).getAllByRole('cell')[0].textContent);
-      // Solo el nombre: un NN se muestra como «Paciente NN» y ningún documento se escribe.
-      expect(names).toEqual([
-        'Ana María Ruiz',
-        'Paciente NN',
-        'Camilo Torres Vega',
-        'Elena Beltrán Gil',
-        'Felipe Quintero Salazar',
-        'Gloria Mora Díaz',
-      ]);
-      expect(document.body.textContent).not.toMatch(/Cédula|8000000\d/);
-      expect(table.querySelectorAll('.cell-sub')).toHaveLength(
-        encountersInEveryStatus.length,
-      );
-      for (const sub of table.querySelectorAll('.cell-sub')) {
-        // La única línea de apoyo es la fecha de la llegada.
-        expect(sub.parentElement).toHaveClass('cell-time');
-      }
-    });
-
-    it.each(ENCOUNTER_STATUSES)(
-      'R16: la fila %s lleva una insignia con icono, texto y tono, y «Ver atención» a su detalle',
-      async (status) => {
-        setup();
-        await rows();
-        const row = encountersInEveryStatus.find((e) => e.status === status)!;
-        const name = row.patient.fullName ?? 'Paciente NN';
-        const tr = screen
-          .getByRole('cell', { name: new RegExp(`^${name}$`) })
-          .closest('tr') as HTMLElement;
-        const badge = within(tr).getByText(ENCOUNTER_STATUS_LABELS[status]);
-        expect(badge).toHaveClass(
-          'badge',
-          `tone--${ENCOUNTER_STATUS_VIEW[status].tone}`,
-        );
-        expect(badge.querySelector('svg')).toHaveAttribute(
-          'aria-hidden',
-          'true',
-        );
-        const link = within(tr).getByRole('link', { name: 'Ver atención' });
-        expect(link).toHaveAttribute('href', `/atenciones/${row.id}`);
-        expect(link).toHaveClass('button', 'button--secondary', 'button--sm');
-        expect(link).not.toHaveClass('button--soft');
-        // Se asocia a su fila con aria-describedby: apunta a la celda del nombre.
-        const cell = within(tr).getAllByRole('cell')[0];
-        expect(cell.id).not.toBe('');
-        expect(link).toHaveAttribute('aria-describedby', cell.id);
-      },
-    );
-
-    it('R16: cada fila muestra la sede y la llegada con la hora en <time> y la fecha debajo, sin segundos', async () => {
-      setup();
-      await rows();
-      const first = encountersInEveryStatus[0];
-      const tr = screen
-        .getByRole('cell', { name: /^Ana María Ruiz$/ })
-        .closest('tr') as HTMLElement;
-      expect(within(tr).getByText(first.siteName)).toBeInTheDocument();
-      const time = tr.querySelector('time')!;
-      expect(time).toHaveAttribute('dateTime', first.arrivalAt);
-      expect(norm(time.textContent)).toBe(
-        norm(formatTimeBogota(first.arrivalAt)),
-      );
-      expect(time.textContent).not.toMatch(/\d:\d{2}:\d{2}/);
-      expect(time.nextElementSibling).toHaveClass('cell-sub');
-      expect(time.nextElementSibling).toHaveTextContent(
-        formatDateBogota(first.arrivalAt),
-      );
-    });
-
-    it('R16: el pie dice «Las 6 atenciones más recientes» con la lista, y «Ver todas las atenciones» lleva a /atenciones', async () => {
-      setup();
-      await rows();
-      const foot = panel().querySelector('.panel__foot') as HTMLElement;
-      expect(foot.firstElementChild).toHaveTextContent(
-        'Las 6 atenciones más recientes',
-      );
-      const link = within(foot).getByRole('link', {
-        name: 'Ver todas las atenciones',
-      });
-      expect(link).toHaveAttribute('href', '/atenciones');
-      expect(link).toHaveClass('link-more');
-      expect(link.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
-      expect(foot.lastElementChild).toBe(link);
-    });
-
-    it.each([
-      [8, 'Las 8 atenciones más recientes'],
-      [1, 'La atención más reciente'],
-    ])('R16: con %i filas el pie dice «%s»', async (count, text) => {
-      setup({
-        routes: {
-          [LIST]: encounters({
-            recent: json(200, {
-              items: Array.from({ length: count }, (_, i) =>
-                encounterSummary({
-                  id: `e3e3e3e3-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
-                  patient: {
-                    ...patient,
-                    id: `b3b3b3b3-0000-4000-8000-${String(i + 1).padStart(12, '0')}`,
-                    fullName: `Paciente ficticio ${i + 1}`,
-                  },
-                }),
-              ),
-            }),
-          }),
-        },
-      });
-      await rows();
-      const foot = panel().querySelector('.panel__foot') as HTMLElement;
-      expect(foot.firstElementChild).toHaveTextContent(text);
-      expect(
-        screen.getAllByRole('link', { name: 'Ver atención' }),
-      ).toHaveLength(count);
-    });
-
-    it('R41: las horas de la tabla salen en America/Bogota sin segundos, con la fecha debajo', async () => {
-      // 04:30 UTC del 28/10 es 11:30 p. m. del 27/10 en Bogotá.
-      setup({
-        routes: {
-          [LIST]: encounters({
-            recent: json(200, {
-              items: [
-                encounterSummary({ arrivalAt: '2026-10-28T04:30:00.000Z' }),
-              ],
-            }),
-          }),
-        },
-      });
-      await rows();
-      const time = panel().querySelector('time')!;
-      expect(time.textContent).toMatch(/^11:30\sp\.\sm\.$/);
-      expect(time.nextElementSibling).toHaveTextContent('27/10/26');
-    });
-  });
-
-  describe('franja «pendiente»', () => {
-    it('R18: muestra el texto neutral de pendiente y no tiene acciones, niveles, tiempos ni gráficos', async () => {
-      const { net } = setup();
-      await rows();
-      const pending = strip();
-      expect(pending).toHaveTextContent('Cola por nivel y espera');
-      expect(pending).toHaveTextContent(
-        'Aquí aparecerá la cola priorizada por nivel de triage y tiempo de espera, con datos del servidor.',
-      );
-      expect(within(pending).getByText('Próximamente')).toHaveClass('badge');
-      expect(
-        // UI-04-web R10: texto neutral, sin código interno de feature.
-        within(pending).getByText('Esta funcionalidad aún no está disponible.'),
-      ).toBeInTheDocument();
-      expect(
-        pending.querySelectorAll(
-          'button, a, input, select, textarea, form, canvas, img, [role="img"], [role="progressbar"], [role="meter"]',
-        ),
-      ).toHaveLength(0);
-      // Nada que parezca un dato: ninguna cifra salvo la de la feature.
-      expect(pending.textContent).not.toMatch(/\d/);
-      // Es estática: no añade peticiones propias (solo las cuatro de atenciones).
-      expect(net.requests.every((r) => r.path === '/api/v1/encounters')).toBe(
-        true,
-      );
-    });
-  });
-
-  describe('estados de cada celda y del panel', () => {
-    it('R19: cada celda y el panel cargan por separado y solo el panel es un role="status"', async () => {
-      const waiting = deferred(encountersFor(() => 8));
-      const recent = deferred(json(200, { items: encountersInEveryStatus }));
-      setup({
-        routes: {
-          [LIST]: encounters({
-            WAITING_TRIAGE: waiting.handler,
-            recent: recent.handler,
-          }),
-        },
-      });
-      const [first, second, third] = cells();
-      await waitFor(() => expect(second).toHaveTextContent('Clasificadas0'));
-      expect(first).toHaveAttribute('aria-busy', 'true');
-      expect(first).toHaveTextContent('Cargando indicador…');
-      expect(first).not.toHaveAttribute('role');
-      expect(second).not.toHaveAttribute('aria-busy');
-      expect(third).toHaveTextContent('En atención3');
-      expect(screen.getAllByRole('status')).toHaveLength(1);
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Cargando las atenciones recientes…',
-      );
-      expect(panel()).toContainElement(screen.getByRole('status'));
-      // Mientras carga, el panel no tiene pie y la franja «pendiente» sigue ahí.
-      expect(panel().querySelector('.panel__foot')).toBeNull();
-      expect(strip()).toBeVisible();
-
-      act(() => {
-        waiting.release();
-        recent.release();
-      });
-      await rows();
-      expect(first).toHaveTextContent('En espera de triage8');
-      expect(first).not.toHaveAttribute('aria-busy');
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
-    });
-
-    it('R20: sin atenciones muestra el vacío con el icono de la cola, el mensaje y sin acción ni pie, y las cifras 0', async () => {
-      setup({
-        routes: {
-          [LIST]: encounters({
-            recent: json(200, { items: [] }),
-            WAITING_TRIAGE: encountersFor(() => 0),
-            IN_CARE: encountersFor(() => 0),
-          }),
-        },
-      });
-      const message = await screen.findByText('Aún no hay atenciones.');
-      const empty = message.closest('.panel-state') as HTMLElement;
-      expect(empty).not.toHaveAttribute('role');
-      expect(empty.querySelector('.panel-state__icon svg')).toHaveAttribute(
-        'aria-hidden',
-        'true',
-      );
-      expect(empty.querySelectorAll('a, button')).toHaveLength(0);
-      expect(panel().querySelector('.panel__foot')).toBeNull();
-      await waitFor(() => {
-        for (const cell of cells()) {
-          expect(cell).not.toHaveAttribute('aria-busy');
-        }
-      });
+      const region = bar();
+      expect(cells()).toHaveLength(3);
       expect(cells().map((cell) => cell.textContent)).toEqual([
-        'En espera de triage0',
-        'Clasificadas0',
-        'En atención0',
+        expect.stringContaining('En espera de triage'),
+        expect.stringContaining('Clasificadas'),
+        expect.stringContaining('En atención'),
       ]);
-    });
-
-    it('R21: si falla un indicador, solo su celda muestra el error y su «Reintentar» repite solo esa petición', async () => {
-      const { net, user } = setup({
-        routes: { [LIST]: encounters({ TRIAGED: problem(500) }) },
-      });
-      await rows();
-      const triaged = cells()[1];
-      await waitFor(() =>
-        expect(triaged).toHaveTextContent('No se pudo cargar'),
+      expect(region.style.getPropertyValue('--cells')).toBe('3');
+      expect(region).toHaveClass('summary--filter');
+      expect(within(region).getByLabelText('Sede')).toBeInstanceOf(
+        HTMLSelectElement,
       );
-      expect(triaged).toHaveTextContent('Clasificadas');
-      expect(cells()[0]).toHaveTextContent('En espera de triage8');
-      expect(cells()[2]).toHaveTextContent('En atención3');
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
-      net.set(LIST, encounters({ TRIAGED: encountersFor(() => 4) }));
-      await user.click(
-        within(triaged).getByRole('button', {
-          name: 'Reintentar: Clasificadas',
+      const sections = SECTION_NAMES.map(section);
+      for (const [i, name] of SECTION_NAMES.entries())
+        expect(
+          within(sections[i]).getByRole('heading', { level: 2, name }),
+        ).toBeInTheDocument();
+      expect(follows(title, region)).toBe(true);
+      expect(follows(region, sections[0])).toBe(true);
+      expect(follows(sections[0], sections[1])).toBe(true);
+      expect(follows(sections[1], sections[2])).toBe(true);
+
+      expect(
+        screen.queryByRole('region', { name: 'Atenciones recientes' }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole('region', { name: 'Cola por nivel y espera' }),
+      ).not.toBeInTheDocument();
+      expect(screen.queryByText('Próximamente')).not.toBeInTheDocument();
+      expect(container.querySelector('.pending-strip')).toBeNull();
+      // Ningún indicador de atenciones vencidas en la barra (PA-12 a).
+      expect(region).not.toHaveTextContent('Tiempo máximo superado');
+      expect(screen.queryByRole('complementary')).not.toBeInTheDocument();
+    },
+  );
+});
+
+describe('F-06-web cola priorizada: lectura', () => {
+  it('R2: un solo GET /queue sin parámetros, las cifras son las filas de cada sección y no se pide GET /encounters', async () => {
+    const { net } = setup();
+    await loaded();
+    await waitFor(() =>
+      expect(cells().map((cell) => cell.textContent)).toEqual([
+        'En espera de triage2',
+        'Clasificadas4',
+        'En atención2',
+      ]),
+    );
+    expect(net.calls(GET_QUEUE)).toHaveLength(1);
+    expect([...net.calls(GET_QUEUE)[0].query]).toEqual([]);
+    expect(net.calls('GET /api/v1/encounters')).toHaveLength(0);
+    const endpoints = [
+      ...new Set(net.requests.map((r) => `${r.method} ${r.path}`)),
+    ].sort();
+    expect(endpoints).toEqual([TENANTS, GET_QUEUE].sort());
+  });
+
+  it('R3: las filas salen en el orden recibido, sin reordenar la sección de control, y cada atención en su sección', async () => {
+    setup({ routes: { [GET_QUEUE]: json(200, unorderedQueue) } });
+    await loaded();
+    const ids = (name: (typeof SECTION_NAMES)[number]) =>
+      rowsOf(name).map((row) =>
+        within(row).getAllByRole('cell')[0].id.replace('queue-patient-', ''),
+      );
+    expect(ids('En espera de triage')).toEqual(
+      unorderedQueue.waitingTriage.map((item) => item.encounterId),
+    );
+    expect(ids('Clasificadas')).toEqual(
+      unorderedQueue.triaged.map((item) => item.encounterId),
+    );
+    expect(ids('En atención')).toEqual(
+      unorderedQueue.inCare.map((item) => item.encounterId),
+    );
+    // Las atenciones en espera de triage solo están en su sección.
+    for (const item of unorderedQueue.waitingTriage) {
+      expect(section('En espera de triage')).toContainElement(rowOf(item));
+      expect(section('Clasificadas')).not.toContainElement(rowOf(item));
+      expect(section('En atención')).not.toContainElement(rowOf(item));
+    }
+  });
+
+  it('R4: cada sección tiene sus columnas', async () => {
+    setup();
+    await loaded();
+    const headers = (name: (typeof SECTION_NAMES)[number]) =>
+      within(within(section(name)).getByRole('table'))
+        .getAllByRole('columnheader')
+        .map((header) => header.textContent);
+    expect(headers('En espera de triage')).toEqual([
+      'Paciente',
+      'Llegada',
+      'Espera',
+      'Sede',
+      'Acción',
+    ]);
+    expect(headers('Clasificadas')).toEqual([
+      'Paciente',
+      'Nivel',
+      'Llegada',
+      'Espera',
+      'Sede',
+      'Acción',
+    ]);
+    expect(headers('En atención')).toEqual([
+      'Paciente',
+      'Nivel',
+      'Llegada',
+      'Sede',
+      'Acción',
+    ]);
+  });
+
+  it('R4: cada fila muestra iniciales, edad y sexo, nivel en romano en una insignia neutra, llegada en Bogotá, espera, sede y «Ver atención» asociado a su fila', async () => {
+    setup();
+    await loaded();
+    const row = rowOf(triagedLevel2Overdue);
+    const [patientCell, level, arrival, wait, site, action] =
+      within(row).getAllByRole('cell');
+    expect(patientCell).toHaveTextContent('JP · 58 años · Masculino');
+    const badge = within(level).getByText('Nivel II');
+    expect(badge).toHaveClass('badge', 'tone--neutral');
+    const time = arrival.querySelector('time')!;
+    expect(time).toHaveAttribute('dateTime', triagedLevel2Overdue.arrivalAt);
+    expect(norm(time.textContent)).toBe(
+      norm(formatTimeBogota(triagedLevel2Overdue.arrivalAt)),
+    );
+    expect(arrival).toHaveTextContent(
+      formatDateBogota(triagedLevel2Overdue.arrivalAt),
+    );
+    expect(wait).toHaveTextContent('31 min');
+    expect(site).toHaveTextContent('Sede Sur');
+    const link = within(action).getByRole('link', { name: 'Ver atención' });
+    expect(link).toHaveAttribute(
+      'href',
+      `/atenciones/${triagedLevel2Overdue.encounterId}`,
+    );
+    expect(link).toHaveClass('button', 'button--secondary', 'button--sm');
+    expect(patientCell.id).toBe(
+      `queue-patient-${triagedLevel2Overdue.encounterId}`,
+    );
+    expect(link).toHaveAttribute('aria-describedby', patientCell.id);
+  });
+
+  it('R4: en espera sin nivel y con «Paciente NN», y en atención sin espera', async () => {
+    setup();
+    await loaded();
+    const nn = within(rowOf(waitingNN)).getAllByRole('cell');
+    expect(nn[0]).toHaveTextContent('Paciente NN · — · —');
+    expect(nn[2]).toHaveTextContent('3 min');
+    expect(rowOf(waitingNN).textContent).not.toMatch(/Nivel/);
+    const care = within(rowOf(inCareSur)).getAllByRole('cell');
+    expect(care[0]).toHaveTextContent('EB · 63 años · Femenino');
+    expect(within(care[1]).getByText('Nivel III')).toHaveClass('tone--neutral');
+    expect(rowOf(inCareSur).textContent).not.toMatch(/\bmin\b/);
+  });
+
+  it('R6: sin nombre, documento, fecha de nacimiento ni motivo, y sin pedir detalle, pacientes ni preregistros', async () => {
+    const { net } = setup();
+    await loaded();
+    const text = document.body.textContent;
+    expect(text).not.toMatch(
+      /Documento|Cédula|Fecha de nacimiento|Motivo|Laura|Gómez|1032456789|17\/05\/1990|Dolor de cabeza/,
+    );
+    expect(
+      net.requests.filter((request) =>
+        /\/encounters\/|\/patients|\/pre-registrations/.test(request.path),
+      ),
+    ).toEqual([]);
+  });
+
+  it('R7: cada sección vacía muestra su mensaje sin tabla ni acciones y las otras siguen con filas', async () => {
+    setup({
+      routes: {
+        [GET_QUEUE]: json(200, queueWith({ waitingTriage: [], inCare: [] })),
+      },
+    });
+    await loaded();
+    for (const [name, message] of [
+      ['En espera de triage', 'No hay atenciones en espera de triage.'],
+      ['En atención', 'No hay atenciones en curso.'],
+    ] as const) {
+      const region = section(name);
+      expect(within(region).getByText(message)).toBeInTheDocument();
+      expect(within(region).queryByRole('table')).not.toBeInTheDocument();
+      expect(within(region).queryByRole('button')).not.toBeInTheDocument();
+      expect(within(region).queryByRole('link')).not.toBeInTheDocument();
+    }
+    expect(rowsOf('Clasificadas')).toHaveLength(4);
+  });
+
+  it('R7: con la cola vacía, las tres secciones dicen su vacío y las cifras son 0', async () => {
+    setup({ routes: { [GET_QUEUE]: json(200, emptyQueue) } });
+    await screen.findByText('No hay atenciones clasificadas.');
+    expect(
+      screen.getByText('No hay atenciones en espera de triage.'),
+    ).toBeInTheDocument();
+    expect(screen.getByText('No hay atenciones en curso.')).toBeInTheDocument();
+    expect(cells().map((cell) => cell.textContent)).toEqual([
+      'En espera de triage0',
+      'Clasificadas0',
+      'En atención0',
+    ]);
+  });
+
+  it('R8: la carga inicial es un único role="status" con «Cargando la cola…» y los tres indicadores ocupados, sin filas', async () => {
+    const pending = deferred(json(200, queue));
+    setup({ routes: { [GET_QUEUE]: pending.handler } });
+    const status = await screen.findByRole('status');
+    expect(screen.getAllByRole('status')).toHaveLength(1);
+    expect(status).toHaveTextContent('Cargando la cola…');
+    for (const cell of cells())
+      expect(cell).toHaveAttribute('aria-busy', 'true');
+    expect(
+      screen.queryByRole('link', { name: 'Ver atención' }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    act(() => pending.release());
+    await loaded();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    for (const cell of cells()) expect(cell).not.toHaveAttribute('aria-busy');
+  });
+
+  it('R29: solo el nivel final: sin sugerencia, IA, nivel sugerido ni datos de la decisión', async () => {
+    setup();
+    await loaded();
+    const text = document.body.textContent;
+    expect(text).not.toMatch(
+      /sugerencia|sugerido|inteligencia artificial|\bIA\b|validad|corregid|Triage manual|Registrado por|motivo/i,
+    );
+    // Los niveles que se ven son los finales de las filas clasificadas y en atención.
+    const levels = [...document.querySelectorAll('.badge.tone--neutral')].map(
+      (badge) => badge.textContent,
+    );
+    expect(levels).toEqual(
+      [
+        triagedLevel1,
+        triagedLevel2Overdue,
+        triagedLevel2,
+        triagedLevel4,
+        inCareNorte,
+        inCareSur,
+      ].map(
+        (item) =>
+          `Nivel ${['I', 'II', 'III', 'IV', 'V'][item.finalLevel! - 1]}`,
+      ),
+    );
+    expect(waitingLong.finalLevel).toBeNull();
+  });
+});
+
+describe('F-06-web cola priorizada: tiempo máximo y alerta', () => {
+  const overdueBadge = (row: HTMLElement) =>
+    within(row).queryByText('Tiempo máximo superado');
+
+  it('R9: las filas I y II vencidas llevan «Tiempo máximo superado» con icono y tono de error; la II sin vencer y la IV no', async () => {
+    setup();
+    await loaded();
+    for (const item of [triagedLevel1, triagedLevel2Overdue]) {
+      const badge = overdueBadge(rowOf(item))!;
+      expect(badge).toHaveClass('badge', 'tone--error');
+      expect(badge.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+      // El estado no depende solo del color: el texto está en la celda de espera.
+      expect(badge.closest('.queue-wait')).not.toBeNull();
+      expect(badge.textContent).toBe('Tiempo máximo superado');
+    }
+    for (const item of [
+      triagedLevel2,
+      triagedLevel4,
+      waitingLong,
+      waitingNN,
+      inCareNorte,
+      inCareSur,
+    ])
+      expect(overdueBadge(rowOf(item))).toBeNull();
+    // La fila no se colorea entera.
+    expect(rowOf(triagedLevel1).className).not.toMatch(/tone--/);
+  });
+
+  it('R10: «Atención inmediata» en la fila I y «Máx. 30 min» en las II, y nada en la IV, en espera ni en atención', async () => {
+    setup();
+    await loaded();
+    expect(rowOf(triagedLevel1)).toHaveTextContent('Atención inmediata');
+    expect(rowOf(triagedLevel2Overdue)).toHaveTextContent('Máx. 30 min');
+    expect(rowOf(triagedLevel2)).toHaveTextContent('Máx. 30 min');
+    for (const item of [
+      triagedLevel4,
+      waitingLong,
+      waitingNN,
+      inCareNorte,
+      inCareSur,
+    ]) {
+      expect(rowOf(item).textContent).not.toMatch(/Máx\.|Atención inmediata/);
+    }
+  });
+
+  it('R5: la hora de la cola es la del servidor en Bogotá y nada cambia con el reloj sin una respuesta nueva', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { net } = setup();
+    await loaded();
+    const stamp = screen.getByText(/^Datos del servidor de las /);
+    expect(stamp.tagName).toBe('TIME');
+    expect(stamp).toHaveAttribute('dateTime', queue.serverNow);
+    // 15:42 UTC = 10:42 a. m. en Bogotá.
+    expect(norm(stamp.textContent)).toBe(
+      norm(`Datos del servidor de las ${formatTimeBogota(queue.serverNow)}`),
+    );
+    expect(stamp.textContent).toMatch(/10:42\sa\.\sm\./);
+    expect(stamp.closest('[aria-live]')).toBeNull();
+    expect(section('En espera de triage')).toContainElement(stamp);
+    const before = document.querySelector('main, .dashboard')!.textContent;
+
+    await act(() => vi.advanceTimersByTimeAsync(29_000));
+    expect(net.calls(GET_QUEUE)).toHaveLength(1);
+    expect(document.querySelector('main, .dashboard')!.textContent).toBe(
+      before,
+    );
+    expect(rowOf(triagedLevel2Overdue)).toHaveTextContent('31 min');
+  });
+
+  it('R5: la alerta sale solo de overdue: con overdue false y más espera que el máximo no hay alerta', async () => {
+    const late = { ...triagedLevel2, waitMinutes: 45, overdue: false };
+    setup({
+      routes: {
+        [GET_QUEUE]: json(200, queueWith({ triaged: [late] })),
+      },
+    });
+    await loaded();
+    expect(rowOf(late)).toHaveTextContent('45 min');
+    expect(overdueBadge(rowOf(late))).toBeNull();
+  });
+});
+
+describe('F-06-web cola priorizada: refresco', () => {
+  it('R11: cada 30 s con la pestaña visible repite GET /queue con el mismo filtro, y «Actualizar» lo repite al instante; la nota «Se actualiza cada 30 s» va junto a las secciones', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { net } = setup();
+    await loaded();
+    const note = within(section('En espera de triage')).getByText(
+      'Se actualiza cada 30 s',
+    );
+    expect(note.closest('[aria-live]')).toBeNull();
+    expect(net.calls(GET_QUEUE)).toHaveLength(1);
+    await act(() => vi.advanceTimersByTimeAsync(30_000));
+    await waitFor(() => expect(net.calls(GET_QUEUE)).toHaveLength(2));
+    expect([...net.calls(GET_QUEUE)[1].query]).toEqual([]);
+    await act(async () => {
+      screen.getByRole('button', { name: 'Actualizar' }).click();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    await waitFor(() => expect(net.calls(GET_QUEUE)).toHaveLength(3));
+  });
+
+  it('R11: ni el foco de la ventana ni la reconexión repiten la petición', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { net } = setup();
+    await loaded();
+    await act(async () => {
+      focusManager.setFocused(false);
+      onlineManager.setOnline(false);
+      focusManager.setFocused(true);
+      onlineManager.setOnline(true);
+      await vi.advanceTimersByTimeAsync(20);
+    });
+    expect(net.calls(GET_QUEUE)).toHaveLength(1);
+  });
+
+  it('R11: con la pestaña oculta no se repite la petición', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { net } = setup();
+    await loaded();
+    const visibility = vi
+      .spyOn(document, 'visibilityState', 'get')
+      .mockReturnValue('hidden');
+    await act(() => vi.advanceTimersByTimeAsync(90_000));
+    expect(net.calls(GET_QUEUE)).toHaveLength(1);
+    visibility.mockRestore();
+  });
+
+  it('R12: durante un refresco se conservan filas y cifras sin estado de carga, y «Actualizar» lleva aria-busy sin deshabilitarse', async () => {
+    const next = deferred(
+      json(200, queueWith({ serverNow: LATER_SERVER_NOW })),
+    );
+    const { user } = setup({
+      routes: { [GET_QUEUE]: sequence(json(200, queue), next.handler) },
+    });
+    const links = await loaded();
+    const button = screen.getByRole('button', { name: 'Actualizar' });
+    expect(button).not.toHaveAttribute('aria-busy');
+    await user.click(button);
+    await waitFor(() => expect(button).toHaveAttribute('aria-busy', 'true'));
+    expect(button).toBeEnabled();
+    expect(button).toHaveFocus();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: 'Ver atención' })).toEqual(
+      links,
+    );
+    expect(cells()[1]).toHaveTextContent('Clasificadas4');
+    expect(cells()[1]).not.toHaveAttribute('aria-busy');
+    act(() => next.release());
+    await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'));
+    expect(screen.getByText(/^Datos del servidor de las /)).toHaveAttribute(
+      'dateTime',
+      LATER_SERVER_NOW,
+    );
+  });
+
+  it('R12: un refresco con una fila nueva conserva el enlace enfocado y la posición, sin desplazamiento programático', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const scrolling = watchScrolling();
+    const { net } = setup();
+    const links = await loaded();
+    const focused = within(rowOf(triagedLevel2)).getByRole('link');
+    act(() => focused.focus());
+    const arrival = {
+      ...triagedLevel1,
+      encounterId: 'f0600000-0000-4000-8000-0000000000aa',
+      patient: { initials: 'NV', ageYears: 40, sex: 'M' as const },
+    };
+    net.set(
+      GET_QUEUE,
+      json(
+        200,
+        queueWith({
+          triaged: [arrival, ...queue.triaged],
         }),
-      );
-      await waitFor(() =>
-        expect(cells()[1]).toHaveTextContent('Clasificadas4'),
-      );
-      expect(callsOf(net, 'TRIAGED')).toHaveLength(2);
-      expect(callsOf(net, 'WAITING_TRIAGE')).toHaveLength(1);
-      expect(callsOf(net, 'IN_CARE')).toHaveLength(1);
-      expect(callsOf(net, 'recent')).toHaveLength(1);
-    });
+      ),
+    );
+    await act(() => vi.advanceTimersByTimeAsync(30_000));
+    await waitFor(() => expect(rowOf(arrival)).toBeTruthy());
+    expect(screen.getAllByRole('link', { name: 'Ver atención' })).toHaveLength(
+      links.length + 1,
+    );
+    expect(focused).toHaveFocus();
+    expect(focused.isConnected).toBe(true);
+    expect(cells()[1]).toHaveTextContent('Clasificadas5');
+    expect(scrolling.calls()).toBe(0);
+    scrolling.restore();
+  });
 
-    it('R21: si falla la lista reciente, el panel muestra el error con su «Reintentar» y las celdas siguen', async () => {
-      const { net, user } = setup({
-        routes: { [LIST]: encounters({ recent: problem(500) }) },
-      });
+  it.each([
+    ['red caída', networkError()],
+    ['500', problem(500)],
+  ])(
+    'R13: un refresco fallido (%s) conserva los datos con el aviso y «Reintentar», y el siguiente ciclo vuelve a pedir y lo quita',
+    async (_label, failure) => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const { net, user } = setup();
+      await loaded();
+      net.set(GET_QUEUE, failure);
+      await act(() => vi.advanceTimersByTimeAsync(30_000));
+      const warning = await screen.findByText(
+        /^No se pudo actualizar la cola\./,
+      );
+      expect(norm(warning.textContent)).toBe(
+        norm(
+          `No se pudo actualizar la cola. Se muestran los datos de las ${formatTimeBogota(queue.serverNow)}.`,
+        ),
+      );
+      const notice = warning.closest('.status') as HTMLElement;
+      expect(notice).toHaveClass('status--warn');
+      expect(rowsOf('Clasificadas')).toHaveLength(4);
+      expect(cells()[1]).toHaveTextContent('Clasificadas4');
+      expect(net.calls(GET_QUEUE)).toHaveLength(2);
+
+      // «Reintentar» pide solo al pulsarlo.
+      await act(() => vi.advanceTimersByTimeAsync(1_000));
+      expect(net.calls(GET_QUEUE)).toHaveLength(2);
+      await user.click(
+        within(notice).getByRole('button', { name: 'Reintentar' }),
+      );
+      await waitFor(() => expect(net.calls(GET_QUEUE)).toHaveLength(3));
+
+      net.set(GET_QUEUE, json(200, queue));
+      await act(() => vi.advanceTimersByTimeAsync(30_000));
+      await waitFor(() => expect(net.calls(GET_QUEUE)).toHaveLength(4));
+      await waitFor(() =>
+        expect(
+          screen.queryByText(/^No se pudo actualizar la cola\./),
+        ).not.toBeInTheDocument(),
+      );
+    },
+  );
+
+  it.each([
+    ['red caída', networkError(), 'No hay conexión con el servidor.'],
+    ['500', problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
+  ])(
+    'R13: si falla la carga inicial (%s) se muestra el error traducido con «Reintentar», sin secciones',
+    async (_label, failure, text) => {
+      const { net, user } = setup({ routes: { [GET_QUEUE]: failure } });
       const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent(
-        'No se pudieron cargar las atenciones recientes.',
-      );
-      expect(screen.queryByRole('table')).not.toBeInTheDocument();
-      expect(panel().querySelector('.panel__foot')).toBeNull();
-      await waitFor(() =>
-        expect(cells()[0]).toHaveTextContent('En espera de triage8'),
-      );
-      expect(cells()[2]).toHaveTextContent('En atención3');
-      expect(strip()).toBeVisible();
-
-      net.set(LIST, encounters());
-      // El «Reintentar» exacto es el del panel y repite solo la lista.
+      expect(alert).toHaveTextContent(text);
+      for (const name of SECTION_NAMES)
+        expect(screen.queryByRole('region', { name })).not.toBeInTheDocument();
+      net.set(GET_QUEUE, json(200, queue));
       await user.click(
         within(alert).getByRole('button', { name: 'Reintentar' }),
       );
-      await rows();
-      expect(callsOf(net, 'recent')).toHaveLength(2);
-      expect(callsOf(net, 'WAITING_TRIAGE')).toHaveLength(1);
-    });
-
-    it('R22: un 403 de un indicador deja solo esa celda «Sin permiso» y sin «Reintentar»', async () => {
-      setup({ routes: { [LIST]: encounters({ IN_CARE: problem(403) }) } });
-      await rows();
-      const inCare = cells()[2];
-      await waitFor(() => expect(inCare).toHaveTextContent('Sin permiso'));
-      expect(within(inCare).queryByRole('button')).not.toBeInTheDocument();
-      expect(cells()[0]).toHaveTextContent('En espera de triage8');
+      await loaded();
       expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
+    },
+  );
 
-    it('R22: un 403 de la lista deja el panel «Sin permiso», sin filas ni «Reintentar», y las celdas siguen', async () => {
-      setup({ routes: { [LIST]: encounters({ recent: problem(403) }) } });
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent(
-        'No tienes permiso para ver esta página.',
-      );
-      expect(within(alert).queryByRole('button')).not.toBeInTheDocument();
-      expect(screen.queryByRole('table')).not.toBeInTheDocument();
-      await waitFor(() =>
-        expect(cells()[0]).toHaveTextContent('En espera de triage8'),
-      );
-    });
+  it('R14: un 403 muestra «No tienes permiso para ver esta página.» sin «Reintentar» ni filas y detiene el intervalo', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { net } = setup({ routes: { [GET_QUEUE]: problem(403) } });
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('No tienes permiso para ver esta página.');
+    expect(within(alert).queryByRole('button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(90_000));
+    expect(net.calls(GET_QUEUE)).toHaveLength(1);
   });
 
-  describe('refresco automático', () => {
-    it('R24: cada 30 s con la pestaña visible se repiten las cuatro peticiones y «Actualizar» las repite todas', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      const { net } = setup();
-      await rows();
-      expect(net.calls(LIST)).toHaveLength(4);
+  it('R14: un 403 en un refresco quita las filas y deja la vista «Sin permiso»', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const { net } = setup();
+    await loaded();
+    net.set(GET_QUEUE, problem(403));
+    await act(() => vi.advanceTimersByTimeAsync(30_000));
+    await screen.findByText('No tienes permiso para ver esta página.');
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(60_000));
+    expect(net.calls(GET_QUEUE)).toHaveLength(2);
+  });
+});
 
-      await act(() => vi.advanceTimersByTimeAsync(30_000));
-      await waitFor(() => expect(net.calls(LIST)).toHaveLength(8));
-      for (const key of [
-        'recent',
-        'WAITING_TRIAGE',
-        'TRIAGED',
-        'IN_CARE',
-      ] as const) {
-        expect(callsOf(net, key)).toHaveLength(2);
+describe('F-06-web cola priorizada: filtro de sede', () => {
+  it('R15: «Todas las sedes» por defecto; elegir una sede pide GET /queue?siteId=… y, mientras carga, no se ven filas ni cifras de la opción anterior', async () => {
+    const { net, user, router } = setup();
+    await loaded();
+    const select = screen.getByLabelText<HTMLSelectElement>('Sede');
+    await waitFor(() => expect(select).toBeEnabled());
+    expect(select.selectedOptions[0]).toHaveTextContent('Todas las sedes');
+    expect([...select.options].map((option) => option.textContent)).toEqual([
+      'Todas las sedes',
+      SITE_NORTE.name,
+      SITE_SUR.name,
+    ]);
+
+    const pending = deferred(queueBySite());
+    net.set(GET_QUEUE, pending.handler);
+    await user.selectOptions(select, SITE_SUR.id);
+    await waitFor(() => expect(net.calls(GET_QUEUE)).toHaveLength(2));
+    expect(Object.fromEntries(net.calls(GET_QUEUE)[1].query)).toEqual({
+      siteId: SITE_SUR.id,
+    });
+    // Sin filas ni cifras de «Todas las sedes» mientras llega la respuesta.
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Cargando la cola…');
+    for (const cell of cells())
+      expect(cell).toHaveAttribute('aria-busy', 'true');
+
+    act(() => pending.release());
+    await loaded();
+    expect(cells().map((cell) => cell.textContent)).toEqual([
+      'En espera de triage1',
+      'Clasificadas2',
+      'En atención1',
+    ]);
+    expect(rowsOf('Clasificadas')).toHaveLength(surQueue.triaged.length);
+    expect(screen.queryByText(SITE_NORTE.name, { selector: 'td' })).toBeNull();
+    // La elección vive en memoria: ni URL ni almacenamiento.
+    expect(router.state.location.search).toBe('');
+    expect(
+      JSON.stringify({ ...localStorage, ...sessionStorage }),
+    ).not.toContain(SITE_SUR.id);
+    expect(net.calls(TENANTS)).toHaveLength(1);
+
+    // Volver a «Todas las sedes» pide sin siteId.
+    await user.selectOptions(select, '');
+    await waitFor(() =>
+      expect([...net.calls(GET_QUEUE).at(-1)!.query]).toEqual([]),
+    );
+  });
+
+  it('R16: si las sedes fallan, el filtro muestra el error con «Reintentar» y la cola de todas las sedes sigue visible', async () => {
+    const { net, user } = setup({ routes: { [TENANTS]: problem(500) } });
+    await loaded();
+    const filter = screen
+      .getByLabelText('Sede')
+      .closest('.summary__filter') as HTMLElement;
+    await within(filter).findByText('No se pudieron cargar las sedes.');
+    expect(rowsOf('Clasificadas')).toHaveLength(4);
+    expect([...net.calls(GET_QUEUE)[0].query]).toEqual([]);
+    net.set(TENANTS, json(200, publicTenants));
+    await user.click(
+      within(filter).getByRole('button', { name: 'Reintentar' }),
+    );
+    await waitFor(() => expect(screen.getByLabelText('Sede')).toBeEnabled());
+    expect(net.calls(TENANTS)).toHaveLength(2);
+  });
+});
+
+const START = 'Iniciar atención';
+const CLOSE_LABEL = 'Cerrar atención';
+const dialog = () => screen.getByRole('dialog');
+
+describe('F-06-web acciones del médico', () => {
+  it('R17: PHYSICIAN tiene «Iniciar atención» en cada fila de «Clasificadas» y «Cerrar atención» en cada una de «En atención», asociados a su fila y con el estilo de «Ver atención», y nada en espera', async () => {
+    setup();
+    await loaded();
+    for (const [name, label, other] of [
+      ['Clasificadas', START, CLOSE_LABEL],
+      ['En atención', CLOSE_LABEL, START],
+    ] as const) {
+      for (const row of rowsOf(name)) {
+        const button = within(row).getByRole('button', { name: label });
+        const link = within(row).getByRole('link', { name: 'Ver atención' });
+        expect(button).toHaveAttribute('type', 'button');
+        expect(button.className).toBe(link.className);
+        const cell = within(row).getAllByRole('cell')[0];
+        expect(button).toHaveAttribute('aria-describedby', cell.id);
+        expect(within(row).queryByRole('button', { name: other })).toBeNull();
+        // Orden de tabulación: «Ver atención» y después la acción.
+        expect(follows(link, button)).toBe(true);
       }
-      expect(queryOf(callsOf(net, 'recent')[1])).toEqual({
-        limit: '8',
-        offset: '0',
-      });
+    }
+    for (const row of rowsOf('En espera de triage'))
+      expect(within(row).queryByRole('button')).toBeNull();
+  });
 
-      await act(async () => {
-        screen.getByRole('button', { name: 'Actualizar' }).click();
-        await vi.advanceTimersByTimeAsync(0);
-      });
-      await waitFor(() => expect(net.calls(LIST)).toHaveLength(12));
-      for (const key of [
-        'recent',
-        'WAITING_TRIAGE',
-        'TRIAGED',
-        'IN_CARE',
-      ] as const) {
-        expect(callsOf(net, key)).toHaveLength(3);
-      }
-      // Ni sedes ni preregistros: son lecturas que este dashboard no necesita.
-      expect(net.calls(TENANTS)).toHaveLength(0);
-      expect(net.calls(PRE_REGISTRATIONS)).toHaveLength(0);
-    });
-
-    it('R25: ni el foco de la ventana ni la reconexión repiten las peticiones', async () => {
+  it.each(['NURSE', 'ADMIN'] as const)(
+    'R17: %s ve la cola de solo lectura, sin botones de acción y sin ningún POST tras cargar y refrescar',
+    async (role) => {
       vi.useFakeTimers({ shouldAdvanceTime: true });
-      const { net } = setup();
-      await rows();
-      await act(async () => {
-        focusManager.setFocused(false);
-        onlineManager.setOnline(false);
-        focusManager.setFocused(true);
-        onlineManager.setOnline(true);
-        await vi.advanceTimersByTimeAsync(20);
-      });
-      expect(net.calls(LIST)).toHaveLength(4);
-    });
-
-    it('R25: con la pestaña oculta no se repite ninguna petición', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      const { net } = setup();
-      await rows();
-      const visibility = vi
-        .spyOn(document, 'visibilityState', 'get')
-        .mockReturnValue('hidden');
-      await act(() => vi.advanceTimersByTimeAsync(90_000));
-      expect(net.calls(LIST)).toHaveLength(4);
-      visibility.mockRestore();
-    });
-
-    it('R22: un 403 detiene el intervalo de esa petición y el de las demás sigue', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      const { net } = setup({
-        routes: { [LIST]: encounters({ TRIAGED: problem(403) }) },
-      });
-      await rows();
-      await waitFor(() => expect(cells()[1]).toHaveTextContent('Sin permiso'));
+      const { net } = setup({ role });
+      await loaded();
+      expect(screen.queryByRole('button', { name: START })).toBeNull();
+      expect(screen.queryByRole('button', { name: CLOSE_LABEL })).toBeNull();
+      for (const name of SECTION_NAMES)
+        expect(within(section(name)).queryAllByRole('button')).toHaveLength(0);
       await act(() => vi.advanceTimersByTimeAsync(30_000));
-      await waitFor(() => expect(callsOf(net, 'recent')).toHaveLength(2));
-      await act(() => vi.advanceTimersByTimeAsync(30_000));
-      await waitFor(() => expect(callsOf(net, 'recent')).toHaveLength(3));
-      await waitFor(() =>
-        expect(callsOf(net, 'WAITING_TRIAGE')).toHaveLength(3),
+      await waitFor(() => expect(net.calls(GET_QUEUE)).toHaveLength(2));
+      expect(net.requests.every((request) => request.method === 'GET')).toBe(
+        true,
       );
-      await waitFor(() => expect(callsOf(net, 'IN_CARE')).toHaveLength(3));
-      expect(callsOf(net, 'TRIAGED')).toHaveLength(1);
-    });
+    },
+  );
 
-    it('R22: un 403 de la lista detiene su intervalo y los de los indicadores siguen', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      const { net } = setup({
-        routes: { [LIST]: encounters({ recent: problem(403) }) },
-      });
-      await screen.findByRole('alert');
-      await act(() => vi.advanceTimersByTimeAsync(30_000));
-      await waitFor(() =>
-        expect(callsOf(net, 'WAITING_TRIAGE')).toHaveLength(2),
+  it.each([
+    [
+      'Iniciar atención',
+      triagedLevel2Overdue,
+      '¿Iniciar la atención?',
+      'JP · 58 años · Masculino, nivel II. La atención pasará a «En atención» y dejará de contar el tiempo de espera.',
+    ],
+    [
+      'Cerrar atención',
+      inCareSur,
+      '¿Cerrar la atención?',
+      'EB · 63 años · Femenino, nivel III. La atención se cerrará y saldrá de la cola. No se puede deshacer.',
+    ],
+  ] as const)(
+    'R18: «%s» abre la confirmación con las iniciales y el nivel; «Volver» y Escape la cierran sin petición y devuelven el foco',
+    async (label, item, title, body) => {
+      const { net, user } = setup();
+      await loaded();
+      const button = within(rowOf(item)).getByRole('button', { name: label });
+      await user.click(button);
+      expect(
+        within(dialog()).getByRole('heading', { name: title }),
+      ).toBeInTheDocument();
+      expect(dialog()).toHaveTextContent(body);
+      await user.click(
+        within(dialog()).getByRole('button', { name: 'Volver' }),
       );
-      await act(() => vi.advanceTimersByTimeAsync(30_000));
-      await waitFor(() =>
-        expect(callsOf(net, 'WAITING_TRIAGE')).toHaveLength(3),
-      );
-      expect(callsOf(net, 'recent')).toHaveLength(1);
-    });
-
-    it('R21: un refresco fallido sustituye las filas por el error y el siguiente ciclo vuelve a pedir', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      const { net } = setup();
-      await rows();
-      net.set(LIST, encounters({ recent: networkError() }));
-      await act(() => vi.advanceTimersByTimeAsync(30_000));
-      const alert = await screen.findByRole('alert');
-      expect(alert).toHaveTextContent(
-        'No se pudieron cargar las atenciones recientes.',
-      );
-      expect(screen.queryByRole('table')).not.toBeInTheDocument();
-      expect(callsOf(net, 'recent')).toHaveLength(2);
-
-      // El error no detiene el intervalo: el siguiente ciclo repite la petición solo.
-      net.set(LIST, encounters());
-      await act(() => vi.advanceTimersByTimeAsync(30_000));
-      await waitFor(() => expect(callsOf(net, 'recent')).toHaveLength(3));
-      expect((await rows()).length).toBeGreaterThan(0);
-      expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    });
-
-    it('R23: durante un refresco se conservan las filas y las cifras, sin estado de carga, y «Actualizar» no se deshabilita', async () => {
-      const recent = deferred(json(200, { items: encountersInEveryStatus }));
-      const waiting = deferred(encountersFor(() => 9));
-      const { user } = setup({
-        routes: {
-          [LIST]: sequence(
-            // Las cuatro primeras respuestas son la carga inicial; las siguientes, el refresco.
-            ...Array.from({ length: 4 }, () => encounters()),
-            ...[
-              encounters({
-                recent: recent.handler,
-                WAITING_TRIAGE: waiting.handler,
-              }),
-            ],
-          ),
-        },
-      });
-      await rows();
-      await waitFor(() =>
-        expect(cells()[0]).toHaveTextContent('En espera de triage8'),
-      );
-      const button = screen.getByRole('button', { name: 'Actualizar' });
-      expect(button).not.toHaveAttribute('aria-busy');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(button).toHaveFocus();
 
       await user.click(button);
-      await waitFor(() => expect(button).toHaveAttribute('aria-busy', 'true'));
-      expect(button).toBeEnabled();
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
-      expect(
-        screen.getAllByRole('link', { name: 'Ver atención' }),
-      ).toHaveLength(encountersInEveryStatus.length);
-      expect(cells()[0]).toHaveTextContent('En espera de triage8');
-      expect(cells()[0]).not.toHaveAttribute('aria-busy');
+      await user.keyboard('{Escape}');
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(button).toHaveFocus();
+      expect(net.requests.filter((r) => r.method === 'POST')).toHaveLength(0);
+    },
+  );
 
-      act(() => {
-        recent.release();
-        waiting.release();
-      });
-      await waitFor(() =>
-        expect(cells()[0]).toHaveTextContent('En espera de triage9'),
-      );
-      await waitFor(() => expect(button).not.toHaveAttribute('aria-busy'));
+  it('R18, R19: «Confirmar» hace un único POST sin cuerpo a la ruta de la fila', async () => {
+    const { net, user } = setup({
+      routes: {
+        [START_CARE(triagedLevel2.encounterId)]: startCareOk(triagedLevel2),
+        [CLOSE(inCareNorte.encounterId)]: closeOk(inCareNorte),
+      },
     });
-
-    it('R37: un refresco conserva el enlace enfocado aunque llegue una atención nueva, y «Actualizar» no pierde el foco ni se deshabilita, sin desplazamiento programático', async () => {
-      vi.useFakeTimers({ shouldAdvanceTime: true });
-      const scrolling = watchScrolling();
-      const { net, user } = setup();
-      const links = await rows();
-      const row = links[2].closest('tr') as HTMLElement;
-      act(() => links[2].focus());
-      expect(links[2]).toHaveFocus();
-      const refresh = screen.getByRole('button', { name: 'Actualizar' });
-      const body = panel().querySelector('.panel__body');
-
-      // Llega una atención nueva arriba: las filas existentes bajan una posición y son las mismas.
-      const arrival = encounterSummary({
-        id: 'e3e3e3e3-0000-4000-8000-0000000000ff',
-        status: 'WAITING_TRIAGE',
-        arrivalAt: '2026-10-27T15:00:00.000Z',
-        patient: {
-          ...patient,
-          id: 'b3b3b3b3-0000-4000-8000-0000000000ff',
-          fullName: 'Sofía Martínez Díaz',
-        },
-      });
-      net.set(
-        LIST,
-        encounters({
-          recent: json(200, { items: [arrival, ...encountersInEveryStatus] }),
-        }),
-      );
-      await act(() => vi.advanceTimersByTimeAsync(30_000));
-      await screen.findByRole('cell', { name: /^Sofía Martínez Díaz$/ });
-
-      const after = screen.getAllByRole('link', { name: 'Ver atención' });
-      expect(after).toHaveLength(encountersInEveryStatus.length + 1);
-      expect(after[3]).toBe(links[2]);
-      expect(links[2]).toHaveFocus();
-      expect(links[2].closest('tr')).toBe(row);
-      expect(screen.getByRole('button', { name: 'Actualizar' })).toBe(refresh);
-      expect(panel().querySelector('.panel__body')).toBe(body);
-      expect(screen.queryByRole('status')).not.toBeInTheDocument();
-      expect(panel().querySelector('.panel__foot')).toHaveTextContent(
-        'Las 7 atenciones más recientes',
-      );
-
-      // «Actualizar» invalida las atenciones sin deshabilitar el botón: conserva el foco.
-      await user.click(refresh);
-      await waitFor(() => expect(callsOf(net, 'recent')).toHaveLength(3));
-      await waitFor(() => expect(refresh).not.toHaveAttribute('aria-busy'));
-      expect(refresh).toBeEnabled();
-      expect(refresh).toHaveFocus();
-      expect(scrolling.calls()).toBe(0);
-      scrolling.restore();
-    });
+    await loaded();
+    await user.click(
+      within(rowOf(triagedLevel2)).getByRole('button', { name: START }),
+    );
+    await user.click(
+      within(dialog()).getByRole('button', { name: 'Confirmar' }),
+    );
+    await screen.findByText('Atención iniciada.');
+    await user.click(
+      within(rowOf(inCareNorte)).getByRole('button', { name: CLOSE_LABEL }),
+    );
+    await user.click(
+      within(dialog()).getByRole('button', { name: 'Confirmar' }),
+    );
+    await screen.findByText('Atención cerrada.');
+    const posts = net.requests.filter((r) => r.method === 'POST');
+    expect(posts.map((r) => r.path)).toEqual([
+      `/api/v1/encounters/${triagedLevel2.encounterId}/start-care`,
+      `/api/v1/encounters/${inCareNorte.encounterId}/close`,
+    ]);
+    for (const post of posts) {
+      expect(post.body).toBeUndefined();
+      expect([...post.query]).toEqual([]);
+    }
   });
 
-  describe('privacidad y permisos', () => {
-    it('R26: no muestra sugerencias de IA ni niveles de triage, ni el documento de nadie', async () => {
-      setup();
-      await rows();
-      expect(document.body.textContent).not.toMatch(
-        /sugerencia|inteligencia artificial|\bIA\b|nivel \d|prioridad (alta|media|baja)|ESI ?\d/i,
+  it.each([
+    [START, triagedLevel1, START_CARE, 'Iniciando la atención…'],
+    [CLOSE_LABEL, inCareNorte, CLOSE, 'Cerrando la atención…'],
+  ] as const)(
+    'R20: durante «%s» todas las acciones del médico se deshabilitan, un segundo clic se ignora y un tick del intervalo no repite ni cancela la petición',
+    async (label, item, route, progress) => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const pending = deferred(
+        label === START ? startCareOk(item) : closeOk(item),
       );
-      expect(document.body.textContent).not.toMatch(
-        /documento|Cédula|8000000\d/i,
+      const { net, user } = setup({
+        routes: { [route(item.encounterId)]: pending.handler },
+      });
+      await loaded();
+      await user.click(
+        within(rowOf(item)).getByRole('button', { name: label }),
       );
-    });
+      const confirm = within(dialog()).getByRole('button', {
+        name: 'Confirmar',
+      });
+      await user.click(confirm);
+      const status = await screen.findByText(progress);
+      expect(status).toHaveAttribute('role', 'status');
+      for (const button of [
+        ...screen.getAllByRole('button', { name: START }),
+        ...screen.getAllByRole('button', { name: CLOSE_LABEL }),
+      ])
+        expect(button).toBeDisabled();
+      await user.click(screen.getAllByRole('button', { name: START })[0]);
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-    it.each(['PHYSICIAN', 'NURSE', 'ADMIN'] as const)(
-      'R28: %s ve el mismo dashboard y solo pide atenciones: sin sedes, preregistros, detalle ni captura clínica',
-      async (role) => {
-        const { net } = setup({ role });
-        await rows();
-        expect(
-          screen.getByRole('heading', { level: 1, name: 'Cola priorizada' }),
-        ).toBeInTheDocument();
-        await waitFor(() => expect(net.calls(LIST)).toHaveLength(4));
-        const endpoints = [
-          ...new Set(net.requests.map((r) => `${r.method} ${r.path}`)),
-        ];
-        expect(endpoints).toEqual([LIST]);
-        expect(
-          net.requests.some((r) => /\/encounters\/|clinical/.test(r.path)),
-        ).toBe(false);
-        // Cualquiera de los tres roles ve las mismas cifras.
-        await waitFor(() =>
-          expect(cells().map((cell) => cell.textContent)).toEqual([
-            'En espera de triage8',
-            'Clasificadas0',
-            'En atención3',
-          ]),
-        );
-      },
+      await act(() => vi.advanceTimersByTimeAsync(30_000));
+      await waitFor(() => expect(net.calls(GET_QUEUE)).toHaveLength(2));
+      expect(net.calls(route(item.encounterId))).toHaveLength(1);
+      act(() => pending.release());
+      await screen.findByText(
+        label === START ? 'Atención iniciada.' : 'Atención cerrada.',
+      );
+      expect(net.calls(route(item.encounterId))).toHaveLength(1);
+      expect(screen.queryByText(progress)).not.toBeInTheDocument();
+    },
+  );
+});
+
+/** Abre la confirmación de la fila y confirma. */
+async function confirmAction(
+  user: ReturnType<typeof userEvent.setup>,
+  item: QueueItem,
+  label: string,
+) {
+  await user.click(within(rowOf(item)).getByRole('button', { name: label }));
+  await user.click(within(dialog()).getByRole('button', { name: 'Confirmar' }));
+}
+
+describe('F-06-web resultado de las acciones del médico', () => {
+  it('R21: un 200 en start-care muestra «Atención iniciada.» con el foco, pide la cola y la fila cambia de sección solo con la nueva respuesta', async () => {
+    const moved = {
+      ...triagedLevel2,
+      status: 'IN_CARE' as const,
+      waitMinutes: null,
+    };
+    const next = deferred(
+      json(
+        200,
+        queueWith({
+          triaged: queue.triaged.filter((i) => i !== triagedLevel2),
+          inCare: [...queue.inCare, moved],
+        }),
+      ),
     );
+    const { net, user } = setup({
+      routes: {
+        [START_CARE(triagedLevel2.encounterId)]: startCareOk(triagedLevel2),
+      },
+    });
+    await loaded();
+    net.set(GET_QUEUE, next.handler);
+    await confirmAction(user, triagedLevel2, START);
+    const notice = await screen.findByText('Atención iniciada.');
+    const status = notice.closest('[role="status"]') as HTMLElement;
+    await waitFor(() => expect(status).toHaveFocus());
+    await waitFor(() => expect(net.calls(GET_QUEUE)).toHaveLength(2));
+    // Sin cambio optimista: la fila sigue en «Clasificadas» hasta la respuesta.
+    expect(section('Clasificadas')).toContainElement(rowOf(triagedLevel2));
+    act(() => next.release());
+    await waitFor(() =>
+      expect(section('En atención')).toContainElement(rowOf(triagedLevel2)),
+    );
+    expect(cells()[1]).toHaveTextContent('Clasificadas3');
+  });
+
+  it('R21: un 200 en close muestra «Atención cerrada.» y la fila sale de la cola con la nueva respuesta', async () => {
+    const { net, user } = setup({
+      routes: { [CLOSE(inCareNorte.encounterId)]: closeOk(inCareNorte) },
+    });
+    await loaded();
+    net.set(GET_QUEUE, json(200, queueWith({ inCare: [inCareSur] })));
+    await confirmAction(user, inCareNorte, CLOSE_LABEL);
+    await screen.findByText('Atención cerrada.');
+    await waitFor(() =>
+      expect(
+        document.getElementById(`queue-patient-${inCareNorte.encounterId}`),
+      ).toBeNull(),
+    );
+    expect(cells()[2]).toHaveTextContent('En atención1');
+  });
+
+  it.each([
+    [
+      START,
+      triagedLevel1,
+      START_CARE,
+      'Esta atención ya no está clasificada. La cola se actualizó.',
+    ],
+    [
+      CLOSE_LABEL,
+      inCareSur,
+      CLOSE,
+      'Esta atención ya no está en atención. La cola se actualizó.',
+    ],
+  ] as const)(
+    'R22: un 409 en «%s» muestra su aviso con el foco, vuelve a pedir la cola y no reenvía',
+    async (label, item, route, text) => {
+      const { net, user } = setup({
+        routes: { [route(item.encounterId)]: problem(409) },
+      });
+      await loaded();
+      await confirmAction(user, item, label);
+      const notice = await screen.findByText(text);
+      expect(notice).toHaveClass('status--warn');
+      await waitFor(() => expect(notice).toHaveFocus());
+      await waitFor(() => expect(net.calls(GET_QUEUE)).toHaveLength(2));
+      expect(net.calls(route(item.encounterId))).toHaveLength(1);
+      expect(within(notice).queryByRole('button')).toBeNull();
+    },
+  );
+
+  it('R23: un 404 muestra «Esta atención ya no existe. La cola se actualizó.» y vuelve a pedir la cola', async () => {
+    const { net, user } = setup({
+      routes: { [START_CARE(triagedLevel4.encounterId)]: problem(404) },
+    });
+    await loaded();
+    await confirmAction(user, triagedLevel4, START);
+    await screen.findByText(
+      'Esta atención ya no existe. La cola se actualizó.',
+    );
+    await waitFor(() => expect(net.calls(GET_QUEUE)).toHaveLength(2));
+  });
+
+  it('R23: un 403 muestra «No tienes permiso para esta acción.» sin «Reintentar»', async () => {
+    const { net, user } = setup({
+      routes: { [CLOSE(inCareSur.encounterId)]: problem(403) },
+    });
+    await loaded();
+    await confirmAction(user, inCareSur, CLOSE_LABEL);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent('No tienes permiso para esta acción.');
+    expect(within(alert).queryByRole('button')).toBeNull();
+    expect(net.calls(GET_QUEUE)).toHaveLength(1);
+  });
+
+  it.each([
+    ['red caída', networkError(), 'No hay conexión con el servidor.'],
+    ['500', problem(500), 'El servidor tuvo un problema. Inténtalo de nuevo.'],
+  ])(
+    'R24: un fallo de %s muestra el error traducido con «Reintentar», que repite la misma acción sobre la misma atención solo al pulsarlo',
+    async (_label, failure, text) => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const route = START_CARE(triagedLevel2Overdue.encounterId);
+      const { net, user } = setup({ routes: { [route]: failure } });
+      await loaded();
+      await confirmAction(user, triagedLevel2Overdue, START);
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent(text);
+      await act(() => vi.advanceTimersByTimeAsync(30_000));
+      expect(net.calls(route)).toHaveLength(1);
+      net.set(route, startCareOk(triagedLevel2Overdue));
+      await user.click(
+        within(alert).getByRole('button', { name: 'Reintentar' }),
+      );
+      await screen.findByText('Atención iniciada.');
+      expect(net.calls(route)).toHaveLength(2);
+      expect(net.requests.filter((r) => r.method === 'POST')).toHaveLength(2);
+    },
+  );
+
+  it('R24: un 400 muestra el error genérico sin «Reintentar»', async () => {
+    const route = CLOSE(inCareNorte.encounterId);
+    const { net, user } = setup({ routes: { [route]: problem(400) } });
+    await loaded();
+    await confirmAction(user, inCareNorte, CLOSE_LABEL);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(
+      'No se pudo completar la acción. Inténtalo de nuevo.',
+    );
+    expect(within(alert).queryByRole('button')).toBeNull();
+    expect(net.calls(route)).toHaveLength(1);
   });
 });

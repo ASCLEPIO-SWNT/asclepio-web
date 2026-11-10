@@ -1,1 +1,1 @@
-Cola priorizada por nivel y espera. Llega con F-06-web.
+Cola priorizada (F-06-web): `/cola` muestra `GET /api/v1/queue` en tres secciones (en espera de triage, clasificadas y en atención) en el orden del servidor, con iniciales, edad, sexo, nivel final, llegada, espera, tiempo máximo y la alerta «Tiempo máximo superado». Se refresca cada 30 s con la pestaña visible y se filtra por sede (en memoria). PHYSICIAN inicia (`start-care`) y cierra (`close`) atenciones con confirmación; NURSE y ADMIN la consultan.

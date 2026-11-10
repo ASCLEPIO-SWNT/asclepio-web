@@ -108,7 +108,7 @@
   "dash_retry_named": "Erneut versuchen: {name}",
   "dash_view_all_encounters": "Alle Behandlungen ansehen",
   "dash_col_action": "Aktion",
-  "guide_queue": "Diese Seite fasst die Behandlungen nach Status zusammen: wartend auf Triage, triagiert und in Behandlung. Darunter sehen Sie die neuesten Behandlungen; öffnen Sie eine, um die Angaben einzusehen. Die Seite aktualisiert sich regelmäßig von selbst; mit Aktualisieren rufen Sie sofort den aktuellen Stand ab. Die Warteschlange nach Stufe und Wartezeit ist noch nicht verfügbar. Die Anleitung liest keine Patientendaten vor.",
+  "guide_queue": "Diese Seite zeigt die priorisierte Warteschlange in drei Abschnitten: wartend auf Triage, triagiert und in Behandlung. Jeder Abschnitt behält die Reihenfolge des Servers; triagierte Behandlungen sind nach Stufe sortiert und innerhalb jeder Stufe steht die längste Wartezeit zuerst. Überschreitet eine Behandlung die maximale Wartezeit ihrer Stufe, sehen Sie den Hinweis Maximale Wartezeit überschritten. Mit dem Standortfilter sehen Sie einen einzelnen Standort. Die Warteschlange aktualisiert sich regelmäßig von selbst; mit Aktualisieren rufen Sie sofort den aktuellen Stand ab. Die Anleitung liest keine Patientendaten vor.",
   "guide_reports": "Diese Seite fasst die Behandlungen nach Status zusammen sowie jene, die an den einzelnen Standorten auf die Triage warten. Die Seite aktualisiert sich regelmäßig von selbst; mit Aktualisieren rufen Sie sofort den aktuellen Stand ab. Berichte zu Zeiten und der CSV-Download sind noch nicht verfügbar. Die Seite zeigt keine Patientendaten an.",
   "common_error_network": "Keine Verbindung zum Server.",
   "common_error_server": "Beim Server ist ein Problem aufgetreten. Bitte versuchen Sie es erneut.",

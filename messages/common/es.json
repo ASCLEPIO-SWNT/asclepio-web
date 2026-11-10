@@ -108,7 +108,7 @@
   "dash_retry_named": "Reintentar: {name}",
   "dash_view_all_encounters": "Ver todas las atenciones",
   "dash_col_action": "Acción",
-  "guide_queue": "Esta pantalla resume las atenciones por estado: en espera de triage, clasificadas y en atención. Debajo verás las atenciones más recientes; abre una para consultar su detalle. Se actualiza sola de forma periódica; usa Actualizar para consultar al instante. La cola por nivel y tiempo de espera todavía no está disponible. La guía no lee datos de pacientes.",
+  "guide_queue": "Esta pantalla muestra la cola priorizada en tres secciones: en espera de triage, clasificadas y en atención. Cada sección conserva el orden del servidor; las clasificadas van por nivel y, en cada nivel, primero la mayor espera. Si una atención supera el tiempo máximo de su nivel, verás la marca Tiempo máximo superado. Con el filtro Sede puedes ver una sola sede. La cola se actualiza sola de forma periódica; usa Actualizar para consultar al instante. La guía no lee datos de pacientes.",
   "guide_reports": "Esta pantalla resume las atenciones por estado y las que esperan triage en cada sede. Se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Los reportes de tiempos y la descarga del CSV todavía no están disponibles. La pantalla no muestra datos de pacientes.",
   "common_error_network": "No hay conexión con el servidor.",
   "common_error_server": "El servidor tuvo un problema. Inténtalo de nuevo.",

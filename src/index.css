@@ -2505,3 +2505,92 @@ textarea:disabled {
 .suggestion-view__guard ul + p {
   margin-top: 0.4rem;
 }
+
+/* F-05-web: tarjeta de triage de enfermería. Solo tokens existentes (R27). */
+.decision-card {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.decision-card > h2 {
+  margin: 0;
+}
+.decision-card p {
+  margin: 0;
+}
+/* D8 (RNF-17): Validar y Corregir comparten contenedor y regla; en 375 px bajan juntos. */
+.decision-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+.decision-actions > .button {
+  flex: 1 1 0;
+  min-width: 10rem;
+}
+.decision-form {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+.decision-form textarea {
+  overflow-wrap: anywhere;
+}
+.decision-form__count {
+  color: var(--muted);
+  font-size: 0.75rem;
+  justify-self: end;
+}
+.decision-notice:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+.level-picker {
+  min-width: 0;
+  margin: 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.75rem;
+}
+.level-picker legend {
+  padding: 0 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.level-picker__options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+}
+.level-picker__option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 2.85rem;
+  font-weight: 600;
+}
+.level-picker__option input {
+  width: 1.15rem;
+  height: 1.15rem;
+  accent-color: var(--accent);
+}
+.level-picker .field__error {
+  margin-top: 0.5rem;
+}
+.decision-view {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  border-radius: 0.75rem;
+}
+.decision-view:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+.decision-view .details {
+  margin: 0;
+}
+.decision-view__reason {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

@@ -3,6 +3,7 @@ import {
   ArrowPathIcon,
   BeakerIcon,
 } from '@heroicons/react/24/outline';
+import { useIsMutating } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router';
 import { useCurrentStaff } from '../../../shared/hooks/useCurrentStaff';
@@ -15,10 +16,13 @@ import { PatientDetails } from '../../../shared/ui/PatientDetails';
 import { UnsavedChangesGuard } from '../../../shared/ui/UnsavedChangesGuard';
 import { ViewForbidden } from '../../../shared/ui/ViewForbidden';
 import { useClinicalCapture } from '../hooks/useClinicalCapture';
+import { decideTriageMutationKey } from '../hooks/useDecideTriage';
 import { useEncounter } from '../hooks/useEncounter';
+import { useTriageDecision } from '../hooks/useTriageDecision';
 import { trayFilters, traySearch } from '../trayFilters';
 import { ClinicalCaptureReadout } from './ClinicalCapturePanel';
 import { SymptomFindingsForm } from './SymptomFindingsForm';
+import { TriageDecisionCard } from './TriageDecisionCard';
 import { TriageSuggestionPanel } from './TriageSuggestionPanel';
 import { VitalSignsForm } from './VitalSignsForm';
 
@@ -39,6 +43,20 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
   );
   const [vitalsDirty, setVitalsDirty] = useState(false);
   const [findingsDirty, setFindingsDirty] = useState(false);
+  const [decisionDirty, setDecisionDirty] = useState(false);
+  // F-05-web D9: el último envío de la decisión respondió 409.
+  const [decisionConflict, setDecisionConflict] = useState(false);
+  // F-05-web D5: la decisión solo se consulta si la atención ya trae nivel final.
+  const hasFinalLevel =
+    detail.data !== undefined && detail.data.finalLevel !== null;
+  const decision = useTriageDecision(
+    encounterId,
+    me.role === 'NURSE' && hasFinalLevel,
+  );
+  const decided = hasFinalLevel || decision.data !== undefined;
+  // F-05-web R12: mientras hay un envío, el panel no deja pedir otra sugerencia.
+  const submitting =
+    useIsMutating({ mutationKey: decideTriageMutationKey(encounterId) }) > 0;
   const [unavailable, setUnavailable] = useState<403 | 404 | null>(null);
   const [stateCheck, setStateCheck] = useState<'idle' | 'checking' | 'failed'>(
     'idle',
@@ -49,8 +67,16 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
   const captureStatus = capture.isError
     ? statusOf(problemOf(capture.error))
     : null;
+  // F-05-web R21: un 403 de la consulta de la decisión muestra la vista sin permiso; su 404
+  // (atención con nivel final) se queda en la tarjeta (R17).
+  const decisionStatus = decision.isError
+    ? statusOf(problemOf(decision.error))
+    : null;
   const forbidden =
-    unavailable === 403 || detailStatus === 403 || captureStatus === 403;
+    unavailable === 403 ||
+    detailStatus === 403 ||
+    captureStatus === 403 ||
+    decisionStatus === 403;
   const missing =
     unavailable === 404 || detailStatus === 404 || captureStatus === 404;
   const refresh = async () => {
@@ -76,7 +102,9 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
   const mountedForms = detail.data !== undefined && capture.data !== undefined;
   return (
     <section className="clinical-workspace" aria-labelledby="capture-title">
-      <UnsavedChangesGuard dirty={vitalsDirty || findingsDirty} />
+      <UnsavedChangesGuard
+        dirty={vitalsDirty || findingsDirty || decisionDirty}
+      />
       <header className="clinical-workspace__header">
         <div>
           <h1 id="capture-title">{t('clinical_capture_title')}</h1>
@@ -181,10 +209,30 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
           {detail.isSuccess && capture.isSuccess && (
             <TriageSuggestionPanel
               encounterId={encounterId}
-              enabled={canCapture}
+              enabled={canCapture && !submitting}
               capture={capture.data}
+              decided={decided}
               onConflict={() => void refresh()}
               onUnavailable={setUnavailable}
+            />
+          )}
+          {/* F-05-web D1: la tarjeta de triage va justo después del panel de sugerencia. */}
+          {detail.isSuccess && capture.isSuccess && (
+            <TriageDecisionCard
+              encounterId={encounterId}
+              encounter={detail.data}
+              capture={capture.data}
+              enabled={canCapture}
+              decided={decided}
+              decision={decision}
+              conflict={decisionConflict}
+              onConflict={() => {
+                setDecisionConflict(true);
+                void refresh();
+              }}
+              onSubmitStart={() => setDecisionConflict(false)}
+              onUnavailable={setUnavailable}
+              onDirtyChange={setDecisionDirty}
             />
           )}
           {detail.isSuccess || mountedForms ? (

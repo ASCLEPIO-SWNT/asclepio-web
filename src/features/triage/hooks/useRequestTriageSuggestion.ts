@@ -4,6 +4,10 @@ import { problemOf, statusOf, unwrap } from '../../../shared/lib/problem';
 import { invalidateClinicalCapture } from './invalidateClinicalCapture';
 import { triageSuggestionsKey } from './useTriageSuggestions';
 
+/** F-05-web D2: clave de la solicitud, para que la tarjeta de triage sepa que hay una en curso. */
+export const requestSuggestionMutationKey = (id: string) =>
+  ['triage', 'suggestions', id, 'request'] as const;
+
 /**
  * F-04-web D4, D5: pide una sugerencia nueva (POST sin cuerpo). Sin reintento ni plazo propio:
  * la API acota la espera y cada solicitud consume tokens. En 201 la respuesta pasa a `items[0]`
@@ -12,6 +16,7 @@ import { triageSuggestionsKey } from './useTriageSuggestions';
 export function useRequestTriageSuggestion(id: string) {
   const client = useQueryClient();
   return useMutation({
+    mutationKey: requestSuggestionMutationKey(id),
     mutationFn: () =>
       unwrap(() =>
         api.POST('/api/v1/encounters/{id}/triage-suggestions', {

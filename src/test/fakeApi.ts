@@ -256,7 +256,7 @@ export const encounter: Schemas['EncounterDto'] = {
     },
     {
       id: '10',
-      // Tipo que la web aún no presenta (aditivo en 0.6.0): se tolera (contrato).
+      // Evento de F-05 (aditivo en 0.6.0); desde F-05-web D16 tiene etiqueta propia.
       type: 'TRIAGE_DECIDED',
       fromStatus: null,
       toStatus: null,

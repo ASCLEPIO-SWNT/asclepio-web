@@ -3,7 +3,7 @@ import type { components, paths } from './schema';
 import { session } from './session';
 
 /** Versión del contrato que consume esta web (feature_list.json → consumes_contract). */
-export const CONSUMED_CONTRACT = '0.5.0';
+export const CONSUMED_CONTRACT = '0.6.0';
 
 const LOGIN_PATH = '/api/v1/auth/login';
 
@@ -75,3 +75,10 @@ export type TriageSuggestionList = Schemas['TriageSuggestionListDto'];
 export type TriageSuggestionStatus = Schemas['TriageSuggestionStatus'];
 export type TriageFactor = Schemas['TriageFactorDto'];
 export type GuardReason = Schemas['GuardReasonDto'];
+
+// F-05-web (contrato 0.6.0): decisión de triage de enfermería. Solo alias de tipos generados.
+export type TriageDecision = Schemas['TriageDecisionDto'];
+export type TriageDecisionAction = Schemas['TriageDecisionAction'];
+export type TriageDecisionRequest = NonNullable<
+  paths['/api/v1/encounters/{id}/triage-decision']['post']['requestBody']
+>['content']['application/json'];

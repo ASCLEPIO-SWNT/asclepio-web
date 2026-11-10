@@ -143,9 +143,32 @@ describe('EncounterDetailPage', () => {
       'Cambio de estado (Registrada → En espera de triage)',
     );
     expect(items[1]).toHaveTextContent('Sistema');
-    expect(items[2]).toHaveTextContent('Evento (TRIAGE_DECIDED)');
+    // F-05-web D16: TRIAGE_DECIDED ya tiene etiqueta; los tipos desconocidos los cubre labels.test.ts.
+    expect(items[2]).toHaveTextContent('Triage registrado');
     expect(items[2]).toHaveTextContent('Paciente');
     expect(timeline).not.toHaveTextContent('payload-no-visible');
+  });
+
+  it('R32: un tipo de evento desconocido se tolera en la línea de tiempo con su etiqueta genérica', async () => {
+    const future = {
+      ...encounter.events[0],
+      id: '99',
+      // Tipo que el contrato aún no declara: el cliente debe tolerarlo.
+      type: 'FUTURE_EVENT' as Encounter['events'][number]['type'],
+      payload: { secreto: 'payload-futuro-no-visible' },
+    };
+    setup({
+      [DETAIL]: json(200, {
+        ...encounter,
+        events: [...encounter.events, future],
+      }),
+    });
+    await details();
+    const timeline = screen.getByRole('region', { name: 'Línea de tiempo' });
+    const items = within(timeline).getAllByRole('listitem');
+    expect(items).toHaveLength(4);
+    expect(items[3]).toHaveTextContent('Evento (FUTURE_EVENT)');
+    expect(timeline).not.toHaveTextContent('payload-futuro-no-visible');
   });
 
   it('R32: respeta el orden de la API aunque no sea cronológico', async () => {
@@ -154,7 +177,7 @@ describe('EncounterDetailPage', () => {
     await details();
     const items = within(screen.getByRole('list')).getAllByRole('listitem');
     expect(items.map((li) => li.textContent)).toEqual([
-      expect.stringContaining('Evento (TRIAGE_DECIDED)'),
+      expect.stringContaining('Triage registrado'),
       expect.stringContaining('Atención creada'),
       expect.stringContaining('Cambio de estado'),
     ]);

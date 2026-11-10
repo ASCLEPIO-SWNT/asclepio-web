@@ -34,6 +34,11 @@ export interface TriageSuggestionPanelProps {
   /** 403/404 de la solicitud: la página muestra su vista sin permiso o no encontrada. */
   onUnavailable: (status: 403 | 404) => void;
   /**
+   * F-05-web D3: con la atención ya registrada no hay botón de solicitud, ni el texto de tomas,
+   * ni `renderActions`. La vista de la sugerencia y los errores de la consulta siguen igual.
+   */
+  decided?: boolean;
+  /**
    * D7: punto de extensión para F-05-web (Validar, Corregir, Manual). Se renderiza debajo de la
    * vista solo si se pasa; en este slice nadie lo pasa y no queda ningún contenedor.
    */
@@ -55,6 +60,7 @@ export function TriageSuggestionPanel({
   capture,
   onConflict,
   onUnavailable,
+  decided = false,
   renderActions,
 }: TriageSuggestionPanelProps) {
   const { t } = useI18n();
@@ -72,7 +78,7 @@ export function TriageSuggestionPanel({
   // R3: solo una consulta con éxito aporta sugerencia vigente.
   const current = query.isSuccess ? (query.data.items[0] ?? null) : null;
   const requesting = mutation.isPending;
-  const canRequest = enabled && hasVitals && !requesting;
+  const canRequest = enabled && hasVitals && !requesting && !decided;
   const request = () => {
     if (!canRequest || inFlight.current) return;
     inFlight.current = true;
@@ -133,11 +139,12 @@ export function TriageSuggestionPanel({
           )}
         </div>
       )}
-      {renderActions?.({
-        current,
-        mode: suggestionMode(current),
-        requesting,
-      })}
+      {!decided &&
+        renderActions?.({
+          current,
+          mode: suggestionMode(current),
+          requesting,
+        })}
       {/* R17 (PA-9 a): sin sugerencia vigente, un error de red o servidor deja el modo manual. */}
       {current === null && isRetryableActionMessage(errorKey) && (
         <ManualNotice />
@@ -149,23 +156,25 @@ export function TriageSuggestionPanel({
           {t(errorKey)}
         </ActionError>
       )}
-      <div className="suggestion-panel__request">
-        <button
-          type="button"
-          className="button"
-          disabled={!canRequest}
-          aria-describedby={hasVitals ? undefined : 'suggestion-needs-vitals'}
-          onClick={request}
-        >
-          <SparklesIcon aria-hidden="true" />
-          {t(current ? 'suggestion_request_again' : 'suggestion_request')}
-        </button>
-        {!hasVitals && (
-          <p id="suggestion-needs-vitals" className="muted">
-            {t('suggestion_needs_vitals')}
-          </p>
-        )}
-      </div>
+      {!decided && (
+        <div className="suggestion-panel__request">
+          <button
+            type="button"
+            className="button"
+            disabled={!canRequest}
+            aria-describedby={hasVitals ? undefined : 'suggestion-needs-vitals'}
+            onClick={request}
+          >
+            <SparklesIcon aria-hidden="true" />
+            {t(current ? 'suggestion_request_again' : 'suggestion_request')}
+          </button>
+          {!hasVitals && (
+            <p id="suggestion-needs-vitals" className="muted">
+              {t('suggestion_needs_vitals')}
+            </p>
+          )}
+        </div>
+      )}
       {requesting && <LoadingState>{t('suggestion_requesting')}</LoadingState>}
     </section>
   );

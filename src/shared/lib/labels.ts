@@ -67,6 +67,8 @@ const EVENT_LABELS = localizedLabels<string>({
   STATUS_CHANGED: 'feature_event_status',
   VITAL_SIGNS_RECORDED: 'feature_event_vitals',
   SYMPTOM_FINDINGS_RECORDED: 'feature_event_findings',
+  // F-05-web D16 (PA-4 a): solo la etiqueta, sin nivel, acción ni motivo.
+  TRIAGE_DECIDED: 'feature_event_triage_decided',
 });
 
 /** Etiqueta de un tipo de evento; los tipos que la web aún no conoce se toleran (D12). */

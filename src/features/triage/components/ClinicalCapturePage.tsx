@@ -19,6 +19,7 @@ import { useEncounter } from '../hooks/useEncounter';
 import { trayFilters, traySearch } from '../trayFilters';
 import { ClinicalCaptureReadout } from './ClinicalCapturePanel';
 import { SymptomFindingsForm } from './SymptomFindingsForm';
+import { TriageSuggestionPanel } from './TriageSuggestionPanel';
 import { VitalSignsForm } from './VitalSignsForm';
 
 export function ClinicalCaptureRoute() {
@@ -175,6 +176,16 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
                 />
               </div>
             </div>
+          )}
+          {/* F-04-web D2: el panel va después de los formularios y antes del historial. */}
+          {detail.isSuccess && capture.isSuccess && (
+            <TriageSuggestionPanel
+              encounterId={encounterId}
+              enabled={canCapture}
+              capture={capture.data}
+              onConflict={() => void refresh()}
+              onUnavailable={setUnavailable}
+            />
           )}
           {detail.isSuccess || mountedForms ? (
             <section className="card" aria-label={t('clinical_capture_title')}>

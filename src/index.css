@@ -2427,3 +2427,81 @@ textarea:disabled {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* F-04-web: panel de sugerencia de triage. Solo tokens existentes (R24). */
+.suggestion-panel {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.suggestion-panel > h2 {
+  margin: 0;
+}
+.suggestion-panel__result {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+  border-radius: 0.75rem;
+}
+.suggestion-panel__result:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+.suggestion-panel__request {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+.suggestion-panel__request > p {
+  flex: 1 1 14rem;
+  margin: 0;
+}
+.suggestion-view {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+.suggestion-view h3 {
+  margin: 0 0 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.suggestion-view p {
+  margin: 0;
+}
+.suggestion-view__level {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+.suggestion-view__notice {
+  padding: 0.6rem 0.8rem;
+  border: 1px dashed var(--border);
+  border-radius: 0.6rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+.suggestion-view__text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.suggestion-view__factors {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+.suggestion-view__factors li {
+  overflow-wrap: anywhere;
+}
+.suggestion-view__guard ul {
+  margin: 0.4rem 0;
+  padding-left: 1.25rem;
+}
+.suggestion-view__guard p + ul,
+.suggestion-view__guard ul + p {
+  margin-top: 0.4rem;
+}

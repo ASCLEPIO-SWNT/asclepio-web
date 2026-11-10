@@ -94,12 +94,12 @@
         "F-03-web",
         "F-04-api"
       ],
-      "consumes_contract": null,
+      "consumes_contract": "0.5.0",
       "acceptance": [
         "Ver ../asclepio-api/docs/product/features/F-04.md (F-04.AC8)"
       ],
       "sdd": true,
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "F-05-web",
@@ -216,7 +216,7 @@
         "Ver specs/UI-04-web/requirements.md; hallazgos H1–H16 en progress/current/UI-04-web.md."
       ],
       "sdd": true,
-      "status": "in_progress"
+      "status": "done"
     }
   ]
 }

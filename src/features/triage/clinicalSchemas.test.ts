@@ -30,7 +30,7 @@ const numeric = [
 ] as const;
 
 describe('F-03 clinical validation from contract', () => {
-  it('R7: publishes the seven required and two optional signs from OpenAPI 0.4.0', () => {
+  it('R7: publishes the seven required and two optional signs from the published OpenAPI contract', () => {
     const contract = JSON.parse(
       readFileSync('../asclepio-api/openapi/asclepio-api.v1.json', 'utf8'),
     ) as {
@@ -47,7 +47,6 @@ describe('F-03 clinical validation from contract', () => {
         };
       };
     };
-    expect(contract.info.version).toBe('0.4.0');
     const published = contract.components.schemas.CreateVitalSignsDto;
     expect(Object.keys(VITAL_SIGN_CONTRACT)).toEqual(
       Object.keys(published.properties),

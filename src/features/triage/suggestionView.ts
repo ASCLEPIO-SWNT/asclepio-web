@@ -23,12 +23,8 @@ export function suggestionMode(
   return current.status === 'OK' ? 'proposal' : 'manual';
 }
 
-const ROMAN = ['I', 'II', 'III', 'IV', 'V'] as const;
-
-/** D12 (PA-1 a): nivel 1–5 de la Res. 5596 en números romanos. */
-export function romanLevel(level: number): string {
-  return ROMAN[level - 1] ?? String(level);
-}
+/** D12 (PA-1 a): vive en `shared/lib/level.ts` desde F-06-web D9; se reexporta aquí. */
+export { romanLevel } from '../../shared/lib/level';
 
 /** `vital_signs.<campo>` de la instantánea → clave `clinical_field_*` de la captura (D13). */
 const VITAL_FIELDS: Record<string, string> = {

@@ -2594,3 +2594,49 @@ textarea:disabled {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* F-06-web: cola priorizada. Solo tokens existentes (R28). */
+.queue-count {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+.queue-server-time {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.queue-wait {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  min-width: 0;
+}
+.queue-wait__minutes {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.queue-wait__max {
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.queue-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+.queue-notice:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 4px;
+}
+@container panel (max-width: 39.99rem) {
+  .queue-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .queue-actions > .button {
+    width: 100%;
+  }
+}

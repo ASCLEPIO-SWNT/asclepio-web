@@ -108,7 +108,7 @@
   "dash_retry_named": "Tentar novamente: {name}",
   "dash_view_all_encounters": "Ver todos os atendimentos",
   "dash_col_action": "Ação",
-  "guide_queue": "Esta tela resume os atendimentos por estado: aguardando triagem, classificados e em atendimento. Abaixo você verá os atendimentos mais recentes; abra um para consultar os detalhes. Ela se atualiza sozinha periodicamente; use Atualizar para consultar na hora. A fila por nível e tempo de espera ainda não está disponível. O guia não lê dados de pacientes.",
+  "guide_queue": "Esta tela mostra a fila priorizada em três seções: aguardando triagem, classificados e em atendimento. Cada seção mantém a ordem do servidor; os classificados vão por nível e, em cada nível, primeiro a maior espera. Se um atendimento ultrapassar o tempo máximo do seu nível, você verá a marca Tempo máximo excedido. Com o filtro Unidade você pode ver uma só unidade. A fila se atualiza sozinha periodicamente; use Atualizar para consultar na hora. O guia não lê dados de pacientes.",
   "guide_reports": "Esta tela resume os atendimentos por estado e os que aguardam triagem em cada unidade. Ela se atualiza sozinha periodicamente; use Atualizar para consultar na hora. Os relatórios de tempos e o download do CSV ainda não estão disponíveis. A tela não mostra dados de pacientes.",
   "common_error_network": "Não há conexão com o servidor.",
   "common_error_server": "O servidor teve um problema. Tente novamente.",

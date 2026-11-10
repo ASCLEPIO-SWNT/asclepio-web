@@ -24,36 +24,22 @@ function sources(dir: string): string[] {
   });
 }
 
-/** Archivos de `src` que no son pruebas, fixtures ni tipos generados. */
-function applicationSources(): string[] {
-  return sources('src').filter(
-    (file) =>
-      !file.endsWith('schema.d.ts') &&
-      !file.includes('/testing/') &&
-      !file.startsWith('src/test/'),
-  );
-}
-
 describe('F-05-web contrato', () => {
-  it('R28: declara el contrato 0.6.0 y los tipos generados coinciden con la huella vigente', () => {
-    expect(CONSUMED_CONTRACT).toBe('0.6.0');
-    expect(EXPECTED_CONTRACT).toBe('0.6.0');
+  it('R28: declara el contrato esperado y los tipos generados coinciden con la huella vigente', () => {
+    // F-06-web D1: la versión sale de contractBaseline.ts (0.7.0 desde F-06-web).
+    expect(CONSUMED_CONTRACT).toBe(EXPECTED_CONTRACT);
     expect(sha256('src/shared/api/schema.d.ts')).toBe(SCHEMA_SHA256);
     expect(sha256('src/features/triage/clinicalContract.generated.ts')).toBe(
       CLINICAL_CONTRACT_SHA256,
     );
   });
 
-  it('R28: el código de aplicación no usa nada que sea solo de 0.7.0 (cola, start-care, close)', () => {
-    const files = applicationSources();
-    expect(files.length).toBeGreaterThan(50);
-    expect(
-      files.filter((file) =>
-        /\/api\/v1\/queue|start-care|\/close'|Queue(Item|Patient)?Dto|Schemas\['Queue/.test(
-          readFileSync(file, 'utf8'),
-        ),
-      ),
-    ).toEqual([]);
+  it('R28: los archivos de la tarjeta de triage no usan la cola, start-care ni close', () => {
+    // F-06-web D1: la cola entra en 0.7.0 (la cubre F-06-web R30); la tarjeta sigue sin usarla.
+    for (const file of DECISION_FILES)
+      expect(readFileSync(file, 'utf8'), file).not.toMatch(
+        /\/api\/v1\/queue|start-care|\/close'|Queue(Item|Patient)?Dto|Schemas\['Queue/,
+      );
   });
 
   it('R28: los límites de la decisión se generan desde el contrato', () => {
@@ -81,7 +67,6 @@ describe('F-05-web operaciones HTTP', () => {
     expect(WEB_OPERATIONS).toContain(
       'POST /api/v1/encounters/{id}/triage-decision',
     );
-    expect(WEB_OPERATIONS).toHaveLength(20);
   });
 });
 

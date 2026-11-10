@@ -5,11 +5,11 @@
  */
 
 /** Versión declarada en `CONSUMED_CONTRACT` y en `consumes_contract` de feature_list.json. */
-export const EXPECTED_CONTRACT = '0.6.0';
+export const EXPECTED_CONTRACT = '0.7.0';
 
 /**
  * SHA-256 de `src/shared/api/schema.d.ts` generado con `npm run api:types` desde el snapshot
- * publicado (snapshot publicado 0.7.0, aditivo respecto a 0.6.0; F-05-web D11).
+ * publicado (snapshot publicado 0.7.0; F-06-web D1).
  */
 export const SCHEMA_SHA256 =
   'e6635d7de1a7f1d269f32632a7830f8867a8f5c1b7304153446fe1978a22160a';
@@ -33,9 +33,12 @@ export const WEB_OPERATIONS = [
   'GET /api/v1/patients',
   'GET /api/v1/pre-registrations',
   'GET /api/v1/public/tenants',
+  'GET /api/v1/queue', // F-06-web T4
   'POST /api/v1/auth/login',
   'POST /api/v1/encounters',
   'POST /api/v1/encounters/{id}/cancel',
+  'POST /api/v1/encounters/{id}/close', // F-06-web T4
+  'POST /api/v1/encounters/{id}/start-care', // F-06-web T4
   'POST /api/v1/encounters/{id}/symptom-findings',
   'POST /api/v1/encounters/{id}/triage-decision',
   'POST /api/v1/encounters/{id}/triage-suggestions',

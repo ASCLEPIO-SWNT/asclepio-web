@@ -5,24 +5,28 @@
  */
 
 /** Versión declarada en `CONSUMED_CONTRACT` y en `consumes_contract` de feature_list.json. */
-export const EXPECTED_CONTRACT = '0.5.0';
+export const EXPECTED_CONTRACT = '0.6.0';
 
 /**
  * SHA-256 de `src/shared/api/schema.d.ts` generado con `npm run api:types` desde el snapshot
- * publicado (0.6.0, aditivo respecto a 0.5.0; F-04-web D9).
+ * publicado (snapshot publicado 0.7.0, aditivo respecto a 0.6.0; F-05-web D11).
  */
 export const SCHEMA_SHA256 =
-  '5fb723b85306e6de9254d271f755ccb7cb88ef25ed343a46b59ecfa73e3af864';
+  'e6635d7de1a7f1d269f32632a7830f8867a8f5c1b7304153446fe1978a22160a';
 
-/** SHA-256 de `src/features/triage/clinicalContract.generated.ts` (solo cambia su cabecera). */
+/**
+ * SHA-256 de `src/features/triage/clinicalContract.generated.ts` (cambian su cabecera y la
+ * constante nueva `DECISION_LIMITS`; F-05-web D11).
+ */
 export const CLINICAL_CONTRACT_SHA256 =
-  '928a0bb6aa60659f41da94b8f87baacab26db8459cda9fddb545c73e7155b837';
+  'a6f5b5320e95dcc48f0a57ffb3b544ccebb4a80bfc9290eeec717efbf0b48fcd';
 
 /** Operaciones `MÉTODO /ruta` que usa el código de aplicación, en orden alfabético. */
 export const WEB_OPERATIONS = [
   'GET /api/v1/encounters',
   'GET /api/v1/encounters/{id}',
   'GET /api/v1/encounters/{id}/clinical-capture',
+  'GET /api/v1/encounters/{id}/triage-decision',
   'GET /api/v1/encounters/{id}/triage-suggestions',
   'GET /api/v1/health',
   'GET /api/v1/me',
@@ -33,6 +37,7 @@ export const WEB_OPERATIONS = [
   'POST /api/v1/encounters',
   'POST /api/v1/encounters/{id}/cancel',
   'POST /api/v1/encounters/{id}/symptom-findings',
+  'POST /api/v1/encounters/{id}/triage-decision',
   'POST /api/v1/encounters/{id}/triage-suggestions',
   'POST /api/v1/encounters/{id}/vital-signs',
   'POST /api/v1/patients',

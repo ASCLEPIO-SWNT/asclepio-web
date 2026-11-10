@@ -11,7 +11,8 @@ describe('labels', () => {
     expect(eventLabel('SYMPTOM_FINDINGS_RECORDED')).toBe(
       'Hallazgos registrados',
     );
-    expect(eventLabel('TRIAGE_DECIDED')).toBe('Evento (TRIAGE_DECIDED)');
+    expect(eventLabel('TRIAGE_DECIDED')).toBe('Triage registrado');
+    expect(eventLabel('FUTURE_EVENT')).toBe('Evento (FUTURE_EVENT)');
     expect(eventLabel('toString')).toBe('Evento (toString)');
   });
 

@@ -1,4 +1,4 @@
-// Generated from OpenAPI 0.6.0 by scripts/extract-clinical-contract.mjs. Do not edit.
+// Generated from OpenAPI 0.7.0 by scripts/extract-clinical-contract.mjs. Do not edit.
 export const VITAL_SIGN_CONTRACT = {
   respiratoryRate: {
     type: 'integer',
@@ -58,4 +58,9 @@ export const FINDING_LIMITS = {
   maxItems: 20,
   minLength: 1,
   maxLength: 500,
+} as const;
+export const DECISION_LIMITS = {
+  level: { minimum: 1, maximum: 5 },
+  reasonMinLength: 1,
+  reasonMaxLength: 500,
 } as const;

@@ -276,6 +276,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/encounters/{id}/start-care": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Pasa la atención a IN_CARE (medicina empieza la atención)
+         * @description Solo desde TRIAGED (si no, 409; dos peticiones simultáneas: una 200 y otra 409). Conserva finalLevel, triagedAt y triagedBy. Hora y responsable del servidor y del token.
+         */
+        post: operations["EncountersController_startCare"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/encounters/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cierra la atención (CLOSED)
+         * @description Solo desde IN_CARE (si no, 409). La atención cerrada conserva su nivel final (finalLevel, triagedAt y triagedBy).
+         */
+        post: operations["EncountersController_close"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/encounters/{id}/vital-signs": {
         parameters: {
             query?: never;
@@ -366,6 +406,26 @@ export interface paths {
          * @description La IA propone, el profesional decide: esta es la decisión de enfermería y la única vía a TRIAGED (fija finalLevel, triagedAt y triagedBy con la hora del servidor y el usuario del token). Como mucho una por atención (sin re-triage). Solo con la atención en WAITING_TRIAGE. Responde solo la decisión: el nuevo estado se lee en GET /encounters/{id}.
          */
         post: operations["TriageDecisionsController_decide"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/queue": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cola priorizada por nivel y espera
+         * @description Atenciones activas del tenant (o de la sede siteId) en tres secciones: waitingTriage, triaged e inCare. La espera se mide desde la llegada (arrivalAt) hasta serverNow, con el reloj del servidor. Tiempos máximos de la Res. 5596 de 2015: nivel I = 0 min (inmediato) y nivel II = 30 min; III, IV y V sin tiempo máximo ni alerta (PA-F06-1). overdue solo en triaged. Del paciente solo se devuelven iniciales, edad y sexo.
+         */
+        get: operations["QueueController_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -969,6 +1029,50 @@ export interface components {
              */
             decidedAt: string;
             decidedBy: components["schemas"]["StaffRefDto"];
+        };
+        QueuePatientDto: {
+            /** @description Primera letra (mayúscula, sin tilde) de la primera y de la última palabra del nombre; null si es NN. */
+            initials: string | null;
+            /** @description Años cumplidos en America/Bogota a serverNow (o la edad estimada si no hay fecha de nacimiento). */
+            ageYears: number | null;
+            /** @enum {string|null} */
+            sex: "M" | "F" | "X" | null;
+        };
+        QueueItemDto: {
+            /** Format: uuid */
+            encounterId: string;
+            /** Format: uuid */
+            siteId: string;
+            siteName: string;
+            /** @enum {string} */
+            status: "WAITING_TRIAGE" | "TRIAGED" | "IN_CARE";
+            /** @description Nivel final de triage; null en waitingTriage. */
+            finalLevel: number | null;
+            /**
+             * Format: date-time
+             * @description Hora legal de llegada (servidor).
+             */
+            arrivalAt: string;
+            /** @description Minutos enteros completos desde arrivalAt hasta serverNow (PA-F06-2); null en inCare (la espera terminó). */
+            waitMinutes: number | null;
+            /** @description Tiempo máximo del nivel (Res. 5596 de 2015): I = 0, II = 30; null sin nivel o en III–V. */
+            maxWaitMinutes: number | null;
+            /** @description true solo en triaged con nivel I y espera > 0 o nivel II y espera > 30. */
+            overdue: boolean;
+            patient: components["schemas"]["QueuePatientDto"];
+        };
+        QueueDto: {
+            /**
+             * Format: date-time
+             * @description Hora del servidor con la que se calcularon todas las esperas de la respuesta.
+             */
+            serverNow: string;
+            /** @description WAITING_TRIAGE, mayor espera primero. */
+            waitingTriage: components["schemas"]["QueueItemDto"][];
+            /** @description TRIAGED, nivel ascendente y, en cada nivel, mayor espera primero. */
+            triaged: components["schemas"]["QueueItemDto"][];
+            /** @description IN_CARE, nivel ascendente y después llegada ascendente. */
+            inCare: components["schemas"]["QueueItemDto"][];
         };
         FieldErrorDto: {
             field: string;
@@ -1721,6 +1825,166 @@ export interface operations {
             };
         };
     };
+    EncountersController_startCare: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Sin cuerpo o {}. Cualquier campo → 400. */
+        requestBody?: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncounterDto"];
+                };
+            };
+            /** @description El cuerpo trae algún campo (errors[] con el campo). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Sin token válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Rol distinto de PHYSICIAN o token de paciente. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description La atención no existe, es de otro tenant o el id está mal formado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description La atención no está en TRIAGED (también tras un cambio concurrente). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    EncountersController_close: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** @description Sin cuerpo o {}. Cualquier campo → 400. */
+        requestBody?: {
+            content: {
+                "application/json": Record<string, never>;
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EncounterDto"];
+                };
+            };
+            /** @description El cuerpo trae algún campo (errors[] con el campo). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Sin token válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Rol distinto de PHYSICIAN o token de paciente. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description La atención no existe, es de otro tenant o el id está mal formado. */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description La atención no está en IN_CARE (también tras un cambio concurrente). */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
     ClinicalCaptureController_recordVitalSigns: {
         parameters: {
             query?: never;
@@ -2014,6 +2278,64 @@ export interface operations {
             };
             /** @description level fuera de 1–5, motivo de corrección inválido o CORRECT con el mismo nivel que el sugerido (errors[] con el campo). */
             422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    QueueController_get: {
+        parameters: {
+            query?: {
+                /** @description Limita la cola a una sede del tenant (PA-F06-4). Una sede inexistente o de otra IPS devuelve las secciones vacías. */
+                siteId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueueDto"];
+                };
+            };
+            /** @description siteId no es un UUID o hay un parámetro de consulta desconocido (errors[] con el campo). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Sin token válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Rol distinto de PHYSICIAN, NURSE o ADMIN, o token de paciente. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

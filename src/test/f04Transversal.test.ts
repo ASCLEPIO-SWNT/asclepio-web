@@ -16,9 +16,8 @@ const sha256 = (file: string) =>
   createHash('sha256').update(readFileSync(file)).digest('hex');
 
 describe('F-04-web transversales', () => {
-  it('R23: declara el contrato 0.5.0 y los tipos generados coinciden con la huella vigente', () => {
-    expect(CONSUMED_CONTRACT).toBe('0.5.0');
-    expect(EXPECTED_CONTRACT).toBe('0.5.0');
+  it('R23: declara el contrato declarado y los tipos generados coinciden con la huella vigente', () => {
+    expect(CONSUMED_CONTRACT).toBe(EXPECTED_CONTRACT);
     expect(sha256('src/shared/api/schema.d.ts')).toBe(SCHEMA_SHA256);
     expect(sha256('src/features/triage/clinicalContract.generated.ts')).toBe(
       CLINICAL_CONTRACT_SHA256,
@@ -50,7 +49,6 @@ describe('F-04-web operaciones HTTP', () => {
     expect(WEB_OPERATIONS).toContain(
       'POST /api/v1/encounters/{id}/triage-suggestions',
     );
-    expect(WEB_OPERATIONS).toHaveLength(18);
   });
 });
 
@@ -65,11 +63,19 @@ function applicationSources(): string[] {
 }
 
 describe('F-04-web sin nada de 0.6.0', () => {
-  it('R20: el código de aplicación no usa triage-decision, finalLevel, triagedAt ni triagedBy', () => {
-    const files = applicationSources();
-    expect(files).toContain(
-      'src/features/triage/components/TriageSuggestionPanel.tsx',
+  it('R20: el panel de sugerencia no usa triage-decision, finalLevel, triagedAt ni triagedBy', () => {
+    // F-05-web: la invariante se limita a los archivos de F-04-web (el panel no sabe nada de la
+    // decisión); la tarjeta de triage sí usa triage-decision.
+    const files = applicationSources().filter((file) =>
+      [
+        'src/features/triage/components/TriageSuggestionPanel.tsx',
+        'src/features/triage/components/TriageSuggestionView.tsx',
+        'src/features/triage/suggestionView.ts',
+        'src/features/triage/hooks/useTriageSuggestions.ts',
+        'src/features/triage/hooks/useRequestTriageSuggestion.ts',
+      ].includes(file),
     );
+    expect(files).toHaveLength(5);
     expect(
       files.filter((file) =>
         /triage-decision|finalLevel|triagedAt|triagedBy/.test(

@@ -29,6 +29,10 @@ import {
   staffMe,
   type Handler,
 } from '../../test/fakeApi';
+import {
+  LIST_SUGGESTIONS,
+  noSuggestions,
+} from '../../features/triage/testing/suggestionFixtures';
 import { norm } from '../../test/text';
 import { renderApp } from '../../test/testApp';
 
@@ -58,6 +62,7 @@ function setup({
     [LIST]: json(200, { items: [encounterSummary()] }),
     [DETAIL]: json(200, encounter),
     [CAPTURE]: json(200, emptyCapture),
+    [LIST_SUGGESTIONS]: noSuggestions,
     ...handlers,
   });
   return {

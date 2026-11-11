@@ -3,7 +3,7 @@ import type { components, paths } from './schema';
 import { session } from './session';
 
 /** Versión del contrato que consume esta web (feature_list.json → consumes_contract). */
-export const CONSUMED_CONTRACT = '0.7.0';
+export const CONSUMED_CONTRACT = '0.9.0';
 
 const LOGIN_PATH = '/api/v1/auth/login';
 

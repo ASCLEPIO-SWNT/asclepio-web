@@ -5,21 +5,29 @@
  */
 
 /** Versión declarada en `CONSUMED_CONTRACT` y en `consumes_contract` de feature_list.json. */
-export const EXPECTED_CONTRACT = '0.7.0';
+export const EXPECTED_CONTRACT = '0.9.0';
 
 /**
  * SHA-256 de `src/shared/api/schema.d.ts` generado con `npm run api:types` desde el snapshot
- * publicado (snapshot publicado 0.7.0; F-06-web D1).
+ * publicado (snapshot publicado 0.9.0; DT-02-web D1).
  */
 export const SCHEMA_SHA256 =
-  'e6635d7de1a7f1d269f32632a7830f8867a8f5c1b7304153446fe1978a22160a';
+  'adf8fbd1549fbda526793396c512205ad3872fcdb4304377a377cd9075857178';
 
 /**
- * SHA-256 de `src/features/triage/clinicalContract.generated.ts` (cambian su cabecera y la
- * constante nueva `DECISION_LIMITS`; F-05-web D11).
+ * SHA-256 de `src/features/triage/clinicalContract.generated.ts` (snapshot publicado 0.9.0;
+ * DT-02-web D1: solo cambia su cabecera).
  */
 export const CLINICAL_CONTRACT_SHA256 =
-  'a6f5b5320e95dcc48f0a57ffb3b544ccebb4a80bfc9290eeec717efbf0b48fcd';
+  'b88898aa64cae4f12a1655f6102b966c31f575c41bc78f0f501dad69f8117b1b';
+
+/**
+ * SHA-256 de `src/features/triage/clinicalContract.generated.ts` sin su primera línea (la
+ * cabecera con la versión), calculado desde 0.7.0 antes de regenerar (DT-02-web D1). Prueba que
+ * las reglas clínicas de F-03 y los límites de decisión de F-05 no cambian con el contrato.
+ */
+export const CLINICAL_RULES_BODY_SHA256 =
+  '7e50182074a101f7ea0ff1741e91bebf02c93d818597d4600fb230f1f8a07374';
 
 /** Operaciones `MÉTODO /ruta` que usa el código de aplicación, en orden alfabético. */
 export const WEB_OPERATIONS = [

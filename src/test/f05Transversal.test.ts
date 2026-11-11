@@ -47,7 +47,12 @@ describe('F-05-web contrato', () => {
       'src/features/triage/clinicalContract.generated.ts',
       'utf8',
     );
-    expect(generated).toMatch(/^\/\/ Generated from OpenAPI 0\.7\.0 /);
+    // DT-02-web D2: la cabecera se construye desde EXPECTED_CONTRACT.
+    expect(generated).toMatch(
+      new RegExp(
+        `^// Generated from OpenAPI ${EXPECTED_CONTRACT.replaceAll('.', '\\.')} `,
+      ),
+    );
     expect(generated).toMatch(/export const DECISION_LIMITS = \{/);
   });
 });

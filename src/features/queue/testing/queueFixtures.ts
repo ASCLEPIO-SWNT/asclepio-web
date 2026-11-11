@@ -8,9 +8,10 @@ import {
 } from '../../../test/fakeApi';
 
 /**
- * Colas sintéticas para las pruebas de F-06-web (contrato 0.7.0, design D13). Iniciales y edades
- * ficticias, sin nombres ni documentos. Los niveles, las esperas y los vencimientos solo ejercitan
- * lo que la API ya calculó: no son un criterio clínico.
+ * Colas sintéticas para las pruebas de F-06-web y DT-02-web (contrato 0.9.0; F-06-web D13,
+ * DT-02-web D7). Iniciales y edades ficticias, sin nombres ni documentos. Los niveles, las
+ * esperas, los tiempos desde la clasificación y los vencimientos solo ejercitan lo que la API ya
+ * calculó: no son un criterio clínico.
  */
 
 export const QUEUE_PATH = '/api/v1/queue';
@@ -43,6 +44,7 @@ export function queueItem(overrides: Partial<QueueItem> = {}): QueueItem {
     arrivalAt: minutesBefore(SERVER_NOW, 5),
     waitMinutes: 5,
     maxWaitMinutes: null,
+    minutesSinceTriage: 5,
     overdue: false,
     patient: { initials: 'ZZ', ageYears: 50, sex: 'F' },
     ...overrides,
@@ -59,6 +61,7 @@ export const waitingLong = queueItem({
   siteName: SITE_SUR.name,
   arrivalAt: minutesBefore(SERVER_NOW, 18),
   waitMinutes: 18,
+  minutesSinceTriage: null,
   patient: { initials: 'MR', ageYears: 34, sex: 'M' },
 });
 
@@ -69,12 +72,13 @@ export const waitingNN = queueItem({
   finalLevel: null,
   arrivalAt: minutesBefore(SERVER_NOW, 3),
   waitMinutes: 3,
+  minutesSinceTriage: null,
   patient: { initials: null, ageYears: null, sex: null },
 });
 
 // ---------------------------------------------------------------- Clasificadas
 
-/** Nivel I vencido: atención inmediata (máximo 0 min). */
+/** Nivel I vencido: atención inmediata (máximo 0 min), clasificada hace 0 min (DT-02-web R8). */
 export const triagedLevel1 = queueItem({
   encounterId: id(11),
   finalLevel: 1,
@@ -82,10 +86,11 @@ export const triagedLevel1 = queueItem({
   waitMinutes: 4,
   maxWaitMinutes: 0,
   overdue: true,
+  minutesSinceTriage: 0,
   patient: { initials: 'AC', ageYears: 71, sex: 'F' },
 });
 
-/** Nivel II vencido (31 min con máximo de 30). */
+/** Nivel II vencido: clasificada hace 30 min con máximo de 30 (DT-02-web R8); espera de 31 min. */
 export const triagedLevel2Overdue = queueItem({
   encounterId: id(12),
   finalLevel: 2,
@@ -95,10 +100,11 @@ export const triagedLevel2Overdue = queueItem({
   waitMinutes: 31,
   maxWaitMinutes: 30,
   overdue: true,
+  minutesSinceTriage: 30,
   patient: { initials: 'JP', ageYears: 58, sex: 'M' },
 });
 
-/** Nivel II sin vencer (12 min). */
+/** Nivel II sin vencer (12 min de espera, clasificada hace 8). */
 export const triagedLevel2 = queueItem({
   encounterId: id(13),
   finalLevel: 2,
@@ -106,6 +112,7 @@ export const triagedLevel2 = queueItem({
   waitMinutes: 12,
   maxWaitMinutes: 30,
   overdue: false,
+  minutesSinceTriage: 8,
   patient: { initials: 'LV', ageYears: 9, sex: 'X' },
 });
 
@@ -119,6 +126,7 @@ export const triagedLevel4 = queueItem({
   waitMinutes: 47,
   maxWaitMinutes: null,
   overdue: false,
+  minutesSinceTriage: 40,
   patient: { initials: 'SG', ageYears: 26, sex: 'F' },
 });
 
@@ -132,6 +140,7 @@ export const inCareNorte = queueItem({
   waitMinutes: null,
   maxWaitMinutes: 30,
   overdue: false,
+  minutesSinceTriage: null,
   patient: { initials: 'DT', ageYears: 44, sex: 'M' },
 });
 
@@ -145,10 +154,57 @@ export const inCareSur = queueItem({
   waitMinutes: null,
   maxWaitMinutes: null,
   overdue: false,
+  minutesSinceTriage: null,
   patient: { initials: 'EB', ageYears: 63, sex: 'F' },
 });
 
-/** La cola completa en el orden de la API (F-06-api R2). */
+// ---------------------------------------------------------------- Reloj de la clasificación (DT-02-web D7)
+
+/** Nivel II que llegó hace 50 min y se clasificó hace 45: vencida desde la clasificación. */
+export const triagedLevel2EarlyTriage = queueItem({
+  encounterId: id(31),
+  finalLevel: 2,
+  arrivalAt: minutesBefore(SERVER_NOW, 50),
+  waitMinutes: 50,
+  maxWaitMinutes: 30,
+  minutesSinceTriage: 45,
+  overdue: true,
+  patient: { initials: 'RA', ageYears: 39, sex: 'F' },
+});
+
+/**
+ * Nivel II que llegó hace 90 min y se clasificó hace 10: sin vencer (con la espera desde la
+ * llegada habría salido vencida).
+ */
+export const triagedLevel2LateArrival = queueItem({
+  encounterId: id(32),
+  finalLevel: 2,
+  siteId: SITE_SUR.id,
+  siteName: SITE_SUR.name,
+  arrivalAt: minutesBefore(SERVER_NOW, 90),
+  waitMinutes: 90,
+  maxWaitMinutes: 30,
+  minutesSinceTriage: 10,
+  overdue: false,
+  patient: { initials: 'TO', ageYears: 52, sex: 'M' },
+});
+
+/**
+ * Fila anómala de «Clasificadas» sin reloj de clasificación ni nivel (DT-02-api R8): solo aparece
+ * si alguien escribió fuera de la API.
+ */
+export const triagedWithoutClock = queueItem({
+  encounterId: id(33),
+  finalLevel: null,
+  arrivalAt: minutesBefore(SERVER_NOW, 20),
+  waitMinutes: 20,
+  maxWaitMinutes: null,
+  minutesSinceTriage: null,
+  overdue: false,
+  patient: { initials: 'KU', ageYears: 47, sex: 'F' },
+});
+
+/** La cola completa en el orden de la API (F-06-api R2; DT-02-api R5). */
 export const queue: Queue = {
   serverNow: SERVER_NOW,
   waitingTriage: [waitingLong, waitingNN],
@@ -163,6 +219,21 @@ export const queue: Queue = {
 export const unorderedQueue: Queue = {
   ...queue,
   triaged: [triagedLevel2, triagedLevel1, triagedLevel4, triagedLevel2Overdue],
+};
+
+/**
+ * El ejemplo de DT-02-api R5 en el orden de la API: dentro del nivel II va primero la que lleva
+ * más tiempo desde la clasificación (45), aunque la otra llegó antes (90 min de espera).
+ */
+export const triageClockQueue: Queue = {
+  ...queue,
+  triaged: [triagedLevel1, triagedLevel2EarlyTriage, triagedLevel2LateArrival],
+};
+
+/** La cola con la fila anómala sin reloj al final de `triaged` (DT-02-web R10). */
+export const queueWithoutClock: Queue = {
+  ...queue,
+  triaged: [...queue.triaged, triagedWithoutClock],
 };
 
 export const emptyQueue: Queue = {

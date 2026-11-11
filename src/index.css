@@ -2640,3 +2640,10 @@ textarea:disabled {
     width: 100%;
   }
 }
+
+/* DT-02-web: tiempo desde la clasificación en la celda «Espera». Solo tokens existentes (R14). */
+.queue-wait__since {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+}

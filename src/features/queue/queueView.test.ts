@@ -63,9 +63,11 @@ describe('F-06-web funciones de la vista de la cola', () => {
     expect(waitLabel(inCareNorte)).toBeNull();
   });
 
-  it('R10: maxWaitLabel: 0 → «Atención inmediata», 30 → «Máx. 30 min», null → nada, y fuera de «Clasificadas», nada', () => {
+  it('R10: maxWaitLabel: 0 → «Atención inmediata», 30 → «Máx. 30 min desde la clasificación», null → nada, y fuera de «Clasificadas», nada', () => {
     expect(maxWaitLabel(triagedLevel1)).toBe('Atención inmediata');
-    expect(maxWaitLabel(triagedLevel2)).toBe('Máx. 30 min');
+    expect(maxWaitLabel(triagedLevel2)).toBe(
+      'Máx. 30 min desde la clasificación',
+    );
     expect(maxWaitLabel(triagedLevel4)).toBeNull();
     // En atención con máximo 30 y en espera: sin tiempo máximo.
     expect(inCareNorte.maxWaitMinutes).toBe(30);

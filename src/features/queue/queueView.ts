@@ -72,8 +72,19 @@ export function waitLabel(item: QueueItem): string | null {
 }
 
 /**
+ * DT-02-web R3, R4, R10 (D4): «Clasificada hace {n} min» con el entero de la API, solo en
+ * «Clasificadas» y con `minutesSinceTriage` no nulo; si no, nada (sin sustituto).
+ */
+export function sinceTriageLabel(item: QueueItem): string | null {
+  if (item.status !== 'TRIAGED' || item.minutesSinceTriage === null)
+    return null;
+  return t('queue_since_triage', { minutes: item.minutesSinceTriage });
+}
+
+/**
  * R10, D7 (PA-3 a): tiempo máximo solo en «Clasificadas» y con `maxWaitMinutes` no nulo:
- * «Atención inmediata» con 0 y «Máx. {n} min» con otro valor.
+ * «Atención inmediata» con 0 y «Máx. {n} min desde la clasificación» con otro valor
+ * (DT-02-web R5, D5).
  */
 export function maxWaitLabel(item: QueueItem): string | null {
   if (item.status !== 'TRIAGED' || item.maxWaitMinutes === null) return null;

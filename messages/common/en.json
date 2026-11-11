@@ -108,7 +108,7 @@
   "dash_retry_named": "Retry: {name}",
   "dash_view_all_encounters": "View all encounters",
   "dash_col_action": "Action",
-  "guide_queue": "This screen shows the prioritized queue in three sections: waiting for triage, triaged and in care. Each section keeps the server order; triaged encounters go by level and, within each level, the longest wait first. If an encounter exceeds the maximum time for its level, you will see the Maximum time exceeded mark. Use the Location filter to see a single location. The queue updates on its own periodically; use Refresh to check right away. The guide does not read patient data.",
+  "guide_queue": "This screen shows the prioritized queue in three sections: waiting for triage, triaged and in care. Each section keeps the server order; triaged encounters go by level and, within each level, the one triaged longest ago first. Waiting time is counted from arrival and the maximum time for each level, from triage. If an encounter exceeds it, you will see the Maximum time exceeded mark. Use the Location filter to see a single location. The queue updates on its own periodically; use Refresh to check right away. The guide does not read patient data.",
   "guide_reports": "This screen summarizes encounters by status and those waiting for triage at each location. It updates on its own periodically; use Refresh to check right away. Time reports and the CSV download are not available yet. The screen does not show patient data.",
   "common_error_network": "There is no connection to the server.",
   "common_error_server": "The server ran into a problem. Please try again.",

@@ -421,9 +421,49 @@ export interface paths {
         };
         /**
          * Cola priorizada por nivel y espera
-         * @description Atenciones activas del tenant (o de la sede siteId) en tres secciones: waitingTriage, triaged e inCare. La espera se mide desde la llegada (arrivalAt) hasta serverNow, con el reloj del servidor. Tiempos máximos de la Res. 5596 de 2015: nivel I = 0 min (inmediato) y nivel II = 30 min; III, IV y V sin tiempo máximo ni alerta (PA-F06-1). overdue solo en triaged. Del paciente solo se devuelven iniciales, edad y sexo.
+         * @description Atenciones activas del tenant (o de la sede siteId) en tres secciones: waitingTriage, triaged e inCare, con el reloj del servidor (serverNow). La espera (waitMinutes) se mide desde la llegada (arrivalAt) y ordena waitingTriage. El tiempo máximo, la alerta y el orden de triaged se cuentan desde la clasificación (triagedAt), como la Res. 256 de 2016: triaged va por nivel y, en cada nivel, por mayor minutesSinceTriage. Tiempos máximos de la Res. 5596 de 2015: nivel I = 0 min (inmediato) y nivel II = 30 min; III, IV y V sin tiempo máximo ni alerta (PA-F06-1). overdue solo en triaged, con el tiempo exacto desde la clasificación (nivel I vencido en cuanto pasa cualquier tiempo; nivel II, con más de 30 min). Del paciente solo se devuelven iniciales, edad y sexo.
          */
         get: operations["QueueController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Resumen de indicadores del periodo
+         * @description Indicadores de las atenciones del tenant (o de la sede siteId) cuya llegada cae en el periodo [from 00:00 −05:00, to+1 00:00 −05:00) de America/Bogota: minutos de llegada a triage por nivel (n, mediana y p90), minutos de triage a atención de los niveles I y II, cumplimiento del nivel II (≤ 30 min desde la clasificación hasta la atención médica, como el indicador "Tiempo de espera Triage II" de la Res. 256 de 2016; el nivel I se informa sin porcentaje), concordancia IA–enfermería (acuerdo exacto, kappa de Cohen ponderado cuadrático, sub y sobreclasificación y matriz 5×5, solo con VALIDATE y CORRECT y la sugerencia decidida) y uso del respaldo y de los safety guards. Porcentajes con 1 decimal y null si el denominador es 0.
+         */
+        get: operations["ReportsController_summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/encounters.csv": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * CSV de atenciones del periodo (formato interno)
+         * @description Una fila por atención de la misma población que GET /reports/summary con los mismos parámetros, ordenadas por arrivalAt e id. FORMATO INTERNO documentado en docs/reports-csv.md: NO es el formato oficial de la Res. 373 ni de SISPRO. RFC 4180 (coma, CRLF, cabecera en la primera fila), UTF-8, horas ISO-8601 con -05:00, minutos con 1 decimal y vacío si no hay valor. Columnas: encounter_id, site_name, status, origin, complaint_source, arrival_at, triaged_at, in_care_at, closed_at, final_level, decision_action, suggestion_status, suggested_level, llm_level, guard_applied, provider, minutes_to_triage, minutes_triage_to_care (desde la clasificación hasta la atención médica, Res. 256 de 2016) y compliant (solo nivel II que llegó a IN_CARE: ≤ 30 min). Sin nombre, documento, motivo de consulta, motivo de corrección ni nombres del personal. Las celdas de texto que empiezan por =, +, -, @, tabulador o CR van precedidas de comilla simple. Cada descarga se audita (REPORT_EXPORTED).
+         */
+        get: operations["ReportsController_csv"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1053,26 +1093,159 @@ export interface components {
              * @description Hora legal de llegada (servidor).
              */
             arrivalAt: string;
-            /** @description Minutos enteros completos desde arrivalAt hasta serverNow (PA-F06-2); null en inCare (la espera terminó). */
+            /** @description Espera desde la llegada: minutos enteros completos desde arrivalAt hasta serverNow (PA-F06-2); null en inCare (la espera terminó). Solo se muestra y ordena waitingTriage: no decide la alerta ni el orden de triaged. */
             waitMinutes: number | null;
-            /** @description Tiempo máximo del nivel (Res. 5596 de 2015): I = 0, II = 30; null sin nivel o en III–V. */
+            /** @description Minutos enteros completos desde la clasificación (triagedAt) hasta serverNow, en triaged; null en waitingTriage y en inCare (Res. 256 de 2016, DT-02). Ordena triaged dentro de cada nivel. */
+            minutesSinceTriage: number | null;
+            /** @description Tiempo máximo del nivel, contado desde la clasificación (Res. 256 de 2016), con los valores de la Res. 5596 de 2015: I = 0, II = 30; null sin nivel o en III–V. */
             maxWaitMinutes: number | null;
-            /** @description true solo en triaged con nivel I y espera > 0 o nivel II y espera > 30. */
+            /** @description true solo en triaged cuando el tiempo exacto desde la clasificación (serverNow − triagedAt, en milisegundos) supera maxWaitMinutes (Res. 256 de 2016): nivel I con cualquier tiempo > 0, nivel II con más de 30 min. Como minutesSinceTriage se muestra en minutos completos, puede ser true con minutesSinceTriage igual al máximo (p. ej. 30 min y 1 s). Nunca en III–V, waitingTriage ni inCare. */
             overdue: boolean;
             patient: components["schemas"]["QueuePatientDto"];
         };
         QueueDto: {
             /**
              * Format: date-time
-             * @description Hora del servidor con la que se calcularon todas las esperas de la respuesta.
+             * @description Hora del servidor con la que se calcularon todas las esperas, los minutos desde la clasificación y las alertas de la respuesta.
              */
             serverNow: string;
-            /** @description WAITING_TRIAGE, mayor espera primero. */
+            /** @description WAITING_TRIAGE, mayor espera desde la llegada (waitMinutes) primero. */
             waitingTriage: components["schemas"]["QueueItemDto"][];
-            /** @description TRIAGED, nivel ascendente y, en cada nivel, mayor espera primero. */
+            /** @description TRIAGED, nivel ascendente y, en cada nivel, más tiempo desde la clasificación primero (mayor minutesSinceTriage; Res. 256 de 2016), con los empates por id. Las que no tienen triagedAt, al final. */
             triaged: components["schemas"]["QueueItemDto"][];
             /** @description IN_CARE, nivel ascendente y después llegada ascendente. */
             inCare: components["schemas"]["QueueItemDto"][];
+        };
+        ReportPeriodDto: {
+            /** Format: date */
+            from: string;
+            /** Format: date */
+            to: string;
+            /** Format: uuid */
+            siteId: string | null;
+        };
+        ReportPopulationDto: {
+            /** @description Atenciones del tenant (y de la sede) con arrival_at en el periodo, en cualquier estado. */
+            encounters: number;
+            /** @description Atenciones de la población con triaged_at (con decisión). */
+            triaged: number;
+        };
+        LevelTimeStatsDto: {
+            n: number;
+            /** @description Mediana en minutos, con 1 decimal; null si n = 0. */
+            median: number | null;
+            /** @description Percentil 90 (rango más cercano, posición ceil(0,9·n)) en minutos, con 1 decimal; null si n = 0. */
+            p90: number | null;
+            level: number;
+        };
+        TimeStatsDto: {
+            n: number;
+            /** @description Mediana en minutos, con 1 decimal; null si n = 0. */
+            median: number | null;
+            /** @description Percentil 90 (rango más cercano, posición ceil(0,9·n)) en minutos, con 1 decimal; null si n = 0. */
+            p90: number | null;
+        };
+        TimeToTriageDto: {
+            /** @description Minutos desde la llegada (arrival_at) hasta el triage (triaged_at), por nivel final 1–5. */
+            byLevel: components["schemas"]["LevelTimeStatsDto"][];
+            total: components["schemas"]["TimeStatsDto"];
+        };
+        CareTimeStatsDto: {
+            n: number;
+            /** @description Mediana en minutos, con 1 decimal; null si n = 0. */
+            median: number | null;
+            /** @description Percentil 90 (rango más cercano, posición ceil(0,9·n)) en minutos, con 1 decimal; null si n = 0. */
+            p90: number | null;
+            level: number;
+            /** @description Media en minutos, con 1 decimal; null si n = 0. */
+            mean: number | null;
+        };
+        TimeToCareDto: {
+            /** @description Minutos desde la clasificación (triaged_at) hasta el inicio de la atención médica (IN_CARE), para los niveles 1 y 2: indicador "Tiempo de espera Triage II" de la Res. 256 de 2016. Solo las atenciones que llegaron a IN_CARE. */
+            byLevel: components["schemas"]["CareTimeStatsDto"][];
+        };
+        ComplianceDto: {
+            /** @enum {integer} */
+            level: 2;
+            /** @description Tiempo máximo del nivel II (Res. 5596 de 2015), la misma definición que usa la cola. */
+            maxMinutes: number;
+            /** @description Atenciones de nivel II que llegaron a IN_CARE. */
+            evaluable: number;
+            /** @description Evaluables con minutos de triage a atención ≤ maxMinutes (desde la clasificación, Res. 256 de 2016). */
+            compliant: number;
+            /** @description Porcentaje con 1 decimal; null si el denominador es 0. */
+            percent: number | null;
+            /** @description Atenciones de nivel II triadas que no llegaron a IN_CARE. */
+            notEvaluated: number;
+        };
+        ConcordanceDto: {
+            /** @description Pares (nivel sugerido de la sugerencia decidida, nivel final) de las decisiones VALIDATE y CORRECT. */
+            pairs: number;
+            /** @description Porcentaje con 1 decimal; null si el denominador es 0. */
+            exactAgreementPercent: number | null;
+            /** @description Kappa de Cohen ponderado cuadrático (5 niveles), con 3 decimales; null con menos de 2 pares o si el acuerdo esperado es 1. */
+            weightedKappa: number | null;
+            /** @description Subclasificación: % de pares con nivel sugerido > nivel final (la IA sugirió un nivel menos grave). */
+            underTriagePercent: number | null;
+            /** @description Sobreclasificación: % de pares con nivel sugerido < nivel final. */
+            overTriagePercent: number | null;
+            /** @description Matriz 5×5 de conteos: matrix[sugerido − 1][final − 1]. */
+            matrix: number[][];
+        };
+        CountPercentDto: {
+            count: number;
+            /** @description Porcentaje con 1 decimal; null si el denominador es 0. */
+            percent: number | null;
+        };
+        DecisionUsageDto: {
+            /** @description Atenciones triadas de la población. */
+            total: number;
+            VALIDATE: components["schemas"]["CountPercentDto"];
+            CORRECT: components["schemas"]["CountPercentDto"];
+            MANUAL: components["schemas"]["CountPercentDto"];
+        };
+        SuggestionUsageDto: {
+            /** @description Todas las sugerencias de la población (cada solicitud a la IA). */
+            total: number;
+            OK: components["schemas"]["CountPercentDto"];
+            INVALID_OUTPUT: components["schemas"]["CountPercentDto"];
+            TIMEOUT: components["schemas"]["CountPercentDto"];
+            FAILED: components["schemas"]["CountPercentDto"];
+        };
+        ProviderUsageDto: {
+            /** @description Sugerencias OK. */
+            total: number;
+            GROQ: components["schemas"]["CountPercentDto"];
+            /** @description Uso del proveedor de respaldo. */
+            OPENROUTER: components["schemas"]["CountPercentDto"];
+        };
+        GuardUsageDto: {
+            /** @description Sugerencias OK. */
+            total: number;
+            /** @description Sugerencias OK en las que un safety guard subió el nivel. */
+            applied: number;
+            /** @description Porcentaje con 1 decimal; null si el denominador es 0. */
+            percent: number | null;
+        };
+        FallbackDto: {
+            decisions: components["schemas"]["DecisionUsageDto"];
+            suggestions: components["schemas"]["SuggestionUsageDto"];
+            providers: components["schemas"]["ProviderUsageDto"];
+            guards: components["schemas"]["GuardUsageDto"];
+        };
+        ReportSummaryDto: {
+            period: components["schemas"]["ReportPeriodDto"];
+            /**
+             * Format: date-time
+             * @description Hora del servidor con la que se generó el resumen (una sola lectura del reloj).
+             */
+            generatedAt: string;
+            population: components["schemas"]["ReportPopulationDto"];
+            timeToTriage: components["schemas"]["TimeToTriageDto"];
+            timeToCare: components["schemas"]["TimeToCareDto"];
+            compliance: components["schemas"]["ComplianceDto"];
+            concordance: components["schemas"]["ConcordanceDto"];
+            fallback: components["schemas"]["FallbackDto"];
         };
         FieldErrorDto: {
             field: string;
@@ -2336,6 +2509,151 @@ export interface operations {
             };
             /** @description Rol distinto de PHYSICIAN, NURSE o ADMIN, o token de paciente. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    ReportsController_summary: {
+        parameters: {
+            query: {
+                /** @description Primer día del periodo (incluido), en hora de Bogotá: desde las 00:00 −05:00. */
+                from: string;
+                /** @description Último día del periodo (incluido), en hora de Bogotá: hasta las 00:00 −05:00 del día siguiente (excluido). Máximo 366 días contando ambos extremos; from > to o un periodo mayor → 422. */
+                to: string;
+                /** @description Limita la población a una sede del tenant. Una sede inexistente o de otra IPS da una población vacía. */
+                siteId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReportSummaryDto"];
+                };
+            };
+            /** @description from o to ausentes o que no son fechas YYYY-MM-DD válidas, siteId que no es un UUID o un parámetro de consulta desconocido (errors[] con el campo). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Sin token válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Rol distinto de ADMIN, o token de paciente. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description from posterior a to o periodo de más de 366 días (errors[] con el campo). */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    ReportsController_csv: {
+        parameters: {
+            query: {
+                /** @description Primer día del periodo (incluido), en hora de Bogotá: desde las 00:00 −05:00. */
+                from: string;
+                /** @description Último día del periodo (incluido), en hora de Bogotá: hasta las 00:00 −05:00 del día siguiente (excluido). Máximo 366 días contando ambos extremos; from > to o un periodo mayor → 422. */
+                to: string;
+                /** @description Limita la población a una sede del tenant. Una sede inexistente o de otra IPS da una población vacía. */
+                siteId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description CSV con Content-Disposition: attachment; filename="asclepio-atenciones-<from>_<to>.csv". */
+            200: {
+                headers: {
+                    /** @description attachment; filename="asclepio-atenciones-<from>_<to>.csv" */
+                    "Content-Disposition"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description from o to ausentes o que no son fechas YYYY-MM-DD válidas, siteId que no es un UUID o un parámetro de consulta desconocido (errors[] con el campo). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Sin token válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Rol distinto de ADMIN, o token de paciente. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description from posterior a to o periodo de más de 366 días (errors[] con el campo). */
+            422: {
                 headers: {
                     [name: string]: unknown;
                 };

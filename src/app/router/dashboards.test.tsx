@@ -93,8 +93,8 @@ const NEW_MESSAGES: Record<string, NewMessage> = {
   dash_col_action: { group: 'common', es: 'Acción', params: [] },
   guide_queue: {
     group: 'common',
-    // F-06-web PA-2 (a): la guía de la cola priorizada.
-    es: 'Esta pantalla muestra la cola priorizada en tres secciones: en espera de triage, clasificadas y en atención. Cada sección conserva el orden del servidor; las clasificadas van por nivel y, en cada nivel, primero la mayor espera. Si una atención supera el tiempo máximo de su nivel, verás la marca Tiempo máximo superado. Con el filtro Sede puedes ver una sola sede. La cola se actualiza sola de forma periódica; usa Actualizar para consultar al instante. La guía no lee datos de pacientes.',
+    // F-06-web PA-2 (a); DT-02-web PA-4 (a): orden y tiempo máximo desde la clasificación.
+    es: 'Esta pantalla muestra la cola priorizada en tres secciones: en espera de triage, clasificadas y en atención. Cada sección conserva el orden del servidor; las clasificadas van por nivel y, en cada nivel, primero la que lleva más tiempo desde la clasificación. La espera se cuenta desde la llegada y el tiempo máximo de cada nivel, desde la clasificación. Si una atención lo supera, verás la marca Tiempo máximo superado. Con el filtro Sede puedes ver una sola sede. La cola se actualiza sola de forma periódica; usa Actualizar para consultar al instante. La guía no lee datos de pacientes.',
     params: [],
   },
   guide_reports: {

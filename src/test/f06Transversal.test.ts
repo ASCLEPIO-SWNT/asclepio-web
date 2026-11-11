@@ -25,9 +25,8 @@ function sources(dir: string): string[] {
 }
 
 describe('F-06-web contrato', () => {
-  it('R30: declara el contrato 0.7.0 y los tipos generados coinciden con la huella vigente', () => {
-    expect(CONSUMED_CONTRACT).toBe('0.7.0');
-    expect(EXPECTED_CONTRACT).toBe('0.7.0');
+  it('R30: declara el contrato esperado y los tipos generados coinciden con la huella vigente', () => {
+    // DT-02-web D2: la versión sale de contractBaseline.ts.
     expect(CONSUMED_CONTRACT).toBe(EXPECTED_CONTRACT);
     expect(sha256('src/shared/api/schema.d.ts')).toBe(SCHEMA_SHA256);
     expect(sha256('src/features/triage/clinicalContract.generated.ts')).toBe(
@@ -89,6 +88,8 @@ const QUEUE_KEYS = [
   'queue_max_immediate',
   'queue_max_minutes',
   'queue_overdue',
+  'queue_since_triage', // DT-02-web T3
+  'queue_overdue_a11y', // DT-02-web T3
   'queue_empty_waiting',
   'queue_empty_triaged',
   'queue_empty_in_care',
@@ -182,7 +183,10 @@ describe('F-06-web i18n', () => {
     expect(es.queue_level).toBe('Nivel {level}');
     expect(es.queue_wait_minutes).toBe('{minutes} min');
     expect(es.queue_max_immediate).toBe('Atención inmediata');
-    expect(es.queue_max_minutes).toBe('Máx. {minutes} min');
+    // DT-02-web PA-2 (a): el máximo se cuenta desde la clasificación.
+    expect(es.queue_max_minutes).toBe(
+      'Máx. {minutes} min desde la clasificación',
+    );
     expect(es.queue_overdue).toBe('Tiempo máximo superado');
     expect(es.queue_empty_waiting).toBe(
       'No hay atenciones en espera de triage.',

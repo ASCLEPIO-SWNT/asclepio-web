@@ -27,3 +27,9 @@
 
 ## Commits
 - Conventional Commits (`feat(triage): …`, `fix(queue): …`, `chore: …`), con `Refs: F-0X-web` en el cuerpo.
+
+## Ramas y PRs
+- `develop` es la rama de integración; `main` solo recibe PR `develop → main`.
+- Una rama `feature/<id>` por funcionalidad (p. ej. `feature/F-07-api`), creada desde `develop`.
+- Cada rama se integra con un PR a `develop`; lo fusiona el humano.
+- Sin push directo a `develop` ni a `main`, y sin force-push.

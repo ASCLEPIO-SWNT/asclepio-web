@@ -368,8 +368,10 @@ describe('F-06-web cola priorizada: lectura', () => {
 });
 
 describe('F-06-web cola priorizada: tiempo máximo y alerta', () => {
+  // DT-02-web D6: el texto visible va en un span dentro de la insignia; se sube a `.badge`.
   const overdueBadge = (row: HTMLElement) =>
-    within(row).queryByText('Tiempo máximo superado');
+    within(row).queryByText('Tiempo máximo superado')?.closest('.badge') ??
+    null;
 
   it('R9: las filas I y II vencidas llevan «Tiempo máximo superado» con icono y tono de error; la II sin vencer y la IV no', async () => {
     setup();
@@ -380,7 +382,14 @@ describe('F-06-web cola priorizada: tiempo máximo y alerta', () => {
       expect(badge.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
       // El estado no depende solo del color: el texto está en la celda de espera.
       expect(badge.closest('.queue-wait')).not.toBeNull();
-      expect(badge.textContent).toBe('Tiempo máximo superado');
+      // DT-02-web D6: el texto visible (aria-hidden) más el texto accesible.
+      const visible = within(badge as HTMLElement).getByText(
+        'Tiempo máximo superado',
+      );
+      expect(visible).toHaveAttribute('aria-hidden', 'true');
+      expect(badge).toHaveTextContent(
+        'Tiempo máximo superado desde la clasificación',
+      );
     }
     for (const item of [
       triagedLevel2,
@@ -888,6 +897,7 @@ describe('F-06-web resultado de las acciones del médico', () => {
       ...triagedLevel2,
       status: 'IN_CARE' as const,
       waitMinutes: null,
+      minutesSinceTriage: null,
     };
     const next = deferred(
       json(

@@ -46,6 +46,10 @@ import {
   waitingLong,
 } from '../../features/queue/testing/queueFixtures';
 import { patientLabel } from '../../features/queue/queueView';
+import {
+  GET_SUMMARY,
+  summaryResponse,
+} from '../../features/reports/testing/reportFixtures';
 import { ROLE_ROUTES } from './roleMatrix';
 import { renderApp } from '../../test/testApp';
 
@@ -85,11 +89,6 @@ const NEW_MESSAGES: Record<string, NewMessage> = {
     es: 'Reintentar: {name}',
     params: ['name'],
   },
-  dash_view_all_encounters: {
-    group: 'common',
-    es: 'Ver todas las atenciones',
-    params: [],
-  },
   dash_col_action: { group: 'common', es: 'Acción', params: [] },
   guide_queue: {
     group: 'common',
@@ -99,7 +98,8 @@ const NEW_MESSAGES: Record<string, NewMessage> = {
   },
   guide_reports: {
     group: 'common',
-    es: 'Esta pantalla resume las atenciones por estado y las que esperan triage en cada sede. Se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Los reportes de tiempos y la descarga del CSV todavía no están disponibles. La pantalla no muestra datos de pacientes.',
+    // F-07-web PA-9 (a): la guía describe el tablero de reportes.
+    es: 'Esta pantalla muestra los indicadores del periodo y la sede que elijas: el tiempo de la llegada al triage por nivel, el tiempo de la clasificación a la atención médica de los niveles I y II con el cumplimiento del nivel II, la concordancia entre la sugerencia de la IA y el nivel final de enfermería, y el uso del proveedor de respaldo y de los safety guards. Elige las fechas y la sede y pulsa Aplicar. La pantalla se actualiza sola de forma periódica; usa Actualizar para consultar al instante. Descargar CSV guarda un archivo en formato interno, que no es el reporte oficial. La pantalla no muestra datos de pacientes.',
     params: [],
   },
   // messages/features
@@ -133,42 +133,6 @@ const NEW_MESSAGES: Record<string, NewMessage> = {
   dash_triage_empty_hint: {
     group: 'features',
     es: 'Las llegadas confirmadas por recepción aparecerán aquí.',
-    params: [],
-  },
-  dash_reports_lead: {
-    group: 'features',
-    es: 'Resumen de las atenciones por estado y por sede.',
-    params: [],
-  },
-  dash_reports_by_site: {
-    group: 'features',
-    es: 'Atenciones por sede',
-    params: [],
-  },
-  dash_reports_sites_loading: {
-    group: 'features',
-    es: 'Cargando las sedes…',
-    params: [],
-  },
-  dash_reports_sites_empty: {
-    group: 'features',
-    es: 'El tenant no tiene sedes registradas.',
-    params: [],
-  },
-  dash_sites_count: {
-    group: 'features',
-    es: '{count} sedes',
-    params: ['count'],
-  },
-  dash_sites_count_one: { group: 'features', es: '1 sede', params: [] },
-  dash_reports_pending_title: {
-    group: 'features',
-    es: 'Indicadores y reportes',
-    params: [],
-  },
-  dash_reports_pending_body: {
-    group: 'features',
-    es: 'Aquí aparecerán los tiempos, el cumplimiento, la concordancia y la descarga del CSV.',
     params: [],
   },
 };
@@ -206,9 +170,9 @@ const entries = Object.entries(NEW_MESSAGES);
 
 describe('UI-02-web catálogos i18n de los dashboards', () => {
   it.each(LOCALES)(
-    'R29: las 27 claves de los dashboards (36 de UI-02-web menos las nueve que retira F-06-web) existen en su grupo y con texto en el idioma %s',
+    'R29: las 18 claves de los dashboards (36 de UI-02-web menos las nueve que retira F-06-web y las nueve que retira F-07-web) existen en su grupo y con texto en el idioma %s',
     (locale) => {
-      expect(entries).toHaveLength(27);
+      expect(entries).toHaveLength(18);
       for (const [key, { group }] of entries) {
         const other: Group = group === 'common' ? 'features' : 'common';
         expect(
@@ -287,10 +251,13 @@ describe('UI-02-web catálogos i18n de los dashboards', () => {
     expect(translate('en', 'dash_retry_named', { name: 'Sede Este' })).toBe(
       'Retry: Sede Este',
     );
-    expect(translate('de', 'dash_sites_count', { count: 3 })).toContain('3');
+    // F-07-web retira dash_sites_count y dash_sites_count_one: se prueban dash_retry_named y dash_at_least.
+    expect(translate('de', 'dash_retry_named', { name: 'Sede Sur' })).toContain(
+      'Sede Sur',
+    );
     // F-06-web retira dash_recent_footer: el parámetro {count} se prueba con dash_at_least.
     expect(translate('fr', 'dash_at_least', { count: 8 })).toContain('8');
-    expect(translate('pt', 'dash_sites_count_one')).toContain('1');
+    expect(translate('pt', 'dash_at_least', { count: 1 })).toContain('1');
     for (const locale of LOCALES) {
       expect(translate(locale, 'dash_stat_forbidden')).not.toBe(
         'dash_stat_forbidden',
@@ -364,7 +331,8 @@ const DASHBOARDS = [
     role: 'ADMIN',
     path: '/reportes',
     title: 'Reportes',
-    panel: 'Atenciones por sede',
+    // F-07-web: el tablero de reportes sustituye al panel por sede.
+    panel: 'De la llegada al triage',
   },
 ] as const satisfies ReadonlyArray<{
   role: StaffRole;
@@ -381,6 +349,8 @@ function dashboardApi(role: StaffRole, routes: Record<string, Handler> = {}) {
     [PRE_REGISTRATIONS]: json(200, [pendingPreRegistration]),
     [ENCOUNTERS]: encountersFor(() => 3),
     [QUEUE]: queueResponse(),
+    // F-07-web: /reportes lee el resumen de indicadores.
+    [GET_SUMMARY]: summaryResponse(),
     ...routes,
   });
 }
@@ -675,7 +645,8 @@ const ALLOWED_REQUESTS = [
   { role: 'PHYSICIAN', path: '/cola', requests: [ME, TENANTS, QUEUE] },
   { role: 'NURSE', path: '/cola', requests: [ME, TENANTS, QUEUE] },
   { role: 'ADMIN', path: '/cola', requests: [ME, TENANTS, QUEUE] },
-  { role: 'ADMIN', path: '/reportes', requests: [ME, TENANTS, ENCOUNTERS] },
+  // F-07-web R2: el tablero solo lee el perfil, las sedes y el resumen.
+  { role: 'ADMIN', path: '/reportes', requests: [ME, TENANTS, GET_SUMMARY] },
 ] as const;
 
 const FORBIDDEN_CASES = Object.entries(FORBIDDEN).flatMap(([role, paths]) =>
@@ -1043,7 +1014,8 @@ const PRIVACY_SCENARIOS: Array<{
     path: '/reportes',
     routes: {},
     run: async ({ user, net }) => {
-      await screen.findByText(SITE_NORTE.name);
+      // F-07-web: el primer panel del tablero en lugar de la tabla por sede.
+      await screen.findByRole('region', { name: 'De la llegada al triage' });
       await settled();
       await refresh(user, net);
     },
@@ -1194,7 +1166,7 @@ describe('UI-02-web arquitectura y contrato', () => {
       'src/features/triage/components/TriageTrayPage.tsx',
       // F-06-web D11: QueuePage.tsx ya no lee atenciones (la invalidación de ENCOUNTERS_KEY vive
       // en features/queue/hooks/useQueueTransition.ts), así que sale de esta lista.
-      'src/features/reports/components/ReportsPage.tsx',
+      // F-07-web: ReportsPage.tsx tampoco (lee GET /reports/summary), así que sale también.
     ])
       expect(readFileSync(file, 'utf8'), file).toMatch(
         /from '\.\.\/\.\.\/\.\.\/shared\/hooks\/useEncounter/,
@@ -1289,8 +1261,6 @@ const LABEL_KEYS = [
   'dash_stat_triaged',
   'dash_stat_in_care',
   'dash_col_action',
-  'dash_reports_by_site',
-  'dash_reports_pending_title',
   'feature_tray_pending',
   'clinical_pending',
   'feature_pr_label',

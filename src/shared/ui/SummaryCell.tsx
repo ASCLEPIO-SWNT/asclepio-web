@@ -2,6 +2,7 @@ import {
   ExclamationTriangleIcon,
   LockClosedIcon,
 } from '@heroicons/react/24/outline';
+import type { ReactNode } from 'react';
 import { useI18n } from '../i18n';
 import type { IconComponent, Tone } from '../lib/encounterStatus';
 import type { IndicatorState } from '../lib/indicator';
@@ -14,6 +15,8 @@ import type { IndicatorState } from '../lib/indicator';
  * La carga lleva `aria-busy` y texto oculto; el error muestra la etiqueta, «No se pudo cargar»
  * y «Reintentar» con el nombre accesible «Reintentar: {indicador}»; el 403, «Sin permiso».
  * El error gana a los datos antiguos: con `error` o `forbidden` no se pinta la cifra.
+ * F-07-web D11: `display`, si llega, sustituye a `value` (un porcentaje ya formateado o «Sin
+ * datos»), y sin `onRetry` el error no ofrece «Reintentar» (un periodo inválido no se repite).
  */
 export function SummaryCell({
   label,
@@ -23,6 +26,7 @@ export function SummaryCell({
   value,
   capped = false,
   onRetry,
+  display,
 }: {
   label: string;
   icon: IconComponent;
@@ -31,6 +35,7 @@ export function SummaryCell({
   value?: number;
   capped?: boolean;
   onRetry?: () => void;
+  display?: ReactNode;
 }) {
   const { t } = useI18n();
   if (state === 'loading') {
@@ -59,7 +64,7 @@ export function SummaryCell({
         <span className="summary__error">
           {t(state === 'error' ? 'dash_stat_error' : 'dash_stat_forbidden')}
         </span>
-        {state === 'error' && (
+        {state === 'error' && onRetry && (
           <button
             type="button"
             className="button button--secondary button--sm"
@@ -79,8 +84,8 @@ export function SummaryCell({
       </span>
       <span className="summary__label">{label}</span>
       <span className="summary__value">
-        {value}
-        {capped && (
+        {display ?? value}
+        {display === undefined && capped && (
           <>
             <span className="summary__plus" aria-hidden="true">
               +

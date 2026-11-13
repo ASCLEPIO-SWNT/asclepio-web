@@ -42,6 +42,8 @@ export const WEB_OPERATIONS = [
   'GET /api/v1/pre-registrations',
   'GET /api/v1/public/tenants',
   'GET /api/v1/queue', // F-06-web T4
+  'GET /api/v1/reports/encounters.csv', // F-07-web T7
+  'GET /api/v1/reports/summary', // F-07-web T3
   'POST /api/v1/auth/login',
   'POST /api/v1/encounters',
   'POST /api/v1/encounters/{id}/cancel',

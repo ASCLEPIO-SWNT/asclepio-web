@@ -21,6 +21,10 @@ import {
   GET_QUEUE,
   queueResponse,
 } from '../../features/queue/testing/queueFixtures';
+import {
+  GET_SUMMARY,
+  summaryResponse,
+} from '../../features/reports/testing/reportFixtures';
 
 /** Texto neutral de la franja «pendiente» en cada idioma (D10). */
 const NEUTRAL: Record<(typeof LOCALES)[number], string> = {
@@ -50,6 +54,8 @@ function dashboardApi(role: StaffRole) {
     'GET /api/v1/encounters': encountersFor(() => 3),
     // F-06-web: /cola lee la cola priorizada.
     [GET_QUEUE]: queueResponse(),
+    // F-07-web: /reportes lee el resumen de indicadores.
+    [GET_SUMMARY]: summaryResponse(),
   });
 }
 
@@ -61,20 +67,7 @@ afterEach(() => {
 });
 
 describe('UI-04-web franja «pendiente» sin códigos internos', () => {
-  it.each([
-    ['ADMIN', '/reportes', 'Reportes', 'Indicadores y reportes'],
-  ] as const)(
-    'R10: %s ve en %s la franja con el texto neutral, sin código de feature',
-    async (role, path, title, strip) => {
-      dashboardApi(role);
-      renderApp({ entries: [path], stored: true });
-      await screen.findByRole('heading', { level: 1, name: title });
-      const pending = screen.getByRole('region', { name: strip });
-      expect(pending).toHaveTextContent(NEUTRAL.es);
-      expect(pending.textContent).not.toMatch(FEATURE_CODE);
-    },
-  );
-
+  // F-07-web D13: /reportes ya no tiene franja «pendiente»; el componente sigue probado abajo.
   it.each(LOCALES)(
     'R10: en %s la franja dice el texto neutral, sin código de feature',
     (locale) => {

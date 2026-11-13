@@ -87,3 +87,11 @@ export type TriageDecisionRequest = NonNullable<
 export type Queue = Schemas['QueueDto'];
 export type QueueItem = Schemas['QueueItemDto'];
 export type QueuePatient = Schemas['QueuePatientDto'];
+
+// F-07-web (contrato 0.9.0): reportes. Solo alias de tipos generados.
+export type ReportSummary = Schemas['ReportSummaryDto'];
+export type ReportLevelTime = Schemas['LevelTimeStatsDto'];
+export type ReportCareTime = Schemas['CareTimeStatsDto'];
+export type ReportCountPercent = Schemas['CountPercentDto'];
+export type ReportSummaryQuery =
+  paths['/api/v1/reports/summary']['get']['parameters']['query'];

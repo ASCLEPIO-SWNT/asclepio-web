@@ -145,12 +145,12 @@
         "F-05-web",
         "F-07-api"
       ],
-      "consumes_contract": null,
+      "consumes_contract": "0.9.0",
       "acceptance": [
         "Ver ../asclepio-api/docs/product/features/F-07.md (F-07.AC6)"
       ],
       "sdd": true,
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "UI-01-web",

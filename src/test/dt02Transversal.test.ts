@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { CONSUMED_CONTRACT } from '../shared/api/client';
 import { LOCALES } from '../shared/i18n/locale';
@@ -9,23 +8,12 @@ import {
   CLINICAL_RULES_BODY_SHA256,
   EXPECTED_CONTRACT,
   SCHEMA_SHA256,
-  WEB_OPERATIONS,
 } from './contractBaseline';
 
 const CLINICAL_FILE = 'src/features/triage/clinicalContract.generated.ts';
 
 const sha256 = (content: string | Buffer) =>
   createHash('sha256').update(content).digest('hex');
-
-/** Archivos `.ts`/`.tsx` de aplicación: sin pruebas, sin Paraglide generado. */
-function sources(dir: string): string[] {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const path = join(dir, entry.name);
-    if (entry.isDirectory())
-      return entry.name === 'paraglide' ? [] : sources(path);
-    return /\.tsx?$/.test(path) && !/\.test\.tsx?$/.test(path) ? [path] : [];
-  });
-}
 
 describe('DT-02-web contrato', () => {
   it('R1: declara el contrato 0.9.0 y los tipos generados coinciden con las huellas vigentes', () => {
@@ -74,33 +62,6 @@ describe('DT-02-web contrato', () => {
       schema.indexOf('};', schema.indexOf('QueueItemDto: {')),
     );
     expect(dto).toMatch(/minutesSinceTriage: number \| null;/);
-  });
-});
-
-describe('DT-02-web reportes fuera de alcance', () => {
-  const MESSAGE =
-    'Los reportes (/api/v1/reports/*) los incorpora F-07-web: hasta entonces la web no los usa (DT-02-web R2, D3). F-07-web retira esta prueba.';
-
-  it('R2: ni WEB_OPERATIONS ni el código de aplicación usan /api/v1/reports, y client.ts no tiene alias de reportes', () => {
-    expect(
-      WEB_OPERATIONS.filter((operation) =>
-        operation.includes('/api/v1/reports'),
-      ),
-      MESSAGE,
-    ).toEqual([]);
-    const appFiles = sources('src').filter(
-      (file) =>
-        !file.endsWith('schema.d.ts') &&
-        !file.includes('/testing/') &&
-        !file.startsWith(join('src', 'test')),
-    );
-    expect(appFiles.length).toBeGreaterThan(20);
-    for (const file of appFiles)
-      expect(readFileSync(file, 'utf8'), `${file}: ${MESSAGE}`).not.toMatch(
-        /\/api\/v1\/reports|ReportSummary|Schemas\['Report/,
-      );
-    const client = readFileSync('src/shared/api/client.ts', 'utf8');
-    expect(client, MESSAGE).not.toMatch(/Report/);
   });
 });
 

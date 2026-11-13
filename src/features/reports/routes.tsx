@@ -3,9 +3,8 @@ import { REPORT_PAGES } from './pages';
 import { ReportsPage } from './components/ReportsPage';
 
 /**
- * Dashboard de administración (F-07-web aún no trae los reportes): solo ADMIN, según la matriz
- * de `app/router`. Hoy solo monta las atenciones por estado y la espera de triage por sede, con
- * la franja «pendiente» de F-07.
+ * Tablero de reportes de F-07 (F-07-web): solo ADMIN, según la matriz de `app/router`. Muestra
+ * los indicadores de `GET /reports/summary` del periodo elegido y descarga el CSV interno.
  */
 export const reportRoutes: RouteObject[] = [
   {

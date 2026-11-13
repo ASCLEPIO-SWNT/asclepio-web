@@ -967,3 +967,38 @@ describe('UI-02-web componentes del dashboard', () => {
     });
   });
 });
+
+describe('F-07-web celda de la barra con valor ya formateado', () => {
+  it('R1: con display, SummaryCell pinta ese contenido en lugar de value y sin «+», y sin onRetry el error no ofrece «Reintentar»', () => {
+    const { rerender } = render(
+      <ul>
+        <SummaryCell
+          label="Cumplimiento Triage II"
+          icon={ClockIcon}
+          tone="accent"
+          state="ready"
+          value={66}
+          capped
+          display={<span>66,7 %</span>}
+        />
+      </ul>,
+    );
+    const cell = screen.getByRole('listitem');
+    expect(cell.querySelector('.summary__value')).toHaveTextContent(/^66,7 %$/);
+    expect(cell.querySelector('.summary__plus')).toBeNull();
+    expect(within(cell).queryByText(/Al menos/)).toBeNull();
+
+    rerender(
+      <ul>
+        <SummaryCell
+          label="Cumplimiento Triage II"
+          icon={ClockIcon}
+          tone="accent"
+          state="error"
+        />
+      </ul>,
+    );
+    expect(screen.getByRole('listitem')).toHaveTextContent('No se pudo cargar');
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
+  });
+});

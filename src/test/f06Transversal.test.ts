@@ -64,8 +64,8 @@ describe('F-06-web operaciones HTTP', () => {
       'POST /api/v1/encounters/{id}/close',
     ])
       expect(WEB_OPERATIONS).toContain(operation);
-    // Las 20 de F-05-web más las tres de la cola.
-    expect(WEB_OPERATIONS).toHaveLength(23);
+    // Las 23 de F-06-web más las dos de reportes (F-07-web).
+    expect(WEB_OPERATIONS).toHaveLength(25);
   });
 });
 

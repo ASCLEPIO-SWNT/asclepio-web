@@ -233,6 +233,22 @@
       ],
       "sdd": true,
       "status": "done"
+    },
+    {
+      "id": "F-11-web",
+      "global_id": "F-11",
+      "name": "symptom_interview_view",
+      "title": "Respuestas de la entrevista y señales de alarma",
+      "description": "Bloque de respuestas del paciente (no verificadas) en la captura clínica y el detalle; insignia de señal de alarma en captura, recepción y cola.",
+      "depends_on": [
+        "F-06-web"
+      ],
+      "consumes_contract": "0.11.0",
+      "acceptance": [
+        "Ver ../asclepio-api/docs/product/features/F-11.md (F-11.AC6, AC7)"
+      ],
+      "sdd": true,
+      "status": "spec_ready"
     }
   ]
 }

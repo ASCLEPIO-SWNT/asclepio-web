@@ -3,7 +3,7 @@ import type { components, paths } from './schema';
 import { session } from './session';
 
 /** Versión del contrato que consume esta web (feature_list.json → consumes_contract). */
-export const CONSUMED_CONTRACT = '0.6.0';
+export const CONSUMED_CONTRACT = '0.9.0';
 
 const LOGIN_PATH = '/api/v1/auth/login';
 
@@ -82,3 +82,16 @@ export type TriageDecisionAction = Schemas['TriageDecisionAction'];
 export type TriageDecisionRequest = NonNullable<
   paths['/api/v1/encounters/{id}/triage-decision']['post']['requestBody']
 >['content']['application/json'];
+
+// F-06-web (contrato 0.7.0): cola priorizada. Solo alias de tipos generados.
+export type Queue = Schemas['QueueDto'];
+export type QueueItem = Schemas['QueueItemDto'];
+export type QueuePatient = Schemas['QueuePatientDto'];
+
+// F-07-web (contrato 0.9.0): reportes. Solo alias de tipos generados.
+export type ReportSummary = Schemas['ReportSummaryDto'];
+export type ReportLevelTime = Schemas['LevelTimeStatsDto'];
+export type ReportCareTime = Schemas['CareTimeStatsDto'];
+export type ReportCountPercent = Schemas['CountPercentDto'];
+export type ReportSummaryQuery =
+  paths['/api/v1/reports/summary']['get']['parameters']['query'];

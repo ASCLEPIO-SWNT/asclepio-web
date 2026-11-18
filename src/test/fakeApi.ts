@@ -96,6 +96,19 @@ export function problem(
     );
 }
 
+/** Respuesta `text/csv` (F-07-web D12): el cuerpo tal cual y las cabeceras dadas. */
+export function csv(
+  status: number,
+  body: string,
+  headers: Record<string, string> = {},
+): Handler {
+  return () =>
+    new Response(body, {
+      status,
+      headers: { 'Content-Type': 'text/csv; charset=utf-8', ...headers },
+    });
+}
+
 /** Error sin respuesta HTTP (red caída, CORS): `fetch` rechaza con TypeError. */
 export function networkError(): Handler {
   return () => Promise.reject(new TypeError('Failed to fetch'));

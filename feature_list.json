@@ -128,12 +128,12 @@
         "F-05-web",
         "F-06-api"
       ],
-      "consumes_contract": null,
+      "consumes_contract": "0.7.0",
       "acceptance": [
         "Ver ../asclepio-api/docs/product/features/F-06.md (F-06.AC2–AC5)"
       ],
       "sdd": true,
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "F-07-web",
@@ -145,12 +145,12 @@
         "F-05-web",
         "F-07-api"
       ],
-      "consumes_contract": null,
+      "consumes_contract": "0.9.0",
       "acceptance": [
         "Ver ../asclepio-api/docs/product/features/F-07.md (F-07.AC6)"
       ],
       "sdd": true,
-      "status": "pending"
+      "status": "done"
     },
     {
       "id": "UI-01-web",
@@ -214,6 +214,22 @@
       "consumes_contract": "0.4.0",
       "acceptance": [
         "Ver specs/UI-04-web/requirements.md; hallazgos H1–H16 en progress/current/UI-04-web.md."
+      ],
+      "sdd": true,
+      "status": "done"
+    },
+    {
+      "id": "DT-02-web",
+      "global_id": "DT-02",
+      "name": "queue_triage_clock",
+      "title": "Cola: tiempo desde la clasificación (Res. 256/2016)",
+      "description": "Adapta la cola de F-06-web al contrato 0.9.0 de DT-02-api: minutesSinceTriage, alerta y orden dentro de cada nivel contados desde la clasificación; la web solo muestra lo que manda el servidor.",
+      "depends_on": [
+        "F-06-web"
+      ],
+      "consumes_contract": "0.9.0",
+      "acceptance": [
+        "Ver ../asclepio-api/specs/DT-02-api/ (impacto en F-06-web) y ../asclepio-api/docs/product/features/F-06.md (AC2, PA-F06-1, PA-F06-2, enmendados)"
       ],
       "sdd": true,
       "status": "done"

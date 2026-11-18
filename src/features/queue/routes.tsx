@@ -3,9 +3,8 @@ import { QUEUE_PAGES } from './pages';
 import { QueuePage } from './components/QueuePage';
 
 /**
- * Dashboard de medicina (F-06-web aún no trae la cola): PHYSICIAN, NURSE y ADMIN, según la matriz
- * de `app/router`. Hoy solo monta las atenciones por estado y las recientes, con la franja
- * «pendiente» de F-06.
+ * Cola priorizada (F-06-web): PHYSICIAN, NURSE y ADMIN, según la matriz de `app/router`. Solo
+ * PHYSICIAN ve las acciones «Iniciar atención» y «Cerrar atención».
  */
 export const queueRoutes: RouteObject[] = [
   {

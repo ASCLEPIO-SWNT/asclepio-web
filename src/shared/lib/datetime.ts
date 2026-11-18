@@ -60,3 +60,31 @@ export function formatCivilDate(date: string): string {
   const [, year, month, day] = match;
   return `${day}/${month}/${year}`;
 }
+
+// F-07-web D4: fechas civiles para el periodo por defecto de los reportes. Son fechas de
+// calendario para un filtro, no horas legales: la web nunca envía una hora.
+const bogotaCivil = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'America/Bogota',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/** Fecha civil `YYYY-MM-DD` de `now` en America/Bogota, sin depender de la zona del navegador. */
+export function bogotaToday(now: Date = new Date()): string {
+  const parts = Object.fromEntries(
+    bogotaCivil.formatToParts(now).map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+/**
+ * Suma `days` (negativos para restar) a una fecha civil `YYYY-MM-DD` con aritmética UTC sobre el
+ * calendario: no usa horas ni la zona del proceso.
+ */
+export function addCivilDays(date: string, days: number): string {
+  const [year, month, day] = date.split('-').map(Number);
+  const shifted = new Date(Date.UTC(year, month - 1, day + days));
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${shifted.getUTCFullYear()}-${pad(shifted.getUTCMonth() + 1)}-${pad(shifted.getUTCDate())}`;
+}

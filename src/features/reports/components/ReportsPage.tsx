@@ -1,156 +1,278 @@
 import {
-  ArrowRightIcon,
-  ClipboardDocumentListIcon,
+  ChartBarIcon,
+  ClipboardDocumentCheckIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  UsersIcon,
 } from '@heroicons/react/24/outline';
 import { useIsFetching, useQueryClient } from '@tanstack/react-query';
-import type { ReactNode } from 'react';
-import { Link } from 'react-router';
-import { useEncounterCount } from '../../../shared/hooks/useEncounterCount';
-import { ENCOUNTERS_KEY } from '../../../shared/hooks/useEncounters';
+import { useState, type ReactNode } from 'react';
+import type { ReportSummary } from '../../../shared/api/client';
 import { useSites } from '../../../shared/hooks/useSites';
 import { useI18n } from '../../../shared/i18n';
 import {
-  ENCOUNTER_STATUS_VIEW,
-  INDICATOR_STATUSES,
-} from '../../../shared/lib/encounterStatus';
-import { indicatorOf } from '../../../shared/lib/indicator';
+  bogotaToday,
+  formatCivilDate,
+  formatDateTimeBogota,
+} from '../../../shared/lib/datetime';
+import { errorClassKey } from '../../../shared/lib/errors';
+import type { IndicatorState } from '../../../shared/lib/indicator';
 import { problemOf, statusOf } from '../../../shared/lib/problem';
 import { DASHBOARD_REFRESH_MS } from '../../../shared/lib/refresh';
 import { DashboardPage } from '../../../shared/ui/DashboardPage';
 import { LiveNote } from '../../../shared/ui/LiveNote';
 import { PageHeader } from '../../../shared/ui/PageHeader';
-import { Panel } from '../../../shared/ui/Panel';
 import { PanelState } from '../../../shared/ui/PanelState';
-import { PendingStrip } from '../../../shared/ui/PendingStrip';
 import { RefreshButton } from '../../../shared/ui/RefreshButton';
 import { SummaryBar } from '../../../shared/ui/SummaryBar';
 import { SummaryCell } from '../../../shared/ui/SummaryCell';
-import { SiteCountTable } from './SiteCountTable';
+import { SUMMARY_KEY, useReportSummary } from '../hooks/useReportSummary';
+import {
+  defaultPeriod,
+  formatCount,
+  formatPercent,
+  type ReportPeriod,
+} from '../reportsView';
+import { CarePanel } from './CarePanel';
+import { ConcordancePanel } from './ConcordancePanel';
+import { ExportPanel } from './ExportPanel';
+import { FallbackPanel } from './FallbackPanel';
+import { PERIOD_ERROR_KEYS } from './periodErrors';
+import { PeriodForm } from './PeriodForm';
+import { ReportValue } from './ReportValue';
+import { TimeToTriagePanel } from './TimeToTriagePanel';
 
-/** Etiqueta de cada indicador: la de la barra de resumen, en plural («Clasificadas»). */
-const INDICATOR_LABELS = {
-  WAITING_TRIAGE: 'dash_stat_waiting',
-  TRIAGED: 'dash_stat_triaged',
-  IN_CARE: 'dash_stat_in_care',
-} as const;
+const PERIOD_ERROR_ID = 'reports-period-error';
+
+/** Un panel con un único estado (carga, error o sin permiso) en lugar de los indicadores (D9). */
+function StatePanel({ children }: { children: ReactNode }) {
+  return (
+    <div className="panel">
+      <div className="panel__body">{children}</div>
+    </div>
+  );
+}
 
 /**
- * `/reportes`: dashboard de administración (UI-02-web R15, R17 y R18). Barra de resumen con las
- * atenciones en espera de triage, clasificadas y en atención (una petición cada una, sin sede ni
- * filtro); panel con la espera de triage por sede (una petición por sede, sin datos de
- * pacientes) y la franja «pendiente» de F-07, sin cifras de reportes ni gráficos. Todo se repite
- * cada 30 s con la pestaña visible y con «Actualizar», que invalida las lecturas de atenciones;
- * las sedes se piden una vez y solo repite su «Reintentar» (R24).
+ * Error del periodo (R8): un aviso sin «Reintentar», porque repetir el mismo periodo no cambia
+ * nada. Su mensaje es la descripción de los campos rechazados.
+ */
+function PeriodError({ message }: { message: string }) {
+  return (
+    <div className="panel-state" role="alert">
+      <span className="panel-state__icon tone--error">
+        <ExclamationTriangleIcon aria-hidden="true" />
+      </span>
+      <p id={PERIOD_ERROR_ID} className="panel-state__msg">
+        {message}
+      </p>
+    </div>
+  );
+}
+
+/**
+ * `/reportes`: tablero de reportes de F-07 (F-07-web D2, D9). Encabezado con «Actualizar», región
+ * «Periodo», barra «Indicadores» y los paneles de tiempos, cumplimiento, concordancia y respaldo,
+ * todos de un único `GET /reports/summary` del periodo aplicado, y «Exportar» con el CSV. La web
+ * no calcula ningún indicador: muestra los del servidor con el formato del idioma.
  */
 export function ReportsPage() {
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const queryClient = useQueryClient();
-  const counts = {
-    WAITING_TRIAGE: useEncounterCount({ status: 'WAITING_TRIAGE' }),
-    TRIAGED: useEncounterCount({ status: 'TRIAGED' }),
-    IN_CARE: useEncounterCount({ status: 'IN_CARE' }),
-  };
+  // R5, D4: el periodo por defecto se calcula una sola vez, al montar.
+  const [applied, setApplied] = useState<ReportPeriod>(() =>
+    defaultPeriod(bogotaToday()),
+  );
   const sites = useSites();
-  const fetching = useIsFetching({ queryKey: ENCOUNTERS_KEY }) > 0;
-  const siteList = sites.data ?? [];
+  const summary = useReportSummary(applied);
+  const fetching = useIsFetching({ queryKey: SUMMARY_KEY }) > 0;
 
-  let content: ReactNode;
-  if (sites.isPending) {
-    content = (
-      <PanelState kind="loading" message={t('dash_reports_sites_loading')} />
-    );
-  } else if (sites.isError) {
-    content =
-      statusOf(problemOf(sites.error)) === 403 ? (
+  const status = summary.isError ? statusOf(problemOf(summary.error)) : null;
+  const forbidden = status === 403;
+  const periodErrorKey =
+    status === null ? undefined : PERIOD_ERROR_KEYS[status];
+  const data: ReportSummary | undefined =
+    forbidden || periodErrorKey ? undefined : summary.data;
+  const problem = problemOf(summary.error);
+  const invalid =
+    periodErrorKey && problem.kind === 'other'
+      ? problem.fieldErrors
+          .map((error) => error.field)
+          .filter((field): field is 'from' | 'to' =>
+            ['from', 'to'].includes(field),
+          )
+      : [];
+
+  const cellState: IndicatorState = forbidden
+    ? 'forbidden'
+    : data
+      ? 'ready'
+      : summary.isError
+        ? 'error'
+        : 'loading';
+  // Un periodo inválido no se repite: sus celdas no ofrecen «Reintentar» (R8).
+  const retryCell = periodErrorKey ? undefined : () => void summary.refetch();
+
+  let main: ReactNode;
+  if (forbidden) {
+    main = (
+      <StatePanel>
         <PanelState kind="forbidden" message={t('common_forbidden')} />
-      ) : (
+      </StatePanel>
+    );
+  } else if (periodErrorKey) {
+    main = (
+      <StatePanel>
+        <PeriodError message={t(periodErrorKey)} />
+      </StatePanel>
+    );
+  } else if (data) {
+    main = (
+      <>
+        <p className="report-meta">
+          <span>
+            {t('reports_period_range', {
+              from: formatCivilDate(data.period.from),
+              to: formatCivilDate(data.period.to),
+            })}
+          </span>
+          <span>{siteName(data.period.siteId)}</span>
+          <time dateTime={data.generatedAt}>
+            {t('reports_generated_at', {
+              datetime: formatDateTimeBogota(data.generatedAt),
+            })}
+          </time>
+          <LiveNote seconds={DASHBOARD_REFRESH_MS / 1000} />
+        </p>
+        {/* D9, R21: un refresco fallido conserva el último éxito con un aviso. */}
+        {summary.isError && (
+          <div className="status status--warn report-notice">
+            <span>
+              {t('reports_refresh_failed', {
+                datetime: formatDateTimeBogota(data.generatedAt),
+              })}
+            </span>
+            <button
+              type="button"
+              className="button button--secondary button--sm"
+              aria-busy={summary.isFetching || undefined}
+              onClick={() => void summary.refetch()}
+            >
+              {t('common_retry')}
+            </button>
+          </div>
+        )}
+        {data.population.encounters === 0 && (
+          <div className="status report-notice report-notice--empty">
+            <InformationCircleIcon aria-hidden="true" />
+            <span>{t('reports_empty')}</span>
+          </div>
+        )}
+        <TimeToTriagePanel summary={data} />
+        <CarePanel summary={data} />
+        <ConcordancePanel summary={data} />
+        <FallbackPanel summary={data} />
+      </>
+    );
+  } else if (summary.isError) {
+    main = (
+      <StatePanel>
         <PanelState
           kind="error"
-          message={t('feature_sites_error')}
-          retrying={sites.isFetching}
-          error={sites.error}
-          onRetry={() => void sites.refetch()}
+          message={t(errorClassKey(summary.error) ?? 'common_error_server')}
+          retrying={summary.isFetching}
+          onRetry={() => void summary.refetch()}
         />
-      );
-  } else if (siteList.length === 0) {
-    content = (
-      <PanelState
-        kind="empty"
-        icon={ClipboardDocumentListIcon}
-        message={t('dash_reports_sites_empty')}
-      />
+      </StatePanel>
     );
   } else {
-    content = <SiteCountTable sites={siteList} labelledBy="reports-by-site" />;
+    main = (
+      <StatePanel>
+        <PanelState kind="loading" message={t('reports_loading')} />
+      </StatePanel>
+    );
+  }
+
+  function siteName(siteId: string | null): string | null {
+    if (siteId === null) return t('feature_sites_all');
+    return sites.data?.find((site) => site.id === siteId)?.name ?? null;
   }
 
   return (
     <DashboardPage
       header={
-        <PageHeader
-          title={t('common_nav_reportes')}
-          description={t('dash_reports_lead')}
-          actions={
-            <RefreshButton
-              onRefresh={() =>
-                void queryClient.invalidateQueries({ queryKey: ENCOUNTERS_KEY })
-              }
-              busy={fetching}
-            />
-          }
-        />
+        <>
+          <PageHeader
+            title={t('common_nav_reportes')}
+            description={t('reports_lead')}
+            actions={
+              <RefreshButton
+                onRefresh={() =>
+                  void queryClient.invalidateQueries({ queryKey: SUMMARY_KEY })
+                }
+                busy={fetching}
+              />
+            }
+          />
+          <PeriodForm
+            applied={applied}
+            onApply={setApplied}
+            invalid={invalid}
+            describedBy={PERIOD_ERROR_ID}
+          />
+        </>
       }
       summary={
         <SummaryBar>
-          {INDICATOR_STATUSES.map((status) => {
-            const query = counts[status];
-            const view = ENCOUNTER_STATUS_VIEW[status];
-            return (
-              <SummaryCell
-                key={status}
-                label={t(INDICATOR_LABELS[status])}
-                icon={view.icon}
-                tone={view.tone}
-                state={indicatorOf(query)}
-                value={query.data?.count}
-                capped={query.data?.capped}
-                onRetry={() => void query.refetch()}
-              />
-            );
-          })}
+          <SummaryCell
+            label={t('reports_stat_encounters')}
+            icon={UsersIcon}
+            tone="neutral"
+            state={cellState}
+            display={
+              data && (
+                <ReportValue
+                  text={formatCount(data.population.encounters, locale)}
+                />
+              )
+            }
+            onRetry={retryCell}
+          />
+          <SummaryCell
+            label={t('reports_stat_triaged')}
+            icon={ClipboardDocumentCheckIcon}
+            tone="accent"
+            state={cellState}
+            display={
+              data && (
+                <ReportValue
+                  text={formatCount(data.population.triaged, locale)}
+                />
+              )
+            }
+            onRetry={retryCell}
+          />
+          <SummaryCell
+            label={t('reports_stat_compliance')}
+            icon={ChartBarIcon}
+            tone="ok"
+            state={cellState}
+            display={
+              data && (
+                <ReportValue
+                  text={formatPercent(data.compliance.percent, locale)}
+                />
+              )
+            }
+            onRetry={retryCell}
+          />
         </SummaryBar>
       }
       main={
-        <Panel
-          id="reports-by-site"
-          title={t('dash_reports_by_site')}
-          meta={<LiveNote seconds={DASHBOARD_REFRESH_MS / 1000} />}
-          footer={
-            sites.isSuccess && siteList.length > 0 ? (
-              <>
-                <span>
-                  {siteList.length === 1
-                    ? t('dash_sites_count_one')
-                    : t('dash_sites_count', { count: siteList.length })}
-                </span>
-                <Link className="link-more" to="/atenciones">
-                  {t('dash_view_all_encounters')}
-                  <ArrowRightIcon aria-hidden="true" />
-                </Link>
-              </>
-            ) : undefined
-          }
-        >
-          {content}
-        </Panel>
-      }
-      pending={
-        <PendingStrip
-          id="reports-pending"
-          title={t('dash_reports_pending_title')}
-        >
-          {t('dash_reports_pending_body')}
-        </PendingStrip>
+        <>
+          {main}
+          <ExportPanel period={applied} />
+        </>
       }
     />
   );

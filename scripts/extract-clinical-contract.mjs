@@ -5,7 +5,10 @@ const contract = JSON.parse(
 );
 // F-04-web D9: 0.5.0 y 0.6.0 no cambian las reglas clínicas de F-03 (revisado el 2026-11-09).
 // F-05-web D11: 0.7.0 no cambia las reglas clínicas de F-03 (revisado el 2026-11-10).
-if (!['0.4.0', '0.5.0', '0.6.0', '0.7.0'].includes(contract.info.version))
+// DT-02-web D1: 0.9.0 no cambia las reglas clínicas de F-03 ni los límites de decisión de F-05 (revisado el 2026-11-11); añade /reports/* (F-07-api), que la web no usa todavía.
+if (
+  !['0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.9.0'].includes(contract.info.version)
+)
   throw new Error(
     'Review F-03 clinical rules before consuming another contract version.',
   );

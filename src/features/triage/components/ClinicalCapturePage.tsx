@@ -13,6 +13,7 @@ import { problemOf, statusOf } from '../../../shared/lib/problem';
 import { LoadError } from '../../../shared/ui/LoadError';
 import { LoadingState } from '../../../shared/ui/LoadingState';
 import { PatientDetails } from '../../../shared/ui/PatientDetails';
+import { RedFlagBadge } from '../../../shared/ui/RedFlagBadge';
 import { UnsavedChangesGuard } from '../../../shared/ui/UnsavedChangesGuard';
 import { ViewForbidden } from '../../../shared/ui/ViewForbidden';
 import { useClinicalCapture } from '../hooks/useClinicalCapture';
@@ -22,6 +23,7 @@ import { useTriageDecision } from '../hooks/useTriageDecision';
 import { trayFilters, traySearch } from '../trayFilters';
 import { ClinicalCaptureReadout } from './ClinicalCapturePanel';
 import { SymptomFindingsForm } from './SymptomFindingsForm';
+import { SymptomInterviewBlock } from './SymptomInterviewBlock';
 import { TriageDecisionCard } from './TriageDecisionCard';
 import { TriageSuggestionPanel } from './TriageSuggestionPanel';
 import { VitalSignsForm } from './VitalSignsForm';
@@ -158,7 +160,18 @@ function ClinicalCapturePage({ encounterId }: { encounterId: string }) {
               <div className="clinical-context__complaint">
                 <h3>{t('clinical_original_complaint')}</h3>
                 <p>{detail.data.chiefComplaintText}</p>
+                {/* F-11-web R2: señales referidas por el paciente, junto al motivo. */}
+                {detail.data.redFlags.length > 0 && (
+                  <RedFlagBadge flags={detail.data.redFlags} />
+                )}
               </div>
+              {/* F-11-web R1/R6: debajo del motivo original y solo si hay entrevista. */}
+              {detail.data.symptomInterview && (
+                <SymptomInterviewBlock
+                  interview={detail.data.symptomInterview}
+                  headingLevel={3}
+                />
+              )}
               <div className="actions">
                 <Link to={`/atenciones/${encounterId}`}>
                   {t('feature_encounter_view')}

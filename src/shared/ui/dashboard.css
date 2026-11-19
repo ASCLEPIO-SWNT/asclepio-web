@@ -337,10 +337,12 @@
 /*
  * A 200 % de texto la insignia no siempre cabe en una línea (la de identidad en una tarjeta de
  * 222 px, la de la fila de una sede): envuelve en lugar de empujar el documento fuera de la ventana
- * (R32, R35). En una tabla con columnas sin apilar sigue sin partirse.
+ * (R32, R35). En una tabla con columnas sin apilar sigue sin partirse. La insignia de señal de
+ * alarma (F-11-web) también envuelve: su texto es largo.
  */
 .prereg__head .badge,
-.data-table--simple .badge {
+.data-table--simple .badge,
+.red-flags .badge {
   max-width: 100%;
   white-space: normal;
 }

@@ -5,21 +5,21 @@
  */
 
 /** Versión declarada en `CONSUMED_CONTRACT` y en `consumes_contract` de feature_list.json. */
-export const EXPECTED_CONTRACT = '0.9.0';
+export const EXPECTED_CONTRACT = '0.11.0';
 
 /**
  * SHA-256 de `src/shared/api/schema.d.ts` generado con `npm run api:types` desde el snapshot
- * publicado (snapshot publicado 0.9.0; DT-02-web D1).
+ * publicado (snapshot publicado 0.11.0; F-11-web T1).
  */
 export const SCHEMA_SHA256 =
-  'adf8fbd1549fbda526793396c512205ad3872fcdb4304377a377cd9075857178';
+  '64f0d5137d26550bde28f4f284322e43c6555cff806b2358d26ccd6d4ed0859f';
 
 /**
- * SHA-256 de `src/features/triage/clinicalContract.generated.ts` (snapshot publicado 0.9.0;
- * DT-02-web D1: solo cambia su cabecera).
+ * SHA-256 de `src/features/triage/clinicalContract.generated.ts` (snapshot publicado 0.11.0;
+ * F-11-web T1: solo cambia su cabecera).
  */
 export const CLINICAL_CONTRACT_SHA256 =
-  'b88898aa64cae4f12a1655f6102b966c31f575c41bc78f0f501dad69f8117b1b';
+  '7f144f79b7298268a5d505b840c49231c012193658bb2061ecdf2330ea6cad6c';
 
 /**
  * SHA-256 de `src/features/triage/clinicalContract.generated.ts` sin su primera línea (la

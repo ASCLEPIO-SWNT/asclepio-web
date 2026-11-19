@@ -432,6 +432,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/patient/queue-position": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Posición del paciente en la fila y espera estimada
+         * @description Instantánea de la atención activa del paciente del token: fase, posición dentro de la fase (el mismo orden de la cola del personal, limitado a su sede), personas delante y un rango de espera por el ritmo reciente de la sede (PA-F10-1, provisional). Sin atención activa → NO_ACTIVE. Nunca incluye identificadores, niveles de triage (tampoco el propio) ni datos de otros pacientes.
+         */
+        get: operations["PatientQueueController_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patient/queue-position/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Posición del paciente en vivo (Server-Sent Events)
+         * @description Stream text/event-stream (ADR 0009). Al abrirlo envía un evento `position` cuyo data es un QueuePositionDto; después envía uno nuevo solo cuando la instantánea cambia: en ≤ 2 s tras un registro, una decisión de triage o un cambio de estado en la sede, y en un recálculo cada 15 s. Si el recálculo no cambia nada, envía el comentario de latido `: ping`. Cuando la atención termina (CLOSED o CANCELLED) envía `position` con phase = DONE y cierra; también cierra al vencer el token. El cliente se reconecta con backoff. Los errores 400, 401 y 403 llegan antes de abrir el stream, en application/problem+json.
+         */
+        get: operations["PatientQueueController_stream"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/patient/symptom-interview/next-question": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post: operations["InterviewController_next"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/summary": {
         parameters: {
             query?: never;
@@ -665,6 +721,26 @@ export interface components {
             /** @description Texto del consentimiento (Markdown). */
             text: string;
         };
+        InterviewTurnDto: {
+            /** @enum {string} */
+            dimension: "ONSET" | "DURATION" | "INTENSITY" | "LOCATION" | "ASSOCIATED" | "HISTORY" | "MEDS_ALLERGIES" | "ALARM_SIGNS";
+            question: string;
+            /** @description Respuesta del paciente, no verificada. null = "No sé / prefiero no responder". */
+            answer: string | null;
+        };
+        SymptomInterviewDto: {
+            /**
+             * @description ON_DEVICE: modelo en el teléfono; SERVER: fallback next-question.
+             * @enum {string}
+             */
+            engine: "ON_DEVICE" | "SERVER";
+            modelId: string;
+            turns: components["schemas"]["InterviewTurnDto"][];
+            /** @description Señales de alarma que detectó el cliente (PA-F11-1, provisional), sin repetir. */
+            redFlags: ("CHEST_PAIN" | "BREATHING_DIFFICULTY" | "LOSS_OF_CONSCIOUSNESS" | "SEIZURE" | "SEVERE_BLEEDING" | "STROKE_SIGNS" | "SUICIDAL_IDEATION")[];
+            /** @enum {string} */
+            endedBy: "COMPLETE" | "MAX_QUESTIONS" | "RED_FLAG" | "PATIENT";
+        };
         CreatePreRegistrationDto: {
             /**
              * Format: uuid
@@ -674,6 +750,8 @@ export interface components {
             chiefComplaintText: string;
             /** @enum {string} */
             complaintSource: "TYPED" | "VOICE_ON_DEVICE";
+            /** @description Entrevista de síntomas de la app (F-11). Opcional: sin ella el pre-registro se crea como en 0.10.0. El servidor añade a redFlags las señales que detectan sus reglas sobre el motivo y las respuestas. */
+            interview?: components["schemas"]["SymptomInterviewDto"];
         };
         EncounterRefDto: {
             /** Format: uuid */
@@ -714,6 +792,10 @@ export interface components {
             /** @description identity_verified de la cuenta del paciente. */
             identityVerified: boolean;
             patient: components["schemas"]["PatientDto"];
+            /** @description Respuestas del paciente (no verificadas) de la entrevista de la app (F-11); null sin entrevista. */
+            symptomInterview: components["schemas"]["SymptomInterviewDto"] | null;
+            /** @description Señales de alarma referidas por el paciente: las de la app unidas a las de las reglas del servidor (F-11, PA-F11-1 provisional). No cambian el nivel sugerido. */
+            redFlags: ("CHEST_PAIN" | "BREATHING_DIFFICULTY" | "LOSS_OF_CONSCIOUSNESS" | "SEIZURE" | "SEVERE_BLEEDING" | "STROKE_SIGNS" | "SUICIDAL_IDEATION")[];
         };
         ConfirmPreRegistrationDto: {
             /**
@@ -787,6 +869,10 @@ export interface components {
             triagedAt: string | null;
             /** @description Enfermera que decidió el triage; null hasta la decisión. */
             triagedBy: components["schemas"]["StaffRefDto"] | null;
+            /** @description Respuestas del paciente (no verificadas) de la entrevista de la app (F-11); null sin entrevista. */
+            symptomInterview: components["schemas"]["SymptomInterviewDto"] | null;
+            /** @description Señales de alarma referidas por el paciente: las de la app unidas a las de las reglas del servidor (F-11, PA-F11-1 provisional). No cambian el nivel sugerido. */
+            redFlags: ("CHEST_PAIN" | "BREATHING_DIFFICULTY" | "LOSS_OF_CONSCIOUSNESS" | "SEIZURE" | "SEVERE_BLEEDING" | "STROKE_SIGNS" | "SUICIDAL_IDEATION")[];
             events: components["schemas"]["EncounterEventDto"][];
         };
         RejectPreRegistrationDto: {
@@ -1101,6 +1187,8 @@ export interface components {
             maxWaitMinutes: number | null;
             /** @description true solo en triaged cuando el tiempo exacto desde la clasificación (serverNow − triagedAt, en milisegundos) supera maxWaitMinutes (Res. 256 de 2016): nivel I con cualquier tiempo > 0, nivel II con más de 30 min. Como minutesSinceTriage se muestra en minutos completos, puede ser true con minutesSinceTriage igual al máximo (p. ej. 30 min y 1 s). Nunca en III–V, waitingTriage ni inCare. */
             overdue: boolean;
+            /** @description true si el paciente refirió señales de alarma (F-11, red_flags no vacío). Ordena waitingTriage (con señales primero); no cambia el nivel. */
+            hasRedFlags: boolean;
             patient: components["schemas"]["QueuePatientDto"];
         };
         QueueDto: {
@@ -1109,12 +1197,58 @@ export interface components {
              * @description Hora del servidor con la que se calcularon todas las esperas, los minutos desde la clasificación y las alertas de la respuesta.
              */
             serverNow: string;
-            /** @description WAITING_TRIAGE, mayor espera desde la llegada (waitMinutes) primero. */
+            /** @description WAITING_TRIAGE: primero las que tienen señales de alarma (hasRedFlags) y, en cada grupo, mayor espera desde la llegada (waitMinutes) primero. */
             waitingTriage: components["schemas"]["QueueItemDto"][];
             /** @description TRIAGED, nivel ascendente y, en cada nivel, más tiempo desde la clasificación primero (mayor minutesSinceTriage; Res. 256 de 2016), con los empates por id. Las que no tienen triagedAt, al final. */
             triaged: components["schemas"]["QueueItemDto"][];
             /** @description IN_CARE, nivel ascendente y después llegada ascendente. */
             inCare: components["schemas"]["QueueItemDto"][];
+        };
+        WaitEstimateDto: {
+            /** @description Límite inferior: 0,5 × eta, redondeado hacia abajo a 5 min. */
+            minMinutes: number;
+            /** @description Límite superior: 1,5 × eta, redondeado hacia arriba a 5 min, nunca menos de 5. */
+            maxMinutes: number;
+        };
+        QueuePositionDto: {
+            /**
+             * @description NO_ACTIVE: sin atención activa (p. ej. pre-registro pendiente de recepción). WAITING_TRIAGE: espera de triage. WAITING_CARE: clasificado, espera de atención médica. CALLED: en atención. DONE: la atención terminó (solo en el stream, que se cierra a continuación).
+             * @enum {string}
+             */
+            phase: "NO_ACTIVE" | "WAITING_TRIAGE" | "WAITING_CARE" | "CALLED" | "DONE";
+            /** @description Posición (desde 1) dentro de la fase, con el mismo orden de la cola del personal (F-06) limitado a la sede de la atención. null en CALLED, DONE y NO_ACTIVE. */
+            position: number | null;
+            /** @description Personas delante (position − 1); null cuando position es null. */
+            aheadCount: number | null;
+            /** @description Rango de espera por el ritmo reciente de la fase en la sede (salidas en las últimas 4 h): eta = aheadCount × 240 / salidas. null con menos de 5 salidas (INSUFFICIENT_DATA) o sin posición. */
+            estimate: components["schemas"]["WaitEstimateDto"] | null;
+            /**
+             * @description RECENT_THROUGHPUT si hay estimación; INSUFFICIENT_DATA con menos de 5 salidas de la fase en la ventana; null sin posición.
+             * @enum {string|null}
+             */
+            estimateBasis: "RECENT_THROUGHPUT" | "INSUFFICIENT_DATA" | null;
+            /**
+             * Format: date-time
+             * @description Hora del servidor con la que se calculó la instantánea.
+             */
+            serverNow: string;
+        };
+        NextQuestionRequestDto: {
+            chiefComplaintText: string;
+            turns: components["schemas"]["InterviewTurnDto"][];
+        };
+        NextQuestionDto: {
+            /** @enum {string} */
+            kind: "QUESTION" | "DONE" | "RED_FLAG";
+            /**
+             * @description Solo en QUESTION.
+             * @enum {string}
+             */
+            dimension?: "ONSET" | "DURATION" | "INTENSITY" | "LOCATION" | "ASSOCIATED" | "HISTORY" | "MEDS_ALLERGIES" | "ALARM_SIGNS";
+            /** @description Solo en QUESTION. Una sola pregunta, terminada en "?". */
+            question?: string;
+            /** @description Solo en RED_FLAG: señales de las reglas deterministas (puede ser vacía si solo la sospechó el LLM). La app muestra "Acude ya a urgencias o llama al 123". */
+            redFlags?: ("CHEST_PAIN" | "BREATHING_DIFFICULTY" | "LOSS_OF_CONSCIOUSNESS" | "SEIZURE" | "SEVERE_BLEEDING" | "STROKE_SIGNS" | "SUICIDAL_IDEATION")[];
         };
         ReportPeriodDto: {
             /** Format: date */
@@ -2509,6 +2643,197 @@ export interface operations {
             };
             /** @description Rol distinto de PHYSICIAN, NURSE o ADMIN, o token de paciente. */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PatientQueueController_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QueuePositionDto"];
+                };
+            };
+            /** @description Hay algún parámetro de consulta (no admite ninguno). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Sin token válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Token de personal. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    PatientQueueController_stream: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description event: position · data: QueuePositionDto (JSON); comentarios `: ping` de latido. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            /** @description Hay algún parámetro de consulta (no admite ninguno). */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Sin token válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Token de personal. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Error en application/problem+json (RFC 9457) */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+        };
+    };
+    InterviewController_next: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NextQuestionRequestDto"];
+            };
+        };
+        responses: {
+            /** @description Siguiente paso de la entrevista. Primero se aplican las reglas de señales de alarma (RED_FLAG). Nada de la petición ni de la respuesta se guarda ni se registra. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NextQuestionDto"];
+                };
+            };
+            /** @description Cuerpo inválido: motivo de 1 a 2000 caracteres, 0 a 5 turnos con dimension, question (1–200) y answer (1–500 o null), sin campos extra. Los errores no repiten los valores. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Sin token válido. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Token de personal. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Demasiadas peticiones de este paciente a este endpoint (más de 30 cada 10 min; application/problem+json). */
+            429: {
+                headers: {
+                    /** @description Segundos hasta que termina la ventana del límite. */
+                    "Retry-After"?: number;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ProblemDetailsDto"];
+                };
+            };
+            /** @description Ningún proveedor del LLM respondió: la app envía el pre-registro sin entrevista. */
+            503: {
                 headers: {
                     [name: string]: unknown;
                 };

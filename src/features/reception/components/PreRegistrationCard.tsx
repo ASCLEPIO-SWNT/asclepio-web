@@ -25,6 +25,7 @@ import {
 } from '../../../shared/lib/problem';
 import { ActionError } from '../../../shared/ui/ActionError';
 import { LoadingState } from '../../../shared/ui/LoadingState';
+import { RedFlagBadge } from '../../../shared/ui/RedFlagBadge';
 import { StatusBadge } from '../../../shared/ui/StatusBadge';
 import { useConfirmPreRegistration } from '../hooks/useConfirmPreRegistration';
 import { useRejectPreRegistration } from '../hooks/useRejectPreRegistration';
@@ -177,6 +178,10 @@ export function PreRegistrationCard({
         <Fact label={t('feature_site')}>{preRegistration.siteName}</Fact>
         <Fact label={t('feature_complaint')} wide>
           {preRegistration.chiefComplaintText}
+          {/* F-11-web R2: señales referidas por el paciente, junto al motivo. */}
+          {preRegistration.redFlags.length > 0 && (
+            <RedFlagBadge flags={preRegistration.redFlags} />
+          )}
         </Fact>
         <Fact label={t('feature_pr_label')} time>
           {formatDateTimeBogota(preRegistration.preRegisteredAt)}

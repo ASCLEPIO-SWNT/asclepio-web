@@ -2342,6 +2342,111 @@ textarea:disabled {
   margin: 0;
   white-space: pre-wrap;
 }
+/*
+ * F-11-web: respuestas del paciente (no verificadas) e insignia de señal de alarma. Solo tokens
+ * existentes. El bloque es neutro (borde continuo, fondo de tarjeta, sin tono semántico) para no
+ * parecerse a la sugerencia de IA (aviso con borde discontinuo) ni a la tarjeta de triage (R4).
+ */
+.interview-block {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+  margin: 1rem 0 0;
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  border-inline-start: 0.25rem solid var(--muted);
+  border-radius: 0.6rem;
+  background: var(--card);
+}
+.interview-block__title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+.interview-block__title svg {
+  width: 1.1rem;
+  height: 1.1rem;
+  flex: none;
+  color: var(--muted);
+}
+.interview-block__note {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+.interview-block p {
+  margin: 0;
+}
+.interview-block__turns {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+.interview-block__turns li {
+  min-width: 0;
+}
+.interview-block__dimension {
+  display: block;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.interview-block__turns dl,
+.interview-block__meta {
+  margin: 0;
+}
+.interview-block__turns dt {
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.interview-block__turns dd {
+  margin: 0.15rem 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.interview-block__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.25rem;
+  font-size: 0.8125rem;
+}
+.interview-block__meta div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.interview-block__meta dt {
+  color: var(--muted);
+}
+.interview-block__meta dd {
+  margin: 0;
+}
+.red-flags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  min-width: 0;
+  margin: 0.5rem 0 0;
+}
+.red-flags__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.2rem 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8125rem;
+}
+.red-flags__list li + li::before {
+  content: '·';
+  margin-inline-end: 0.6rem;
+  color: var(--muted);
+}
 .clinical-forms {
   display: grid;
   gap: 1rem;

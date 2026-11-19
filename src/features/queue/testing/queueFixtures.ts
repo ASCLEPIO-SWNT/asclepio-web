@@ -46,6 +46,7 @@ export function queueItem(overrides: Partial<QueueItem> = {}): QueueItem {
     maxWaitMinutes: null,
     minutesSinceTriage: 5,
     overdue: false,
+    hasRedFlags: false,
     patient: { initials: 'ZZ', ageYears: 50, sex: 'F' },
     ...overrides,
   };

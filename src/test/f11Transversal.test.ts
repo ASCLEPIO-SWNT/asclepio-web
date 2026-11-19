@@ -23,8 +23,27 @@ const params = (text: string) =>
   [...text.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
 
 /** Las enumeraciones de 0.11.0, leídas del snapshot del contrato. */
-const schemas = JSON.parse(
-  readFileSync('../asclepio-api/openapi/asclepio-api.v1.json', 'utf8'),
+interface EnumSchema {
+  enum: string[];
+}
+interface Snapshot {
+  components: {
+    schemas: {
+      InterviewTurnDto: { properties: { dimension: EnumSchema } };
+      SymptomInterviewDto: {
+        properties: {
+          engine: EnumSchema;
+          endedBy: EnumSchema;
+          redFlags: { items: EnumSchema };
+        };
+      };
+    };
+  };
+}
+const schemas = (
+  JSON.parse(
+    readFileSync('../asclepio-api/openapi/asclepio-api.v1.json', 'utf8'),
+  ) as Snapshot
 ).components.schemas;
 
 describe('F-11-web textos en los cinco idiomas', () => {

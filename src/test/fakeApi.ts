@@ -286,6 +286,43 @@ export const encounter: Schemas['EncounterDto'] = {
   ],
 };
 
+// ------------------------------------------------------------------ Fixtures F-11-web (contrato 0.11.0)
+
+/**
+ * Entrevista sintética de la app (F-11). Preguntas y respuestas ficticias, sin nombre ni
+ * documento: solo ejercitan cómo se muestran, no son un criterio clínico.
+ */
+export const symptomInterview: Schemas['SymptomInterviewDto'] = {
+  engine: 'ON_DEVICE',
+  modelId: 'modelo-sintetico-1',
+  turns: [
+    {
+      dimension: 'ONSET',
+      question: '¿Desde cuándo tiene el dolor de cabeza?',
+      answer: 'Desde ayer por la tarde',
+    },
+    {
+      dimension: 'INTENSITY',
+      question: 'Del 0 al 10, ¿qué tan fuerte es el dolor?',
+      answer: '7',
+    },
+    {
+      dimension: 'MEDS_ALLERGIES',
+      question: '¿Toma algún medicamento o tiene alergias?',
+      answer: null,
+    },
+  ],
+  redFlags: [],
+  endedBy: 'PATIENT',
+};
+
+/** Atención con entrevista y, opcionalmente, señales de alarma (F-11-web R1, R2). */
+export function encounterWithInterview(
+  overrides: Partial<Schemas['EncounterDto']> = {},
+): Schemas['EncounterDto'] {
+  return { ...encounter, symptomInterview, ...overrides };
+}
+
 export function encounterSummary(
   overrides: Partial<Schemas['EncounterSummaryDto']> = {},
 ): Schemas['EncounterSummaryDto'] {

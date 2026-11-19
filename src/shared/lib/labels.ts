@@ -5,6 +5,10 @@ import type {
   EncounterEvent,
   EncounterOrigin,
   EncounterStatus,
+  InterviewDimension,
+  InterviewEndedBy,
+  InterviewEngine,
+  RedFlag,
   Sex,
 } from '../api/client';
 
@@ -60,6 +64,40 @@ export const ORIGIN_LABELS = localizedLabels<EncounterOrigin>({
 export const COMPLAINT_SOURCE_LABELS = localizedLabels<ComplaintSource>({
   TYPED: 'feature_complaint_typed',
   VOICE_ON_DEVICE: 'feature_complaint_voice',
+});
+
+// F-11-web: señales de alarma referidas por el paciente (PA-F11-1, provisional) y la entrevista.
+export const RED_FLAG_LABELS = localizedLabels<RedFlag>({
+  CHEST_PAIN: 'red_flag_chest_pain',
+  BREATHING_DIFFICULTY: 'red_flag_breathing_difficulty',
+  LOSS_OF_CONSCIOUSNESS: 'red_flag_loss_of_consciousness',
+  SEIZURE: 'red_flag_seizure',
+  SEVERE_BLEEDING: 'red_flag_severe_bleeding',
+  STROKE_SIGNS: 'red_flag_stroke_signs',
+  SUICIDAL_IDEATION: 'red_flag_suicidal_ideation',
+});
+
+export const INTERVIEW_DIMENSION_LABELS = localizedLabels<InterviewDimension>({
+  ONSET: 'interview_dim_onset',
+  DURATION: 'interview_dim_duration',
+  INTENSITY: 'interview_dim_intensity',
+  LOCATION: 'interview_dim_location',
+  ASSOCIATED: 'interview_dim_associated',
+  HISTORY: 'interview_dim_history',
+  MEDS_ALLERGIES: 'interview_dim_meds_allergies',
+  ALARM_SIGNS: 'interview_dim_alarm_signs',
+});
+
+export const INTERVIEW_ENGINE_LABELS = localizedLabels<InterviewEngine>({
+  ON_DEVICE: 'interview_engine_on_device',
+  SERVER: 'interview_engine_server',
+});
+
+export const INTERVIEW_ENDED_LABELS = localizedLabels<InterviewEndedBy>({
+  COMPLETE: 'interview_ended_complete',
+  MAX_QUESTIONS: 'interview_ended_max',
+  RED_FLAG: 'interview_ended_red_flag',
+  PATIENT: 'interview_ended_patient',
 });
 
 const EVENT_LABELS = localizedLabels<string>({

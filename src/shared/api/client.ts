@@ -95,3 +95,11 @@ export type ReportCareTime = Schemas['CareTimeStatsDto'];
 export type ReportCountPercent = Schemas['CountPercentDto'];
 export type ReportSummaryQuery =
   paths['/api/v1/reports/summary']['get']['parameters']['query'];
+
+// F-11-web (contrato 0.11.0): entrevista de síntomas y señales de alarma. Solo alias de tipos generados.
+export type SymptomInterview = Schemas['SymptomInterviewDto'];
+export type InterviewTurn = Schemas['InterviewTurnDto'];
+export type InterviewDimension = InterviewTurn['dimension'];
+export type InterviewEngine = SymptomInterview['engine'];
+export type InterviewEndedBy = SymptomInterview['endedBy'];
+export type RedFlag = Schemas['EncounterDto']['redFlags'][number];

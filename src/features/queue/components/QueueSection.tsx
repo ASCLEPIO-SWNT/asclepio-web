@@ -12,6 +12,7 @@ import { romanLevel } from '../../../shared/lib/level';
 import { DataCell, DataRow, DataTable } from '../../../shared/ui/DataTable';
 import { Panel } from '../../../shared/ui/Panel';
 import { PanelState } from '../../../shared/ui/PanelState';
+import { RedFlagBadge } from '../../../shared/ui/RedFlagBadge';
 import { StatusBadge } from '../../../shared/ui/StatusBadge';
 import { patientLabel, type QueueSectionView } from '../queueView';
 import { QueueWait } from './QueueWait';
@@ -80,6 +81,10 @@ export function QueueSection({
                   <span className="cell-name">
                     {patientLabel(item.patient)}
                   </span>
+                  {/* F-11-web R2: solo en «En espera de triage»; la cola no trae la lista. */}
+                  {section.id === 'waiting' && item.hasRedFlags && (
+                    <RedFlagBadge />
+                  )}
                 </DataCell>
                 {withLevel && (
                   <DataCell label={t('queue_col_level')}>

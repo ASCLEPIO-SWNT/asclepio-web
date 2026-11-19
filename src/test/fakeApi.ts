@@ -220,6 +220,9 @@ export const pendingPreRegistration: Schemas['PendingPreRegistrationDto'] = {
   complaintSource: 'TYPED',
   identityVerified: false,
   patient,
+  // Campos aditivos de 0.11.0 (F-11-web): sin entrevista ni señales, la vista no cambia (R6).
+  symptomInterview: null,
+  redFlags: [],
 };
 
 export const ENCOUNTER_ID = 'e0e0e0e0-0000-4000-8000-000000000001';
@@ -244,6 +247,9 @@ export const encounter: Schemas['EncounterDto'] = {
   triagedAt: null,
   triagedBy: null,
   patient,
+  // Campos aditivos de 0.11.0 (F-11-web): sin entrevista ni señales, la vista no cambia (R6).
+  symptomInterview: null,
+  redFlags: [],
   events: [
     {
       id: '3',

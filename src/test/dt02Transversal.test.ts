@@ -16,9 +16,8 @@ const sha256 = (content: string | Buffer) =>
   createHash('sha256').update(content).digest('hex');
 
 describe('DT-02-web contrato', () => {
-  it('R1: declara el contrato 0.9.0 y los tipos generados coinciden con las huellas vigentes', () => {
-    expect(CONSUMED_CONTRACT).toBe('0.9.0');
-    expect(EXPECTED_CONTRACT).toBe('0.9.0');
+  // F-11-web T1: la versión se lee de EXPECTED_CONTRACT (0.9.0 en DT-02-web, 0.11.0 desde F-11-web).
+  it('R1: declara el contrato vigente y los tipos generados coinciden con las huellas vigentes', () => {
     expect(CONSUMED_CONTRACT).toBe(EXPECTED_CONTRACT);
     expect(sha256(readFileSync('src/shared/api/schema.d.ts'))).toBe(
       SCHEMA_SHA256,
@@ -28,12 +27,16 @@ describe('DT-02-web contrato', () => {
 
   it('R1: el cuerpo del archivo clínico (sin la cabecera) conserva la huella generada desde 0.7.0', () => {
     const generated = readFileSync(CLINICAL_FILE, 'utf8');
-    expect(generated).toMatch(/^\/\/ Generated from OpenAPI 0\.9\.0 /);
+    expect(generated).toMatch(
+      new RegExp(
+        `^// Generated from OpenAPI ${EXPECTED_CONTRACT.replaceAll('.', '\\.')} `,
+      ),
+    );
     const body = generated.slice(generated.indexOf('\n') + 1);
     expect(sha256(body)).toBe(CLINICAL_RULES_BODY_SHA256);
   });
 
-  it('R1: la guarda de extract-clinical-contract.mjs admite 0.9.0 con su comentario de revisión, y solo las versiones revisadas', () => {
+  it('R1: la guarda de extract-clinical-contract.mjs admite 0.9.0 (y 0.11.0, F-11-web) con su comentario de revisión, y solo las versiones revisadas', () => {
     const script = readFileSync(
       'scripts/extract-clinical-contract.mjs',
       'utf8',
@@ -43,8 +46,16 @@ describe('DT-02-web contrato', () => {
     const versions = [...guard![1].matchAll(/'([^']+)'/g)].map(
       (match) => match[1],
     );
-    expect(versions).toEqual(['0.4.0', '0.5.0', '0.6.0', '0.7.0', '0.9.0']);
+    expect(versions).toEqual([
+      '0.4.0',
+      '0.5.0',
+      '0.6.0',
+      '0.7.0',
+      '0.9.0',
+      '0.11.0',
+    ]);
     expect(versions).not.toContain('0.8.0');
+    expect(versions).not.toContain('0.10.0');
     expect(script).toMatch(
       /\/\/ DT-02-web D1: 0\.9\.0 no cambia las reglas clínicas de F-03 ni los límites de decisión de F-05/,
     );

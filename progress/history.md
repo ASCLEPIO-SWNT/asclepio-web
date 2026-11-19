@@ -116,3 +116,14 @@
 - **Revisión:** APROBADO por el reviewer (C1–C8, R1–R32). Desviaciones aceptadas: «Reintentar» de `SummaryCell` solo con `onRetry` (R8); `role="group"` en `.report-table-wrap` (D11; ambas en design.md); dos claves i18n fuera del plan (`reports_pairs_count`, `reports_csv_forbidden`); inglés igual al español en `reports_minutes` y `reports_provider_groq`; parte de los ajustes de `dashboards.test.tsx` en T4. Observaciones: si se aplica una sede y las sedes no cargaron, la línea del periodo deja vacío el nombre (`ReportsPage.tsx:196-199`); alias `ReportSummaryQuery` y `ReportLevelTime` sin uso.
 - **Verificación:** `./init.sh` en VERDE (1301 pruebas), `i18n:check`, `build` y `api:types` sin diff. T10 verificada a mano por el humano como ADMIN contra la API local, 2026-11-13.
 - **Pendiente en asclepio-api:** exponer `Content-Disposition` en el CORS (`src/app.setup.ts:63`, hoy solo `Retry-After`); mientras tanto la web descarga con el nombre `asclepio-atenciones-<from>_<to>.csv`. La revisión de la cola pedida con 0.9.0 ya estaba hecha en DT-02-web.
+
+## 2026-11-19 — F-11-web: respuestas de la entrevista y señales de alarma → done
+
+- **Spec:** aprobada por el humano el 2026-11-18. Consume el contrato 0.11.0 (F-11-api, asclepio-api#6). Rama `feature/F-11-web`, rebasada sobre `develop`.
+- **Resultado:** se regeneró `schema.d.ts` (0.11.0).
+  - `SymptomInterviewBlock`, debajo del motivo original en la captura clínica y en el detalle: preguntas, respuestas ("No sabe / prefirió no responder" cuando el valor es `null`), motor y motivo de fin, con un estilo informativo distinto del de la sugerencia de IA (RNF-17).
+  - `RedFlagBadge`, con las señales traducidas y un nombre accesible, en la captura, el detalle, la bandeja de recepción y la espera de triage de la cola.
+  - El cliente no reordena: el orden lo pone el servidor.
+- **Pruebas:** `./init.sh` en VERDE, con 1.343 pruebas. R1–R6 cubiertos con 42 pruebas `R<n>:`.
+- **Revisión:** APROBADA a la primera.
+- **Verificación manual (T5):** la validó el humano el 2026-11-19 contra la API local, con `../f11.sh` y `../f10.sh` de la raíz del workspace.

@@ -79,3 +79,27 @@ describe('F-11-web señal de alarma en la cola', () => {
     expect(link).toHaveAccessibleDescription(expect.stringContaining(BADGE));
   });
 });
+
+describe('F-11-web orden de «En espera de triage»', () => {
+  const ids = () =>
+    within(within(section('En espera de triage')).getByRole('table'))
+      .getAllByRole('row')
+      .slice(1)
+      .map((row) =>
+        within(row).getAllByRole('cell')[0].id.replace('queue-patient-', ''),
+      );
+
+  it('R3: con señales primero (orden del servidor), la fila con señales va primero aunque espere menos', async () => {
+    const order = [waitingRedFlag, waitingLong, waitingNN];
+    openQueue({ ...queue, waitingTriage: order });
+    await screen.findAllByRole('link', { name: 'Ver atención' });
+    expect(ids()).toEqual(order.map((item) => item.encounterId));
+  });
+
+  it('R3: la web no reordena: si el servidor envía la fila con señales al final, se respeta', async () => {
+    const order = [waitingNN, waitingLong, waitingRedFlag];
+    openQueue({ ...queue, waitingTriage: order });
+    await screen.findAllByRole('link', { name: 'Ver atención' });
+    expect(ids()).toEqual(order.map((item) => item.encounterId));
+  });
+});

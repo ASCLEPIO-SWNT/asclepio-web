@@ -71,3 +71,24 @@ describe('F-11-web señal de alarma en la bandeja de recepción', () => {
     expect(screen.getAllByText(BADGE)).toHaveLength(1);
   });
 });
+
+describe('F-11-web orden de la bandeja', () => {
+  const names = () =>
+    screen
+      .getAllByRole('article')
+      .map(
+        (card) => within(card).getByRole('heading', { level: 3 }).textContent,
+      );
+
+  it('R3: con señales primero (orden del servidor), la bandeja las muestra primero', async () => {
+    openTray([flagged, pendingPreRegistration]);
+    await screen.findByRole('article', { name: 'Marta Ríos' });
+    expect(names()).toEqual(['Marta Ríos', patient.fullName]);
+  });
+
+  it('R3: la web no reordena: si el servidor envía primero la que no tiene señales, se respeta', async () => {
+    openTray([pendingPreRegistration, flagged]);
+    await screen.findByRole('article', { name: 'Marta Ríos' });
+    expect(names()).toEqual([patient.fullName, 'Marta Ríos']);
+  });
+});

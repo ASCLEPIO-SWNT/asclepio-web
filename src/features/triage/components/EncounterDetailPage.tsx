@@ -25,10 +25,12 @@ import { LoadError } from '../../../shared/ui/LoadError';
 import { LoadingState } from '../../../shared/ui/LoadingState';
 import { Notice } from '../../../shared/ui/Notice';
 import { PatientDetails } from '../../../shared/ui/PatientDetails';
+import { RedFlagBadge } from '../../../shared/ui/RedFlagBadge';
 import { ViewForbidden } from '../../../shared/ui/ViewForbidden';
 import { encounterKey, useEncounter } from '../hooks/useEncounter';
 import { CancelEncounterForm } from './CancelEncounterForm';
 import { EncounterTimeline } from './EncounterTimeline';
+import { SymptomInterviewBlock } from './SymptomInterviewBlock';
 import { ClinicalCapturePanel } from './ClinicalCapturePanel';
 
 /** Roles de cancelación (PA-F02-3). */
@@ -120,6 +122,10 @@ function EncounterDetailPage({ id }: { id: string }) {
             <span className="muted">
               ({COMPLAINT_SOURCE_LABELS[encounter.complaintSource]})
             </span>
+            {/* F-11-web R2: señales referidas por el paciente, junto al motivo. */}
+            {encounter.redFlags.length > 0 && (
+              <RedFlagBadge flags={encounter.redFlags} />
+            )}
           </dd>
           {encounter.status === 'CANCELLED' && (
             <>
@@ -128,6 +134,14 @@ function EncounterDetailPage({ id }: { id: string }) {
             </>
           )}
         </dl>
+
+        {/* F-11-web R1/R6: debajo de los datos de la atención (con el motivo) y solo si hay entrevista. */}
+        {encounter.symptomInterview && (
+          <SymptomInterviewBlock
+            interview={encounter.symptomInterview}
+            headingLevel={2}
+          />
+        )}
 
         <section aria-labelledby="patient-title">
           <h2 id="patient-title">{t('feature_patient')}</h2>

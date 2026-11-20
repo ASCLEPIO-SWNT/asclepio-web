@@ -18,9 +18,9 @@ const sha256 = (content: string | Buffer) =>
   createHash('sha256').update(content).digest('hex');
 
 describe('F-07-web contrato', () => {
-  it('R31: consume el contrato 0.9.0 y las tres huellas no cambian (npm run api:types sin diff)', () => {
-    expect(CONSUMED_CONTRACT).toBe('0.9.0');
-    expect(EXPECTED_CONTRACT).toBe('0.9.0');
+  // F-11-web T1: la versión se lee de EXPECTED_CONTRACT (0.9.0 en F-07-web, 0.11.0 desde F-11-web).
+  it('R31: consume el contrato vigente y las tres huellas no cambian (npm run api:types sin diff)', () => {
+    expect(CONSUMED_CONTRACT).toBe(EXPECTED_CONTRACT);
     expect(sha256(readFileSync('src/shared/api/schema.d.ts'))).toBe(
       SCHEMA_SHA256,
     );
